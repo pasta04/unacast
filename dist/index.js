@@ -942,7 +942,7 @@ else {
         mainWin.setTitle('unacast');
         mainWin.setMenu(null);
         // レンダラーで使用するhtmlファイルを指定する
-        mainWin.loadURL(path_1.default.resolve(__dirname, '../src/html/index.html'));
+        mainWin.loadURL('file://' + path_1.default.resolve(__dirname, '../src/html/index.html'));
         // ウィンドウが閉じられたらアプリも終了
         mainWin.on('close', function (event) {
             // 確認ダイアログではいをクリックしたら閉じる
@@ -1053,7 +1053,7 @@ var createChatWindow = function () {
     chatWindow.setTitle('unacast');
     chatWindow.setMenu(null);
     // レンダラーで使用するhtmlファイルを指定する
-    chatWindow.loadURL(path_1.default.resolve(__dirname, '../src/html/chat.html'));
+    chatWindow.loadURL('file://' + path_1.default.resolve(__dirname, '../src/html/chat.html'));
     globalThis.electron.chatWindow = chatWindow;
     // chatWindow.webContents.openDevTools();
 };
@@ -1083,7 +1083,7 @@ var createTranslateWindow = function () {
     translateWindow.setTitle('unacast');
     translateWindow.setMenu(null);
     // レンダラーで使用するhtmlファイルを指定する
-    translateWindow.loadURL(path_1.default.resolve(__dirname, '../src/html/translate.html'));
+    translateWindow.loadURL('file://' + path_1.default.resolve(__dirname, '../src/html/translate.html'));
     // 初期表示は最小化
     translateWindow.minimize();
     globalThis.electron.translateWindow = translateWindow;
@@ -1117,7 +1117,7 @@ var createImagePreviewWindow = function () {
     childwindow.setMenu(null);
     childwindow.hide();
     // レンダラーで使用するhtmlファイルを指定する
-    childwindow.loadURL(path_1.default.resolve(__dirname, '../src/html/imagePreview.html'));
+    childwindow.loadURL('file://' + path_1.default.resolve(__dirname, '../src/html/imagePreview.html'));
     // ×押したらインスタンス再生成
     childwindow.on('close', function (e) {
         setTimeout(function () {
