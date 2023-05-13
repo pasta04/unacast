@@ -1480,19 +1480,22 @@ var NiconamaComment = /** @class */ (function (_super) {
         _this.fetchCommentServerThread = function () { return __awaiter(_this, void 0, void 0, function () {
             var url, res, $, embeddedData, broadcastId, audienceToken, frontendId, threadWssUrl, tWs;
             var _this = this;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log.info("[fetchCommentServerThread]");
                         url = "https://live.nicovideo.jp/watch/" + this.communityId;
                         return [4 /*yield*/, axios_1.default.get(url)];
                     case 1:
-                        res = _b.sent();
+                        res = _c.sent();
                         $ = cheerio_1.default.load(res.data);
                         embeddedData = JSON.parse((_a = $('#embedded-data').attr('data-props')) !== null && _a !== void 0 ? _a : '');
                         broadcastId = embeddedData.program.broadcastId || embeddedData.program.reliveProgramId;
                         audienceToken = embeddedData.player.audienceToken;
+                        if (!broadcastId) {
+                            broadcastId = ((_b = audienceToken.match(/^\d+/)) === null || _b === void 0 ? void 0 : _b[0]) || '';
+                        }
                         frontendId = embeddedData.site.frontendId;
                         threadWssUrl = "wss://a.live2.nicovideo.jp/unama/wsapi/v2/watch/" + broadcastId + "?audience_token=" + audienceToken + "&frontend_id=" + frontendId;
                         log.info(threadWssUrl);

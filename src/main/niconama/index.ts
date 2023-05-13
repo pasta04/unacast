@@ -143,8 +143,11 @@ class NiconamaComment extends EventEmitter {
     const embeddedData = JSON.parse($('#embedded-data').attr('data-props') ?? '');
     // log.info(JSON.stringify(embeddedData, null, '  '));
 
-    const broadcastId: string = embeddedData.program.broadcastId || embeddedData.program.reliveProgramId;
+    let broadcastId: string = embeddedData.program.broadcastId || embeddedData.program.reliveProgramId;
     const audienceToken: string = embeddedData.player.audienceToken;
+    if (!broadcastId) {
+      broadcastId = audienceToken.match(/^\d+/)?.[0] || '';
+    }
     const frontendId: string = embeddedData.site.frontendId;
 
     // スレッドURLを取得
