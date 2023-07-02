@@ -344,6 +344,37 @@
         </div>
       </div>
 
+      <!-- 読み子辞書編集ダイアログ -->
+      <dialog id="yomikoDictionary-dialog" class="mdl-dialog" style="width:fit-content">
+        <div class="mdl-dialog__content">
+          <table id="yomikoDictionary-table" class="mdl-data-table mdl-js-data-table">
+            <thead>
+              <tr>
+                <th class="mdl-data-table__cell--non-numeric">置き換え対象(正規表現)</th>
+                <th class="mdl-data-table__cell--non-numeric">読み方</th>
+              </tr>
+            </thead>
+            <tbody id="yomikoDictionary-table-body">
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="mdl-data-table__cell--non-numeric">
+                  <button type="button" id="button-yomikoDictionary-dialog-add" class="mdl-button mdl-button--fab mdl-button--mini-fab mdl-js-ripple-effect">
+                    <i class="material-icons">add</i>
+                  </button>
+                </td>
+                <td></td>
+                <td>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="mdl-dialog__actions">
+          <button type="button" id="button-yomikoDictionary-dialog-close" class="mdl-button mdl-button--raised mdl-button--colored">閉じる</button>
+        </div>
+      </dialog>
+
       <div class="block">
         <h5>読み子設定</h5>
 
@@ -410,6 +441,7 @@
           <input type="checkbox" id="yomiko-replace-newline" class="mdl-checkbox__input" value="0" checked />
           <span class="mdl-checkbox__label">読み子に渡す時に改行削除</span>
         </label>
+        <button type="button" id="button-yomikoDictionary-edit" class="mdl-button mdl-js-button mdl-button--raised">読み上げ辞書編集</button>
 
       </div>
 

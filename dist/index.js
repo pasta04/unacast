@@ -3384,7 +3384,7 @@ exports.createDom = createDom;
  * @param message
  */
 var sendDom = function (messageList) { return __awaiter(void 0, void 0, void 0, function () {
-    var newList, domStr, socketObject_1, typeYomiko, text, e_3;
+    var newList, domStr, socketObject_1, typeYomiko, text_1, e_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -3425,14 +3425,19 @@ var sendDom = function (messageList) { return __awaiter(void 0, void 0, void 0, 
                 _a.sent();
                 return [3 /*break*/, 9];
             case 7:
-                text = newList[newList.length - 1].text.replace(/<br> /g, '\n ').replace(/<br>/g, '\n ');
-                text = text.replace(/<img.*?\/>/g, '');
-                text = text.replace(/<a .*?>/g, '').replace(/<\/a>/g, '');
-                text = util_1.unescapeHtml(text);
+                text_1 = newList[newList.length - 1].text;
+                text_1 = text_1.replace(/<br\s*\/?>\s*/g, '\n ');
+                text_1 = text_1.replace(/<img.*?\/>/g, '');
+                text_1 = text_1.replace(/<a .*?>/g, '').replace(/<\/a>/g, '');
+                // 読み上げ辞書の置き換え
+                config.yomikoDictionary.forEach(function (entry) {
+                    text_1 = text_1.replace(new RegExp(entry.pattern, 'gim'), entry.pronunciation);
+                });
+                text_1 = util_1.unescapeHtml(text_1);
                 if (globalThis.config.yomikoReplaceNewline) {
-                    text = text.replace(/\r\n/g, ' ').replace(/\n/g, ' ');
+                    text_1 = text_1.replace(/\r\n/g, ' ').replace(/\n/g, ' ');
                 }
-                return [4 /*yield*/, playYomiko(typeYomiko, text)];
+                return [4 /*yield*/, playYomiko(typeYomiko, text_1)];
             case 8:
                 _a.sent();
                 _a.label = 9;

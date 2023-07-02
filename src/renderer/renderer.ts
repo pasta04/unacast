@@ -3,6 +3,7 @@ import electronlog from 'electron-log';
 const log = electronlog.scope('renderer-main');
 import { electronEvent } from '../main/const';
 import { sleep } from '../main/util';
+import 'material-design-lite'
 
 const ipcRenderer = electron.ipcRenderer;
 
@@ -109,6 +110,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const config = buildConfigJson();
     ipcRenderer.send(electronEvent.COMMENT_TEST, config);
   };
+
+  // 読み上げ辞書編集ボタン
+  const editYomikoDictionary = document.getElementById('button-yomikoDictionary-edit') as HTMLInputElement;
+  editYomikoDictionary.onclick = () => {
+    //確認ダイアログを表示
+    (document.getElementById('yomikoDictionary-dialog') as HTMLDialogElement).showModal();
+  };
+  (document.getElementById('button-yomikoDictionary-dialog-close') as HTMLButtonElement).onclick = () => {
+    (document.getElementById('yomikoDictionary-dialog') as HTMLDialogElement).close();
+  }
+  (document.getElementById('button-yomikoDictionary-dialog-add') as HTMLButtonElement).onclick = () => {
+    addYomikoDictionaryEntry('', '');
+  };
 });
 
 const mainContextMenuInText = (target: HTMLInputElement) => {
@@ -212,6 +226,38 @@ const toggleInputFormDisable = (isDisabled: boolean) => {
   (document.getElementById('azureStt-inputDevice') as HTMLInputElement).disabled = isDisabled;
 };
 
+const addYomikoDictionaryEntry = (pattern: string, pronunciation: string) => {
+  const yomikoDictionaryTableBody = document.getElementById('yomikoDictionary-table-body') as HTMLTableSectionElement;
+  const createTextInput = (value: string) => {
+    const inputDiv = document.createElement('div');
+    inputDiv.classList.add('mdl-textfield', 'mdl-js-textfield');
+    inputDiv.style.width = 'auto';
+    const inputText = document.createElement('input');
+    inputText.classList.add('mdl-textfield__input');
+    inputText.type = 'text';
+    inputText.value = value;
+    inputDiv.appendChild(inputText);
+    componentHandler.upgradeElement(inputDiv);
+    return inputDiv;
+  };
+  const newRow = yomikoDictionaryTableBody.insertRow();
+  const col0 = newRow.insertCell();
+  col0.classList.add('mdl-data-table__cell--non-numeric');
+  col0.appendChild(createTextInput(pattern));
+  const col1 = newRow.insertCell();
+  col1.classList.add('mdl-data-table__cell--non-numeric');
+  col1.appendChild(createTextInput(pronunciation));
+  const col2 = newRow.insertCell();
+  const deleteButton = document.createElement('button');
+  deleteButton.classList.add('mdl-button', 'mdl-js-button', 'mdl-button--fab', 'mdl-button--mini-fab', 'mdl-js-ripple-effect');
+  deleteButton.innerHTML = '<i class="material-icons">delete</i>';
+  deleteButton.onclick = () => {
+    yomikoDictionaryTableBody.deleteRow(newRow.rowIndex - 1);
+  };
+  componentHandler.upgradeElement(deleteButton);
+  col2.appendChild(deleteButton);
+};
+
 /**
  * 設定RenderのHTMLから、Configを取得する
  */
@@ -235,6 +281,18 @@ const buildConfigJson = () => {
   const bouyomiVolume = parseInt((document.getElementById('bouyomi-volume') as HTMLInputElement).value);
   const bouyomiPrefix = (document.getElementById('text-bouyomi-prefix') as HTMLInputElement).value;
   const yomikoReplaceNewline = (document.getElementById('yomiko-replace-newline') as any).checked === true;
+
+  // 読み上げ文字列置き換え
+  const yomikoDictionaryTableBody = document.getElementById('yomikoDictionary-table-body') as HTMLTableSectionElement;
+  const yomikoDictionary = [];
+  for (let i = 0; i < yomikoDictionaryTableBody.rows.length; i++) {
+    const row = yomikoDictionaryTableBody.rows.item(i);
+    const pattern = row?.cells.item(0)?.getElementsByTagName('input').item(0)?.value;
+    const pronunciation = row?.cells.item(1)?.getElementsByTagName('input').item(0)?.value || '';
+    if (pattern) {
+      yomikoDictionary.push({ pattern, pronunciation });
+    }
+  }
 
   // Azure Text To Speect
   const azureStt: typeof globalThis['config']['azureStt'] = {
@@ -362,6 +420,7 @@ const buildConfigJson = () => {
 
   const config: typeof globalThis['config'] = {
     url: url,
+    yomikoDictionary,
     resNumber,
     initMessage,
     port,
@@ -462,6 +521,11 @@ const loadConfigToLocalStrage = async () => {
     playSeStt: false,
     typeYomiko: 'none',
     typeYomikoStt: 'none',
+    yomikoDictionary: [
+      { pattern: 'h?ttps?://[A-Za-z0-9:/?#\\[\\]@!$&\'()*+.,;=%\-]+', pronunciation: 'URL' },
+      { pattern: 'www+', pronunciation: 'わらわら' },
+      { pattern: 'ｗｗｗ+', pronunciation: 'わらわら' },
+    ],
     tamiyasuPath: '',
     bouyomiPort: 50001,
     bouyomiVolume: 50,
@@ -588,6 +652,9 @@ const loadConfigToLocalStrage = async () => {
       break;
   }
 
+  for (const entry of config.yomikoDictionary) {
+    addYomikoDictionaryEntry(entry.pattern, entry.pronunciation);
+  }
 
   switch (config.commentProcessType) {
     case 0:
