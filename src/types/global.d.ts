@@ -134,9 +134,9 @@ declare global {
     /** 音声認識レス着信音再生 */
     let playSeStt: boolean;
     /** 読み子の種類 */
-    let typeYomiko: 'none' | 'tamiyasu' | 'bouyomi';
+    let typeYomiko: 'none' | 'tamiyasu' | 'bouyomi' | 'voicevox';
     /** 音声認識テキスト読み子の種類 */
-    let typeYomikoStt: 'none' | 'tamiyasu' | 'bouyomi';
+    let typeYomikoStt: 'none' | 'tamiyasu' | 'bouyomi' | 'voicevox';
     /** 民安Talkのファイルパス */
     let tamiyasuPath: string;
     /** 棒読みちゃんの待ち受けポート */
@@ -145,6 +145,13 @@ declare global {
     let bouyomiVolume: number;
     /** 棒読みちゃんへ送るときのプレフィックス */
     let bouyomiPrefix: string;
+    /** VOICE VOX 設定 **/
+    let voicevox: {
+      /** VOICE VOX CORE のパス **/
+      path: string;
+      /** 話者とスタイル(名前を\で区切った文字列) **/
+      speakerAndStyle: string;
+    };
     /** 読み子へ渡す時に改行を置換 */
     let yomikoReplaceNewline: boolean;
     /** スレが通信エラーになった時の通知閾値 */

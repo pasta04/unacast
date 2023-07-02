@@ -13,6 +13,7 @@ import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihong
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
 import { CommentItem, ImageItem } from './youtube-chat/parser';
 import bouyomiChan from './bouyomi-chan';
+import VoiceVoxClient from './voicevox';
 import { spawn } from 'child_process';
 import { electronEvent } from './const';
 import NiconamaComment from './niconama';
@@ -29,6 +30,9 @@ let server: http.Server;
 /** 棒読みちゃんインスタンス */
 let bouyomi: bouyomiChan;
 
+/** VoiceVoxインスタンス */
+let voiceVox: VoiceVoxClient;
+
 /** スレッド定期取得実行するか */
 let threadIntervalEvent = false;
 
@@ -41,6 +45,29 @@ let aWss: ReturnType<expressWs.Instance['getWss']>;
 let serverId = 0;
 
 /**
+ * VOICEVOX の読み込み(Rendererからの要求による)
+ */
+const loadVoiceVox = async (config_voicevox: typeof config['voicevox'], force: boolean = false) => {
+  if (!voiceVox?.available || force) {
+    voiceVox = new VoiceVoxClient({ path: config_voicevox.path });
+  }
+  const configuration = {
+    path: voiceVox.path,
+    available: voiceVox.available,
+    speakerAndStyle: config_voicevox.speakerAndStyle,
+    speakers:
+      voiceVox.speakers.reduce((state: { speaker: string, style: string }[], speaker) => {
+        return state.concat(speaker.styles.map(style => { return { speaker: speaker.name, style: style.name } }));
+      }, []),
+  };
+  globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_VOICEVOX_CONFIG, configuration);
+};
+
+ipcMain.on(electronEvent.LOAD_VOICEVOX, async (event: any, config_voicevox: typeof config['voicevox']) => {
+  loadVoiceVox(config_voicevox, false);
+})
+
+/**
  * 設定の適用
  */
 ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: typeof globalThis['config']) => {
@@ -48,6 +75,7 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: typeof globalT
   log.info(config);
 
   // Configの変更内容に応じて何かする
+  const oldConfig = globalThis.config;
   const isChangedUrl = globalThis.config.url !== config.url;
   const isChangeSePath = globalThis.config.sePath !== config.sePath;
   globalThis.config = config;
@@ -59,6 +87,15 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: typeof globalT
 
   // initメッセージ
   resetInitMessage();
+
+  // iconを設定
+  globalThis.electron.iconList = new CommentIcons({
+    bbs: config.iconDirBbs,
+    youtube: config.iconDirYoutube,
+    twitch: config.iconDirTwitch,
+    niconico: config.iconDirNiconico,
+    stt: config.iconDirStt,
+  });
 
   // スレのURLが変わった
   if (isChangedUrl && config.url) {
@@ -76,6 +113,24 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: typeof globalT
 
     // スレタイ更新
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'title', message: ret[0].threadTitle });
+  }
+
+  // VOICE VOX 関連
+  if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+    // VOICEVOX 利用の場合のみ
+    if (oldConfig.voicevox?.path !== config.voicevox?.path) {
+      // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
+      loadVoiceVox(config.voicevox, true);
+    }
+    else {
+      // パスが変わっていない場合は未読み込みの時だけ読み込む
+      loadVoiceVox(config.voicevox, false);
+    }
+  }
+  if (voiceVox) {
+    voiceVox.speaker = config.voicevox?.speakerAndStyle || '';
+    voiceVox.prefix = config.bouyomiPrefix;
+    voiceVox.volume = config.bouyomiVolume;
   }
 });
 
@@ -241,6 +296,25 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: typeof globalT
   if (config.typeYomiko === 'bouyomi' || config.typeYomikoStt === 'bouyomi') {
     if (config.bouyomiPort) {
       bouyomi = new bouyomiChan({ port: config.bouyomiPort, volume: config.bouyomiVolume, prefix: config.bouyomiPrefix });
+    }
+  }
+
+  // VoiceVox 接続
+  if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+    if (config.voicevox) {
+      if (!voiceVox?.available) {
+        voiceVox = new VoiceVoxClient({
+          path: config.voicevox.path,
+          speaker: config.voicevox.speakerAndStyle,
+          volume: config.bouyomiVolume,
+          prefix: config.bouyomiPrefix,
+        });
+      }
+      else {
+        voiceVox.speaker = config.voicevox.speakerAndStyle;
+        voiceVox.volume = config.bouyomiVolume;
+        voiceVox.prefix = config.bouyomiPrefix;
+      }
     }
   }
 
@@ -733,6 +807,24 @@ let isSpeaking = false;
 /** 読み子を再生する */
 const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => {
   // log.info('[playYomiko] start');
+  if (isSpeaking) {
+    // 以前の読み子がまだ読んでいる
+    switch (typeYomiko) {
+      case 'tamiyasu': {
+        // TODO:強制的に発話を終了する
+        break;
+      }
+      case 'bouyomi': {
+        // TODO:強制的に発話を終了する
+        break;
+      }
+      case 'voicevox': {
+        // 強制的に発話を終了する
+        if (voiceVox) voiceVox.abort();
+        break;
+      }
+    }
+  }
   isSpeaking = true;
 
   // 読み子呼び出し
@@ -740,15 +832,35 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
     case 'tamiyasu': {
       log.debug(`${config.tamiyasuPath} "${msg}"`);
       spawn(config.tamiyasuPath, [msg]);
+      // 読み子が読んでる時間分相当待つ
+      globalThis.electron.mainWindow.webContents.send(electronEvent.WAIT_YOMIKO_TIME, msg);
       break;
     }
     case 'bouyomi': {
-      if (bouyomi) bouyomi.speak(msg);
+      if (bouyomi) {
+        bouyomi.speak(msg);
+        // 読み子が読んでる時間分相当待つ
+        globalThis.electron.mainWindow.webContents.send(electronEvent.WAIT_YOMIKO_TIME, msg);
+      }
+      else {
+        isSpeaking = false;
+      }
       break;
     }
+    case 'voicevox': {
+      if (voiceVox) {
+        voiceVox.speak(msg);
+      }
+      else {
+        isSpeaking = false;
+      }
+      break;
+    }
+    default:
+      isSpeaking = false;
+      break;
   }
-  // 読み子が読んでる時間分相当待つ
-  globalThis.electron.mainWindow.webContents.send(electronEvent.WAIT_YOMIKO_TIME, msg);
+  // 読み子がまだ読んでたら待つ
   while (isSpeaking) {
     await sleep(50);
   }

@@ -109,6 +109,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     const config = buildConfigJson();
     ipcRenderer.send(electronEvent.COMMENT_TEST, config);
   };
+
+  // VOICEVOX を使用する設定の場合は読み込んでみる
+  if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+    ipcRenderer.send(electronEvent.LOAD_VOICEVOX, config.voicevox);
+  }
+
+});
+
+// VOICEVOX の状態表示更新
+ipcRenderer.on(electronEvent.UPDATE_VOICEVOX_CONFIG, (event: any, arg: { path: string | undefined, available: boolean, speakers: { speaker: string, style: string }[], speakerAndStyle: string }) => {
+  const styleSelect = document.getElementById('select-voicevox-style') as HTMLSelectElement;
+  while (styleSelect.length > 0) {
+    styleSelect.remove(0);
+  }
+  arg.speakers.forEach((val) => {
+    const opt = new Option(`${val.speaker} - ${val.style}`, `${val.speaker}\\${val.style}`);
+    styleSelect.add(opt);
+  });
+  styleSelect.value = arg.speakerAndStyle;
+  const statusElement = document.getElementById('voicevox-status');
+  if (statusElement) {
+    if (arg.available) {
+      statusElement.innerText = 'OK';
+    }
+    else {
+      statusElement.innerText = 'VOICEVOXが読み込めません';
+    }
+  }
 });
 
 const mainContextMenuInText = (target: HTMLInputElement) => {
@@ -234,6 +262,10 @@ const buildConfigJson = () => {
   const bouyomiPort = parseInt((document.getElementById('text-bouyomi-port') as HTMLInputElement).value);
   const bouyomiVolume = parseInt((document.getElementById('bouyomi-volume') as HTMLInputElement).value);
   const bouyomiPrefix = (document.getElementById('text-bouyomi-prefix') as HTMLInputElement).value;
+  const voicevox = {
+    path: (document.getElementById('text-voicevox-path') as HTMLInputElement).value,
+    speakerAndStyle: (document.getElementById('select-voicevox-style') as HTMLInputElement).value,
+  };
   const yomikoReplaceNewline = (document.getElementById('yomiko-replace-newline') as any).checked === true;
 
   // Azure Text To Speect
@@ -399,6 +431,7 @@ const buildConfigJson = () => {
     bouyomiPort,
     bouyomiVolume,
     bouyomiPrefix,
+    voicevox,
     yomikoReplaceNewline,
     notifyThreadConnectionErrorLimit,
     notifyThreadResLimit,
@@ -466,6 +499,10 @@ const loadConfigToLocalStrage = async () => {
     bouyomiPort: 50001,
     bouyomiVolume: 50,
     bouyomiPrefix: '',
+    voicevox: {
+      path: '',
+      speakerAndStyle: '',
+    },
     yomikoReplaceNewline: false,
     notifyThreadConnectionErrorLimit: 0,
     notifyThreadResLimit: 0,
@@ -574,6 +611,9 @@ const loadConfigToLocalStrage = async () => {
     case 'bouyomi':
       (document.getElementById('yomiko_bouyomi') as any).checked = true;
       break;
+    case 'voicevox':
+      (document.getElementById('yomiko_voicevox') as any).checked = true;
+      break;
   }
 
   switch (config.typeYomikoStt) {
@@ -585,6 +625,9 @@ const loadConfigToLocalStrage = async () => {
       break;
     case 'bouyomi':
       (document.getElementById('yomiko_stt_bouyomi') as any).checked = true;
+      break;
+    case 'voicevox':
+      (document.getElementById('yomiko_stt_voicevox') as any).checked = true;
       break;
   }
 
@@ -608,6 +651,7 @@ const loadConfigToLocalStrage = async () => {
   (document.getElementById('disp-bouyomi-volume') as any).innerHTML = config.bouyomiVolume;
   (document.getElementById('text-bouyomi-prefix') as any).value = config.bouyomiPrefix;
   (document.getElementById('bouyomi-volume') as any).value = config.bouyomiVolume;
+  (document.getElementById('text-voicevox-path') as any).value = config.voicevox?.path || '';
   (document.getElementById('text-notify-threadConnectionErrorLimit') as any).value = config.notifyThreadConnectionErrorLimit;
   (document.getElementById('text-notify-threadResLimit') as any).value = config.notifyThreadResLimit;
   (document.getElementById('moveThread') as any).checked == config.moveThread;
@@ -685,9 +729,52 @@ const playSe = async (arg: { wavfilepath: string; volume: number; deviceId: stri
   }
 };
 
-ipcRenderer.on(electronEvent.WAIT_YOMIKO_TIME, async (event: any, arg: string) => {
-  await yomikoTime(arg);
-  ipcRenderer.send(electronEvent.SPEAKING_END);
+// 読み上げ用に WAV データを再生する。
+let speakWavElement: HTMLAudioElement | null = null;
+const speakWav = async (arg: { wavblob: Uint8Array; volume: number; deviceId?: string }) => {
+  const audioElem = new Audio();
+  speakWavElement = audioElem;
+
+  const blob = new Blob([arg.wavblob], { type: "audio/wav" });
+  const url = URL.createObjectURL(blob);
+  try {
+    if (arg.deviceId) {
+      await (audioElem as any).setSinkId(arg.deviceId);
+    }
+    audioElem.volume = arg.volume / 100;
+    audioElem.src = url;
+    audioElem.play();
+    audioElem.onended = () => {
+      console.log('onended')
+      ipcRenderer.send(electronEvent.SPEAKING_END);
+      URL.revokeObjectURL(url);
+    };
+    audioElem.onerror = () => {
+      console.log('onerror')
+      ipcRenderer.send(electronEvent.SPEAKING_END);
+      URL.revokeObjectURL(url);
+    };
+  } catch (e) {
+    log.error(e);
+    console.log(e)
+    ipcRenderer.send(electronEvent.SPEAKING_END);
+    URL.revokeObjectURL(url);
+  }
+};
+
+ipcRenderer.on(electronEvent.SPEAK_WAV, async (event: any, arg: { wavblob: Uint8Array; volume: number; deviceId?: string }) => {
+  await speakWav(arg);
+});
+
+// 読み上げ中の WAV データを再生を中断する。
+const abortWav = () => {
+  if (speakWavElement != null) {
+    speakWavElement.pause();
+  }
+}
+
+ipcRenderer.on(electronEvent.ABORT_WAV, async (event: any, arg: any) => {
+  await abortWav();
 });
 
 /**
@@ -709,6 +796,11 @@ const yomikoTime = async (msg: string) => {
     });
   });
 };
+
+ipcRenderer.on(electronEvent.WAIT_YOMIKO_TIME, async (event: any, arg: string) => {
+  await yomikoTime(arg);
+  ipcRenderer.send(electronEvent.SPEAKING_END);
+});
 
 // 何かしら通知したいことがあったら表示する
 ipcRenderer.on(electronEvent.SHOW_ALERT, async (event: any, args: string) => {

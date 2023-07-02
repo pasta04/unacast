@@ -363,6 +363,11 @@
             <input id="yomiko_bouyomi" class="mdl-radio__button" type="radio" name="typeYomiko" value="bouyomi" />
             <span class="mdl-radio__label">棒読みちゃん</span>
           </label>
+
+          <label class="mdl-radio mdl-js-radio" for="yomiko_voicevox">
+            <input id="yomiko_voicevox" class="mdl-radio__button" type="radio" name="typeYomiko" value="voicevox" />
+            <span class="mdl-radio__label">VOICE VOX</span>
+          </label>
         </div>
 
         <div class="mdl-textfield mdl-js-textfield" style="width: 100vw;">
@@ -380,6 +385,11 @@
           <label class="mdl-radio mdl-js-radio" for="yomiko_stt_bouyomi">
             <input id="yomiko_stt_bouyomi" class="mdl-radio__button" type="radio" name="typeYomikoStt" value="bouyomi" />
             <span class="mdl-radio__label">棒読みちゃん</span>
+          </label>
+
+          <label class="mdl-radio mdl-js-radio" for="yomiko_stt_voicevox">
+            <input id="yomiko_stt_voicevox" class="mdl-radio__button" type="radio" name="typeYomikoStt" value="voicevox" />
+            <span class="mdl-radio__label">VOICE VOX</span>
           </label>
         </div>
 
@@ -403,6 +413,20 @@
           <div class="subtitle">プレフィックス</div>
           <div class="caption">読み子に送信するテキストの先頭に固定文字列を追加します。</div>
           <input class="mdl-textfield__input" type="text" id="text-bouyomi-prefix" />
+        </div>
+
+        <h5>VOICE VOX設定</h5>
+        <div class="mdl-textfield mdl-js-textfield" style="width: 600px;">
+          <div class="subtitle">インストールパス</div>
+          <div class="caption">VOICE VOXがインストールされているパスを指定します。空の場合は既定のインストール先を調べます。</div>
+          <input class="mdl-textfield__input" type="text" id="text-voicevox-path" />
+          <div class="subtitle">話者</div>
+          <select id="select-voicevox-style">
+            <!-- スクリプトで入れる -->
+          </select>
+          <div class="voiceVoxStatusArea">
+            <span class="status"><span class="status-label">status:</span><span id="voicevox-status">none</span></span>
+          </div>
         </div>
 
         <h5>その他の読み子設定</h5>
