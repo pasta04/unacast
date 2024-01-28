@@ -1,4 +1,4 @@
-import electron, { remote } from 'electron';
+import electron, { remote, shell } from 'electron';
 import electronlog from 'electron-log';
 const log = electronlog.scope('renderer-chat');
 import { electronEvent } from '../main/const';
@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   log.debug('DOM Content Loaded');
 });
 
+/** テキスト選択中の右クリックメニュー */
 const contextMenuInText = new remote.Menu();
 contextMenuInText.append(
   new remote.MenuItem({
@@ -24,6 +25,30 @@ contextMenuInText.append(
     },
   }),
 );
+
+/** 画像右クリックメニュー */
+const createContextMenuInImage = (e: MouseEvent, src: string) => {
+  const contextMenuInImage = new remote.Menu();
+  contextMenuInImage.append(
+    new remote.MenuItem({
+      label: 'Copy URL',
+      type: 'normal',
+      click: (menu, browser, event) => {
+        electron.clipboard.writeText(src);
+      },
+    }),
+  );
+  contextMenuInImage.append(
+    new remote.MenuItem({
+      label: 'Open By Browser',
+      type: 'normal',
+      click: (menu, browser, event) => {
+        shell.openExternal(src);
+      },
+    }),
+  );
+  contextMenuInImage.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+};
 
 const contextMenu = new remote.Menu();
 contextMenu.append(
@@ -49,15 +74,21 @@ contextMenu.append(
 );
 
 // 右クリックメニュー
-document.oncontextmenu = (e) => {
+document.oncontextmenu = (e: MouseEvent) => {
   e.preventDefault();
 
-  // 選択範囲があるならCopyのメニューを出す
-  const selectText = window.getSelection()?.toString() ?? '';
-  if (selectText) {
-    contextMenuInText.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+  const target = e.target as any;
+  if (target && target.tagName === 'IMG') {
+    // 画像クリックした時は画像用のメニューを表示
+    createContextMenuInImage(e, target.src);
   } else {
-    contextMenu.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+    // 選択範囲があるならCopyのメニューを出す
+    const selectText = window.getSelection()?.toString() ?? '';
+    if (selectText) {
+      contextMenuInText.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+    } else {
+      contextMenu.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+    }
   }
 };
 

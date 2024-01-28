@@ -82,6 +82,7 @@ class NiconamaComment extends EventEmitter {
   latestNo = NaN;
   /** コメント取得のWebSocket */
   commentSocket: WebSocket = null as any;
+  threadSocket: WebSocket = null as any;
   /** ニコ生チャットWebSocketに対する定期ping */
   commentPingIntervalObj: NodeJS.Timeout = null as any;
 
@@ -224,6 +225,7 @@ class NiconamaComment extends EventEmitter {
       if (tWs.OPEN) tWs.close();
       this.fetchCommentServerThread();
     });
+    this.threadSocket = tWs;
   };
 
   /**
@@ -318,6 +320,7 @@ class NiconamaComment extends EventEmitter {
       this.commentPingIntervalObj = null as any;
     }
     if (this.commentSocket) this.commentSocket.close();
+    if (this.threadSocket) this.threadSocket.close();
     this.emit('end');
   };
 
