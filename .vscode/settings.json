@@ -4,9 +4,9 @@
   "prettier.printWidth": 300,
   "prettier.disableLanguages": ["markdown"],
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true,
-    "source.fixAll.tslint": true,
-    "source.fixAll": true
+    "source.fixAll.eslint": "explicit",
+    "source.fixAll.tslint": "explicit",
+    "source.fixAll": "explicit"
   },
   "eslint.validate": ["javascript", "typescript"],
   "files.eol": "\n",

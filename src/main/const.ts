@@ -18,7 +18,14 @@ export const electronEvent = {
   PLAY_SOUND_END: 'play-sound-end',
 
   WAIT_YOMIKO_TIME: 'wait-yomiko-time',
+  SPEAK_WAV: 'speak-wav',
+  ABORT_WAV: 'abort-wav',
   SPEAKING_END: 'speaking-end',
+
+  // VOICEVOX の読み込み renderer → main
+  LOAD_VOICEVOX: 'load-voicevox',
+  // VOICEVOX の状態更新 renderer ← main
+  UPDATE_VOICEVOX_CONFIG: 'update-voicevox-config',
 
   /** コメント表示 */
   SHOW_COMMENT: 'show-comment',

@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [12.x, 13.x, 14.x]
+        node-version: [16.x]
         os: [windows-latest, macOS-latest]
       fail-fast: false
     steps:
@@ -17,6 +17,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Install
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile 
       - name: Build
         run: yarn build
