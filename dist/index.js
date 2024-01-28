@@ -1438,6 +1438,7 @@ var NiconamaComment = /** @class */ (function (_super) {
         _this.latestNo = NaN;
         /** コメント取得のWebSocket */
         _this.commentSocket = null;
+        _this.threadSocket = null;
         /** ニコ生チャットWebSocketに対する定期ping */
         _this.commentPingIntervalObj = null;
         /** ニコ生の配信開始待ち */
@@ -1574,6 +1575,7 @@ var NiconamaComment = /** @class */ (function (_super) {
                                 tWs.close();
                             _this.fetchCommentServerThread();
                         });
+                        this.threadSocket = tWs;
                         return [2 /*return*/];
                 }
             });
@@ -1666,6 +1668,8 @@ var NiconamaComment = /** @class */ (function (_super) {
             }
             if (_this.commentSocket)
                 _this.commentSocket.close();
+            if (_this.threadSocket)
+                _this.threadSocket.close();
             _this.emit('end');
         };
         if ('communityId' in options) {
