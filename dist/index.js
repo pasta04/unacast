@@ -503,7 +503,13 @@ exports.electronEvent = {
     PLAY_SOUND_START: 'play-sound-start',
     PLAY_SOUND_END: 'play-sound-end',
     WAIT_YOMIKO_TIME: 'wait-yomiko-time',
+    SPEAK_WAV: 'speak-wav',
+    ABORT_WAV: 'abort-wav',
     SPEAKING_END: 'speaking-end',
+    // VOICEVOX の読み込み renderer → main
+    LOAD_VOICEVOX: 'load-voicevox',
+    // VOICEVOX の状態更新 renderer ← main
+    UPDATE_VOICEVOX_CONFIG: 'update-voicevox-config',
     /** コメント表示 */
     SHOW_COMMENT: 'show-comment',
     /** コメント欄初期化 */
@@ -2480,6 +2486,7 @@ var util_1 = __webpack_require__(/*! ./util */ "./src/main/util.ts");
 // レス取得APIをセット
 var getRes_1 = __importStar(__webpack_require__(/*! ./getRes */ "./src/main/getRes.ts"));
 var bouyomi_chan_1 = __importDefault(__webpack_require__(/*! ./bouyomi-chan */ "./src/main/bouyomi-chan/index.ts"));
+var voicevox_1 = __importDefault(__webpack_require__(/*! ./voicevox */ "./src/main/voicevox/index.ts"));
 var child_process_1 = __webpack_require__(/*! child_process */ "child_process");
 var const_1 = __webpack_require__(/*! ./const */ "./src/main/const.ts");
 var niconama_1 = __importDefault(__webpack_require__(/*! ./niconama */ "./src/main/niconama/index.ts"));
@@ -2492,6 +2499,8 @@ var app;
 var server;
 /** 棒読みちゃんインスタンス */
 var bouyomi;
+/** VoiceVoxインスタンス */
+var voiceVox;
 /** スレッド定期取得実行するか */
 var threadIntervalEvent = false;
 /** キュー処理実行するか */
@@ -2500,30 +2509,72 @@ var isExecuteQue = false;
 var aWss;
 var serverId = 0;
 /**
+ * VOICEVOX の読み込み(Rendererからの要求による)
+ */
+var loadVoiceVox = function (config_voicevox, force) {
+    if (force === void 0) { force = false; }
+    return __awaiter(void 0, void 0, void 0, function () {
+        var configuration;
+        return __generator(this, function (_a) {
+            if (!(voiceVox === null || voiceVox === void 0 ? void 0 : voiceVox.available) || force) {
+                voiceVox = new voicevox_1.default({ path: config_voicevox.path });
+            }
+            configuration = {
+                path: voiceVox.path,
+                available: voiceVox.available,
+                speakerAndStyle: config_voicevox.speakerAndStyle,
+                speakers: voiceVox.speakers.reduce(function (state, speaker) {
+                    return state.concat(speaker.styles.map(function (style) {
+                        return { speaker: speaker.name, style: style.name };
+                    }));
+                }, []),
+            };
+            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_VOICEVOX_CONFIG, configuration);
+            return [2 /*return*/];
+        });
+    });
+};
+electron_1.ipcMain.on(const_1.electronEvent.LOAD_VOICEVOX, function (event, config_voicevox) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        loadVoiceVox(config_voicevox, false);
+        return [2 /*return*/];
+    });
+}); });
+/**
  * 設定の適用
  */
 electron_1.ipcMain.on(const_1.electronEvent.APPLY_CONFIG, function (event, config) { return __awaiter(void 0, void 0, void 0, function () {
-    var isChangedUrl, isChangeSePath, ret;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var oldConfig, isChangedUrl, isChangeSePath, ret;
+    var _a, _b, _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 electron_log_1.default.info('[apply-config] start');
                 electron_log_1.default.info(config);
+                oldConfig = globalThis.config;
                 isChangedUrl = globalThis.config.url !== config.url;
                 isChangeSePath = globalThis.config.sePath !== config.sePath;
                 globalThis.config = config;
                 if (!isChangeSePath) return [3 /*break*/, 2];
                 return [4 /*yield*/, exports.findSeList()];
             case 1:
-                _a.sent();
-                _a.label = 2;
+                _d.sent();
+                _d.label = 2;
             case 2:
                 // initメッセージ
                 resetInitMessage();
+                // iconを設定
+                globalThis.electron.iconList = new CommentIcons_1.default({
+                    bbs: config.iconDirBbs,
+                    youtube: config.iconDirYoutube,
+                    twitch: config.iconDirTwitch,
+                    niconico: config.iconDirNiconico,
+                    stt: config.iconDirStt,
+                });
                 if (!(isChangedUrl && config.url)) return [3 /*break*/, 4];
                 return [4 /*yield*/, getRes_1.getRes(globalThis.config.url, NaN)];
             case 3:
-                ret = _a.sent();
+                ret = _d.sent();
                 electron_log_1.default.debug(ret);
                 if (ret.length === 0) {
                     globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.SHOW_ALERT, '掲示板URLがおかしそうです');
@@ -2535,8 +2586,26 @@ electron_1.ipcMain.on(const_1.electronEvent.APPLY_CONFIG, function (event, confi
                 exports.sendDom([ret[ret.length - 1]]);
                 // スレタイ更新
                 globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'title', message: ret[0].threadTitle });
-                _a.label = 4;
-            case 4: return [2 /*return*/];
+                _d.label = 4;
+            case 4:
+                // VOICE VOX 関連
+                if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+                    // VOICEVOX 利用の場合のみ
+                    if (((_a = oldConfig.voicevox) === null || _a === void 0 ? void 0 : _a.path) !== ((_b = config.voicevox) === null || _b === void 0 ? void 0 : _b.path)) {
+                        // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
+                        loadVoiceVox(config.voicevox, true);
+                    }
+                    else {
+                        // パスが変わっていない場合は未読み込みの時だけ読み込む
+                        loadVoiceVox(config.voicevox, false);
+                    }
+                }
+                if (voiceVox) {
+                    voiceVox.speaker = ((_c = config.voicevox) === null || _c === void 0 ? void 0 : _c.speakerAndStyle) || '';
+                    voiceVox.prefix = config.bouyomiPrefix;
+                    voiceVox.volume = config.bouyomiVolume;
+                }
+                return [2 /*return*/];
         }
     });
 }); });
@@ -2686,15 +2755,33 @@ electron_1.ipcMain.on(const_1.electronEvent.START_SERVER, function (event, confi
                 bouyomi = new bouyomi_chan_1.default({ port: config.bouyomiPort, volume: config.bouyomiVolume, prefix: config.bouyomiPrefix });
             }
         }
+        // VoiceVox 接続
+        if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+            if (config.voicevox) {
+                if (!(voiceVox === null || voiceVox === void 0 ? void 0 : voiceVox.available)) {
+                    voiceVox = new voicevox_1.default({
+                        path: config.voicevox.path,
+                        speaker: config.voicevox.speakerAndStyle,
+                        volume: config.bouyomiVolume,
+                        prefix: config.bouyomiPrefix,
+                    });
+                }
+                else {
+                    voiceVox.speaker = config.voicevox.speakerAndStyle;
+                    voiceVox.volume = config.bouyomiVolume;
+                    voiceVox.prefix = config.bouyomiPrefix;
+                }
+            }
+        }
         // Azure SpeechToText
         if (globalThis.config.azureStt && globalThis.config.azureStt.enable && globalThis.config.azureStt.key && globalThis.config.azureStt.region) {
-            stt = new azureStt_1.default(globalThis.config.azureStt.name || "", globalThis.config.azureStt.key, globalThis.config.azureStt.region, globalThis.config.azureStt.language || "ja-JP", globalThis.config.azureStt.inputDevice);
+            stt = new azureStt_1.default(globalThis.config.azureStt.name || '', globalThis.config.azureStt.key, globalThis.config.azureStt.region, globalThis.config.azureStt.language || 'ja-JP', globalThis.config.azureStt.inputDevice);
             globalThis.electron.azureStt = stt;
             stt.on('start', function () {
                 globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, {
                     commentType: 'stt',
                     category: 'status',
-                    message: "started"
+                    message: "started",
                 });
             });
             stt.on('comment', function (event) {
@@ -3237,22 +3324,59 @@ var playYomiko = function (typeYomiko, msg) { return __awaiter(void 0, void 0, v
         switch (_a.label) {
             case 0:
                 // log.info('[playYomiko] start');
+                if (isSpeaking) {
+                    // 以前の読み子がまだ読んでいる
+                    switch (typeYomiko) {
+                        case 'tamiyasu': {
+                            // TODO:強制的に発話を終了する
+                            break;
+                        }
+                        case 'bouyomi': {
+                            // TODO:強制的に発話を終了する
+                            break;
+                        }
+                        case 'voicevox': {
+                            // 強制的に発話を終了する
+                            if (voiceVox)
+                                voiceVox.abort();
+                            break;
+                        }
+                    }
+                }
                 isSpeaking = true;
                 // 読み子呼び出し
                 switch (typeYomiko) {
                     case 'tamiyasu': {
                         electron_log_1.default.debug(config.tamiyasuPath + " \"" + msg + "\"");
                         child_process_1.spawn(config.tamiyasuPath, [msg]);
+                        // 読み子が読んでる時間分相当待つ
+                        globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.WAIT_YOMIKO_TIME, msg);
                         break;
                     }
                     case 'bouyomi': {
-                        if (bouyomi)
+                        if (bouyomi) {
                             bouyomi.speak(msg);
+                            // 読み子が読んでる時間分相当待つ
+                            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.WAIT_YOMIKO_TIME, msg);
+                        }
+                        else {
+                            isSpeaking = false;
+                        }
                         break;
                     }
+                    case 'voicevox': {
+                        if (voiceVox) {
+                            voiceVox.speak(msg);
+                        }
+                        else {
+                            isSpeaking = false;
+                        }
+                        break;
+                    }
+                    default:
+                        isSpeaking = false;
+                        break;
                 }
-                // 読み子が読んでる時間分相当待つ
-                globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.WAIT_YOMIKO_TIME, msg);
                 _a.label = 1;
             case 1:
                 if (!isSpeaking) return [3 /*break*/, 3];
@@ -3669,6 +3793,239 @@ var isNihongo = function (message) {
     return reg.test(message);
 };
 exports.isNihongo = isNihongo;
+
+
+/***/ }),
+
+/***/ "./src/main/voicevox/index.ts":
+/*!************************************!*\
+  !*** ./src/main/voicevox/index.ts ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ../const */ "./src/main/const.ts");
+var ffi_napi_1 = __importDefault(__webpack_require__(/*! ffi-napi */ "ffi-napi"));
+var ref_napi_1 = __importDefault(__webpack_require__(/*! ref-napi */ "ref-napi"));
+var ref_struct_napi_1 = __importDefault(__webpack_require__(/*! ref-struct-napi */ "ref-struct-napi"));
+var os_1 = __importDefault(__webpack_require__(/*! os */ "os"));
+var path_1 = __importDefault(__webpack_require__(/*! path */ "path"));
+var fs_1 = __importDefault(__webpack_require__(/*! fs */ "fs"));
+var VoicevoxInitializeOptions = ref_struct_napi_1.default({
+    accelerationMode: 'int',
+    cpuNumThreads: 'uint16',
+    loadAllModels: 'bool',
+    openJTalkDictDir: 'string',
+});
+var VoicevoxAudioQueryOptions = ref_struct_napi_1.default({
+    kana: 'bool',
+});
+var VoicevoxSynthesisOptions = ref_struct_napi_1.default({
+    enable_interrogative_upspeak: 'bool',
+});
+var VoicevoxTtsOptions = ref_struct_napi_1.default({
+    kana: 'bool',
+    enable_interrogative_upspeak: 'bool',
+});
+var VoiceVoxClient = /** @class */ (function () {
+    function VoiceVoxClient(options) {
+        var _a, _b, _c;
+        /**
+         * 読み上げに使用する話者。
+         * 話者名とスタイル名を\で接続した文字列を格納する。
+         */
+        this.speaker = '';
+        /**
+         * 読み上げ音量 default=50 (0 ～ 100)
+        */
+        this.volume = 50;
+        /**
+         * 読み上げの際先頭に付加する文字列
+         */
+        this.prefix = '';
+        /**
+         * 速度倍率 default=1.0 (0.5 ～ 2.0)
+         */
+        this.speed = 1.0;
+        /**
+         * 音声ピッチ default=0.0 (-0.15 ～ 0.15)
+         */
+        this.pitch = 0.0;
+        /**
+         * 抑揚倍率 default=1.0 (0.0 ～ 2.0)
+         */
+        this.intonation = 1.0;
+        var voicevox_path = (options === null || options === void 0 ? void 0 : options.path) || "";
+        if (os_1.default.platform() == 'win32') {
+            // パスが設定されていれば指定したパスから VOICEVOX を読み込む。
+            // 設定されていない(空の場合)は VOICEVOX の既定のインストール先を検索する。
+            // Windows の場合は
+            // * C:/Program Files/VOICEVOX
+            // * C:/Users/(ユーザー名)/AppData/Local/Programs/VOICEVOX
+            // のいずれか
+            var search_paths = voicevox_path ? [voicevox_path] : [
+                path_1.default.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'VOICEVOX'),
+                path_1.default.join(os_1.default.homedir(), 'AppData\\Local\\Programs\\VOICEVOX'),
+            ];
+            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'voicevox_core.dll')); }) || "";
+            if (voicevox_path) {
+                var kernel32 = ffi_napi_1.default.Library("kernel32.dll", {
+                    'SetDllDirectoryW': ['bool', ['uint16*']],
+                });
+                kernel32.SetDllDirectoryW(Buffer.from(voicevox_path + "\0", 'utf16le'));
+            }
+        }
+        else if (os_1.default.platform() == 'darwin') {
+            // macOS の場合は
+            // * /Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
+            // * $HOME/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
+            // のいずれか
+            var search_paths = voicevox_path ? [voicevox_path] : [
+                '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS',
+                path_1.default.join(os_1.default.homedir(), '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS'),
+            ];
+            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'libvoicevox_core.dylib')); }) || "";
+        }
+        try {
+            this.voicevox_core = ffi_napi_1.default.Library('voicevox_core', {
+                'voicevox_initialize': ['int', [VoicevoxInitializeOptions]],
+                'voicevox_get_metas_json': ['string', []],
+                'voicevox_audio_query': ['int', ['string', 'uint32', VoicevoxAudioQueryOptions, 'char**']],
+                'voicevox_audio_query_json_free': ['void', ['char*']],
+                'voicevox_synthesis': ['int', ['string', 'uint32', VoicevoxSynthesisOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
+                'voicevox_tts': ['int', ['string', 'uint32', VoicevoxTtsOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
+                'voicevox_wav_free': ['void', ['uint8*']],
+                'voicevox_is_model_loaded': ['bool', ['uint32']],
+                'voicevox_load_model': ['int', ['uint32']],
+            });
+            var opts = new VoicevoxInitializeOptions();
+            opts.accelerationMode = 0; // 利用モードは自動(GPUが使えれば使う)
+            opts.cpuNumThreads = 0;
+            opts.loadAllModels = false;
+            // 辞書ファイルの場所は今のところ固定(VOICEVOXインストール先/pyopenjtalk/open_jtalk_dic_utf_8-1.11)
+            opts.openJTalkDictDir = path_1.default.join(voicevox_path, 'pyopenjtalk', 'open_jtalk_dic_utf_8-1.11');
+            if (this.voicevox_core.voicevox_initialize(opts) == 0) {
+                var metas = JSON.parse(this.voicevox_core.voicevox_get_metas_json());
+                this.speakers = metas;
+                this.available = true;
+                this.path = voicevox_path;
+            }
+            else {
+                this.speakers = [];
+                this.available = false;
+                this.path = options === null || options === void 0 ? void 0 : options.path;
+            }
+        }
+        catch (_d) {
+            this.available = false;
+            this.voicevox_core = null;
+            this.speakers = [];
+            this.path = options === null || options === void 0 ? void 0 : options.path;
+        }
+        this.speaker = (_a = options === null || options === void 0 ? void 0 : options.speaker) !== null && _a !== void 0 ? _a : '';
+        this.volume = (_b = options === null || options === void 0 ? void 0 : options.volume) !== null && _b !== void 0 ? _b : 50;
+        this.prefix = (_c = options === null || options === void 0 ? void 0 : options.prefix) !== null && _c !== void 0 ? _c : '';
+    }
+    /**
+     * 読み上げを開始します。
+     * @param message VOICEVOX に読み上げてもらう文章
+     */
+    VoiceVoxClient.prototype.speak = function (message) {
+        return __awaiter(this, void 0, void 0, function () {
+            var concatMessage, speakerAndStyle, speaker, style, query_option, audio_query, audio_query_json, audio_query_obj, opts, len, wav, result, buf;
+            return __generator(this, function (_a) {
+                concatMessage = this.prefix.concat(message);
+                speakerAndStyle = this.speaker.split('\\');
+                speaker = this.speakers.find(function (speaker) { return speaker.name === speakerAndStyle[0]; }) || this.speakers[0];
+                if (!speaker) {
+                    return [2 /*return*/, false];
+                }
+                style = speaker.styles.find(function (style) { return style.name === speakerAndStyle[1]; }) || speaker.styles[0];
+                if (!style) {
+                    return [2 /*return*/, false];
+                }
+                if (!this.voicevox_core.voicevox_is_model_loaded(style.id)) {
+                    this.voicevox_core.voicevox_load_model(style.id);
+                }
+                query_option = VoicevoxAudioQueryOptions();
+                query_option.kana = false;
+                audio_query = ref_napi_1.default.alloc('char*');
+                if (this.voicevox_core.voicevox_audio_query(concatMessage, style.id, query_option, audio_query) == 0) {
+                    audio_query_json = audio_query.deref().readCString();
+                    this.voicevox_core.voicevox_audio_query_json_free(audio_query.deref());
+                    audio_query_obj = JSON.parse(audio_query_json);
+                    audio_query_obj.speed_scale = this.speed;
+                    audio_query_obj.pitch_scale = this.pitch;
+                    audio_query_obj.intonation_scale = this.intonation;
+                    audio_query_json = JSON.stringify(audio_query_obj);
+                    opts = VoicevoxSynthesisOptions();
+                    opts.enable_interrogative_upspeak = true;
+                    len = ref_napi_1.default.alloc(ref_napi_1.default.sizeof.pointer == 8 ? 'uint64' : 'uint32');
+                    wav = ref_napi_1.default.alloc('uint8*');
+                    result = this.voicevox_core.voicevox_synthesis(audio_query_json, style.id, opts, len, wav);
+                    if (result == 0) {
+                        buf = new Uint8Array(len.readUInt32LE());
+                        wav.readPointer(0, len.readUInt32LE()).copy(buf);
+                        this.voicevox_core.voicevox_wav_free(wav.deref());
+                        // VOICEVOX は WAV のデータを出力してくるので実際の再生は renderer プロセスにお願いする。
+                        globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.SPEAK_WAV, { wavblob: buf, volume: this.volume, deviceId: undefined });
+                    }
+                }
+                return [2 /*return*/, true];
+            });
+        });
+    };
+    /**
+     * 読み上げを中断します。
+     */
+    VoiceVoxClient.prototype.abort = function () {
+        globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.ABORT_WAV);
+    };
+    return VoiceVoxClient;
+}());
+exports.default = VoiceVoxClient;
 
 
 /***/ }),
@@ -4331,6 +4688,17 @@ module.exports = require("express-ws");
 
 /***/ }),
 
+/***/ "ffi-napi":
+/*!***************************!*\
+  !*** external "ffi-napi" ***!
+  \***************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("ffi-napi");
+
+/***/ }),
+
 /***/ "fs":
 /*!*********************!*\
   !*** external "fs" ***!
@@ -4386,6 +4754,17 @@ module.exports = require("net");
 
 /***/ }),
 
+/***/ "os":
+/*!*********************!*\
+  !*** external "os" ***!
+  \*********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("os");
+
+/***/ }),
+
 /***/ "paho-mqtt":
 /*!****************************!*\
   !*** external "paho-mqtt" ***!
@@ -4405,6 +4784,28 @@ module.exports = require("paho-mqtt");
 /***/ (function(module, exports) {
 
 module.exports = require("path");
+
+/***/ }),
+
+/***/ "ref-napi":
+/*!***************************!*\
+  !*** external "ref-napi" ***!
+  \***************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("ref-napi");
+
+/***/ }),
+
+/***/ "ref-struct-napi":
+/*!**********************************!*\
+  !*** external "ref-struct-napi" ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("ref-struct-napi");
 
 /***/ }),
 
