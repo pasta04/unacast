@@ -1,4 +1,4 @@
-import electron from 'electron';
+import electron, { remote } from 'electron';
 import electronlog from 'electron-log';
 import path from 'path';
 const log = electronlog.scope('renderer-imagePreview');
@@ -39,8 +39,8 @@ ipcRenderer.on(electronEvent.PREVIEW_IMAGE, (event: any, url: string) => {
     return;
   }
 
-  tabBartDom.insertAdjacentHTML('beforeend', `<a id="tab_${id}" href="#${id}" class="">${tabname}</a>`);
-  tabContentDom.insertAdjacentHTML('beforeend', `<div class="mdl-tabs__panel is-active" id="${id}"><div class="content"><img src="${url}" /></div></div>`);
+  tabBartDom.insertAdjacentHTML('beforeend', `<a id="tab_${id}" href="#${id}" class="" data-type="tab">${tabname}</a>`);
+  tabContentDom.insertAdjacentHTML('beforeend', `<div class="mdl-tabs__panel is-active" id="${id}"><div class="content"><img src="${url}" data-type="content" /></div></div>`);
 
   existsTabdom = tabBartDom.querySelector(`#tab_${id}`);
   if (existsTabdom) {
@@ -72,10 +72,60 @@ const activeTab = (url: string, id: string) => () => {
   }
 };
 
-// window.addEventListener(
-//   'contextmenu',
-//   (e) => {
-//     //
-//   },
-//   false,
-// );
+/** タブ右クリック時の処理 */
+const handleTabRightClick = (e: MouseEvent, id: string) => {
+  const contextMenu = new remote.Menu();
+  contextMenu.append(
+    new remote.MenuItem({
+      label: 'Close',
+      type: 'normal',
+      click: (menu, browser, event) => {
+        // 要素取得
+        const tabBarDom = document.getElementById('tab-bar') as HTMLDivElement;
+        const tabContentDom = document.getElementById('tab-content') as HTMLDivElement;
+
+        const existsTabdom = tabBarDom.querySelector(`#tab_${id}`) as HTMLDivElement;
+        const existsContentdom = tabContentDom.querySelector(`#${id}`) as HTMLDivElement;
+        // クローズ対象の位置取得
+        const tabIdList: string[] = [];
+        tabBarDom.querySelectorAll('a').forEach((value, key) => {
+          tabIdList.push(value.getAttribute('id') as string);
+        });
+        const tabIndex = tabIdList.indexOf(`tab_${id}`);
+
+        // クローズ
+        if (existsTabdom) existsTabdom.remove();
+        if (existsContentdom) existsContentdom.remove();
+
+        // 他に要素があればそっちにフォーカスを移す
+        // 最後の1個だったらそのまま終了
+        if (tabIdList.length <= 1) return;
+        // 一番後ろの要素なら1個前のやつ、それ以外の要素なら1個後ろのやつをアクティブ化対象にする
+        const activeTargetId = tabIdList.length === tabIndex + 1 ? tabIdList[tabIndex - 1] : tabIdList[tabIndex + 1];
+        document.getElementById(`${activeTargetId}`)?.classList.add('is-active');
+        document.getElementById(`${activeTargetId.replace('tab_', '')}`)?.classList.add('is-active');
+      },
+    }),
+  );
+  contextMenu.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+};
+
+// // 右クリックメニュー
+document.oncontextmenu = (e: MouseEvent) => {
+  e.preventDefault();
+
+  const target = e.target as any;
+  if (!target) return;
+
+  const dataType = target.getAttribute('data-type');
+  if (dataType === 'tab') {
+    const domId = target.getAttribute('id').replace('tab_', '');
+
+    // タブ右クリックメニュー
+    handleTabRightClick(e, domId);
+  } else if (dataType === 'content') {
+    const src = target.getAttribute('src');
+
+    // 画像右クリックメニュー
+  }
+};
