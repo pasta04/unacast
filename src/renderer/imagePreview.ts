@@ -1,4 +1,4 @@
-import electron, { remote } from 'electron';
+import electron, { remote, shell } from 'electron';
 import electronlog from 'electron-log';
 import path from 'path';
 const log = electronlog.scope('renderer-imagePreview');
@@ -107,6 +107,21 @@ const handleTabRightClick = (e: MouseEvent, id: string) => {
       },
     }),
   );
+
+  // ブラウザで画像開く
+  contextMenu.append(
+    new remote.MenuItem({
+      label: 'Open By Browser',
+      type: 'normal',
+      click: (menu, browser, event) => {
+        const imageDom = document.querySelector(`#${id} > div > img`);
+        if (imageDom) {
+          const src = imageDom.getAttribute('src') as string;
+          shell.openExternal(src);
+        }
+      },
+    }),
+  );
   contextMenu.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
 };
 
@@ -124,8 +139,12 @@ document.oncontextmenu = (e: MouseEvent) => {
     // タブ右クリックメニュー
     handleTabRightClick(e, domId);
   } else if (dataType === 'content') {
-    const src = target.getAttribute('src');
+    // const src = target.getAttribute('src');
+    const parentNode = target.parentNode.parentNode;
+    const domId = parentNode.getAttribute('id').replace('tab_', '');
 
     // 画像右クリックメニュー
+    // とりあえずタブと挙動一緒にしておく
+    handleTabRightClick(e, domId);
   }
 };
