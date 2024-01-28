@@ -54,5 +54,4 @@ export const electronEvent = {
   AZURE_STT_START: 'azure-stt-start',
   AZURE_STT_STOP: 'azure-stt-stop',
   AZURE_STT_EVENT: 'azure-stt-event',
-
 };
