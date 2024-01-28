@@ -934,9 +934,14 @@ export const sendDom = async (messageList: UserComment[]) => {
         await playYomiko(typeYomiko, config.aamode.speakWord);
       } else {
         // タグを除去する
-        let text = newList[newList.length - 1].text.replace(/<br> /g, '\n ').replace(/<br>/g, '\n ');
+        let text = newList[newList.length - 1].text
+        text = text.replace(/<br\s*\/?>\s*/g, '\n ');
         text = text.replace(/<img.*?\/>/g, '');
         text = text.replace(/<a .*?>/g, '').replace(/<\/a>/g, '');
+        // 読み上げ辞書の置き換え
+        config.yomikoDictionary.forEach(entry => {
+          text = text.replace(new RegExp(entry.pattern, 'gim'), entry.pronunciation);
+        });
         text = unescapeHtml(text);
 
         if (globalThis.config.yomikoReplaceNewline) {

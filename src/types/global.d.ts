@@ -137,6 +137,12 @@ declare global {
     let typeYomiko: 'none' | 'tamiyasu' | 'bouyomi';
     /** 音声認識テキスト読み子の種類 */
     let typeYomikoStt: 'none' | 'tamiyasu' | 'bouyomi';
+    let yomikoDictionary: {
+      /** 置き換えられるテキストパターン **/
+      pattern: string;
+      /** 置き換える文字列 **/
+      pronunciation: string;
+    }[];
     /** 民安Talkのファイルパス */
     let tamiyasuPath: string;
     /** 棒読みちゃんの待ち受けポート */
