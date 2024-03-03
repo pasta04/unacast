@@ -619,6 +619,7 @@ var axios_1 = __importDefault(__webpack_require__(/*! axios */ "axios"));
 var iconv_lite_1 = __importDefault(__webpack_require__(/*! iconv-lite */ "iconv-lite")); // 文字コード変換用パッケージ
 var express_1 = __importDefault(__webpack_require__(/*! express */ "express"));
 var body_parser_1 = __importDefault(__webpack_require__(/*! body-parser */ "body-parser")); // jsonパーサ
+var https_1 = __importDefault(__webpack_require__(/*! https */ "https"));
 var router = express_1.default.Router();
 var electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "electron-log"));
 var log = electron_log_1.default.scope('bbs');
@@ -628,6 +629,11 @@ var readSitaraba_1 = __importStar(__webpack_require__(/*! ./readBBS/readSitaraba
 var Read5ch_1 = __importStar(__webpack_require__(/*! ./readBBS/Read5ch */ "./src/main/readBBS/Read5ch.ts")); // 5ch互換板読み込み用モジュール
 var sitaraba = new readSitaraba_1.default();
 var read5ch = new Read5ch_1.default();
+var instance = axios_1.default.create({
+    httpsAgent: new https_1.default.Agent({
+        rejectUnauthorized: false,
+    }),
+});
 // 掲示板読み込みモジュール、一度決定したら使いまわすためにグローバル宣言
 var bbsModule = null;
 // リクエストのbodyをパース下りエンコードしたりするためのやつ
@@ -817,6 +823,7 @@ var threadUrlToBoardInfo = function (threadUrl) { return __awaiter(void 0, void 
                         tempUrl = tempUrl + "SETTING.TXT";
                     }
                 }
+                log.debug("[SETTING.TXT] " + tempUrl + " [BoardUrl] " + boardUrl);
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 3, , 4]);
@@ -826,7 +833,7 @@ var threadUrlToBoardInfo = function (threadUrl) { return __awaiter(void 0, void 
                     timeout: 3 * 1000,
                     responseType: 'arraybuffer',
                 };
-                return [4 /*yield*/, axios_1.default(options)];
+                return [4 /*yield*/, instance(options)];
             case 2:
                 response = _a.sent();
                 if (response.status < 400) {
@@ -843,9 +850,11 @@ var threadUrlToBoardInfo = function (threadUrl) { return __awaiter(void 0, void 
                 return [3 /*break*/, 4];
             case 3:
                 e_2 = _a.sent();
-                log.error('なんかエラー');
+                log.error('なんかエラー error=' + JSON.stringify(e_2.message));
                 return [3 /*break*/, 4];
-            case 4: return [2 /*return*/, result];
+            case 4:
+                log.info(JSON.stringify(result));
+                return [2 /*return*/, result];
         }
     });
 }); };
@@ -1757,7 +1766,7 @@ exports.postRes = exports.readBoard = void 0;
 var axios_1 = __importDefault(__webpack_require__(/*! axios */ "axios"));
 var iconv_lite_1 = __importDefault(__webpack_require__(/*! iconv-lite */ "iconv-lite")); // 文字コード変換用パッケージ
 var electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "electron-log"));
-var log = electron_log_1.default.scope('bbs');
+var log = electron_log_1.default.scope('bbs 5ch');
 var https_1 = __importDefault(__webpack_require__(/*! https */ "https"));
 var encoding_japanese_1 = __importDefault(__webpack_require__(/*! encoding-japanese */ "encoding-japanese"));
 var instance = axios_1.default.create({
@@ -1775,6 +1784,7 @@ var readBoard = function (boardUrl) { return __awaiter(void 0, void 0, void 0, f
         switch (_a.label) {
             case 0:
                 requestUrl = boardUrl + "subject.txt";
+                log.debug("[readBoard] " + requestUrl);
                 list = [];
                 options = {
                     url: requestUrl,
@@ -2174,7 +2184,7 @@ var axios_1 = __importDefault(__webpack_require__(/*! axios */ "axios"));
 var https_1 = __importDefault(__webpack_require__(/*! https */ "https"));
 var iconv_lite_1 = __importDefault(__webpack_require__(/*! iconv-lite */ "iconv-lite")); // 文字コード変換用パッケージ
 var electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "electron-log"));
-var log = electron_log_1.default.scope('bbs');
+var log = electron_log_1.default.scope('bbs shitaraba');
 var encoding_japanese_1 = __importDefault(__webpack_require__(/*! encoding-japanese */ "encoding-japanese"));
 /** スレ一覧を読み込む */
 var readBoard = function (boardUrl) { return __awaiter(void 0, void 0, void 0, function () {
@@ -2183,6 +2193,7 @@ var readBoard = function (boardUrl) { return __awaiter(void 0, void 0, void 0, f
         switch (_a.label) {
             case 0:
                 requestUrl = boardUrl + "subject.txt";
+                log.debug("[readBoard] " + requestUrl);
                 list = [];
                 options = {
                     url: requestUrl,
@@ -2205,7 +2216,7 @@ var readBoard = function (boardUrl) { return __awaiter(void 0, void 0, void 0, f
                 return [3 /*break*/, 4];
             case 3:
                 error_1 = _a.sent();
-                log.error('[Read5ch.js]5ch系BBS板取得APIリクエストエラー、message=' + error_1.message);
+                log.error('5ch系BBS板取得APIリクエストエラー、message=' + error_1.message);
                 throw new Error('connection error');
             case 4: return [2 /*return*/, list];
         }

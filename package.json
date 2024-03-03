@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/yudeunagi/unacast#readme",
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.28.0",
     "body-parser": "^1.19.0",
     "cheerio": "^1.0.0-rc.3",
     "cors": "^2.8.5",
@@ -54,8 +54,8 @@
     "@types/encoding-japanese": "^1.0.17",
     "@types/express": "^4.17.6",
     "@types/express-ws": "^3.0.0",
-    "@types/material-design-lite": "^1.1.17",
     "@types/ffi-napi": "^4.0.7",
+    "@types/material-design-lite": "^1.1.17",
     "@types/node": "^13.11.1",
     "@types/paho-mqtt": "^1.0.4",
     "@typescript-eslint/eslint-plugin": "^2.29.0",

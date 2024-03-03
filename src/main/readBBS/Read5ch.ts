@@ -4,7 +4,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import iconv from 'iconv-lite'; // 文字コード変換用パッケージ
 import electronlog from 'electron-log';
-const log = electronlog.scope('bbs');
+const log = electronlog.scope('bbs 5ch');
 import https from 'https';
 import encoding from 'encoding-japanese';
 
@@ -21,6 +21,8 @@ const RANGE_NOT_SATISFIABLE = '416';
 /** スレ一覧を読み込む */
 export const readBoard = async (boardUrl: string) => {
   const requestUrl = `${boardUrl}subject.txt`;
+  log.debug(`[readBoard] ${requestUrl}`);
+
   const list: ReturnType<typeof parseThreadList>[] = [];
 
   //リクエストオプションの設定
@@ -162,7 +164,7 @@ class Read5ch {
       headers: {
         'if-modified-since': this.lastModified,
         range: 'bytes=' + range + '-',
-      },
+      } as any,
       validateStatus: (status: number) => {
         return status >= 200 && status <= 304;
       },
@@ -179,7 +181,7 @@ class Read5ch {
       }
 
       // レスポンスヘッダ表示
-      const headers: { [key: string]: string } = response.headers;
+      const headers = response.headers;
 
       // 文字コード変換
       const str = iconv.decode(Buffer.from(response.data), 'Shift_JIS');
