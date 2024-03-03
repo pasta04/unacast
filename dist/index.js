@@ -619,6 +619,7 @@ var axios_1 = __importDefault(__webpack_require__(/*! axios */ "axios"));
 var iconv_lite_1 = __importDefault(__webpack_require__(/*! iconv-lite */ "iconv-lite")); // 文字コード変換用パッケージ
 var express_1 = __importDefault(__webpack_require__(/*! express */ "express"));
 var body_parser_1 = __importDefault(__webpack_require__(/*! body-parser */ "body-parser")); // jsonパーサ
+var https_1 = __importDefault(__webpack_require__(/*! https */ "https"));
 var router = express_1.default.Router();
 var electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "electron-log"));
 var log = electron_log_1.default.scope('bbs');
@@ -628,6 +629,11 @@ var readSitaraba_1 = __importStar(__webpack_require__(/*! ./readBBS/readSitaraba
 var Read5ch_1 = __importStar(__webpack_require__(/*! ./readBBS/Read5ch */ "./src/main/readBBS/Read5ch.ts")); // 5ch互換板読み込み用モジュール
 var sitaraba = new readSitaraba_1.default();
 var read5ch = new Read5ch_1.default();
+var instance = axios_1.default.create({
+    httpsAgent: new https_1.default.Agent({
+        rejectUnauthorized: false,
+    }),
+});
 // 掲示板読み込みモジュール、一度決定したら使いまわすためにグローバル宣言
 var bbsModule = null;
 // リクエストのbodyをパース下りエンコードしたりするためのやつ
@@ -817,6 +823,7 @@ var threadUrlToBoardInfo = function (threadUrl) { return __awaiter(void 0, void 
                         tempUrl = tempUrl + "SETTING.TXT";
                     }
                 }
+                log.debug("[SETTING.TXT] " + tempUrl + " [BoardUrl] " + boardUrl);
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 3, , 4]);
@@ -826,7 +833,7 @@ var threadUrlToBoardInfo = function (threadUrl) { return __awaiter(void 0, void 
                     timeout: 3 * 1000,
                     responseType: 'arraybuffer',
                 };
-                return [4 /*yield*/, axios_1.default(options)];
+                return [4 /*yield*/, instance(options)];
             case 2:
                 response = _a.sent();
                 if (response.status < 400) {
@@ -843,9 +850,11 @@ var threadUrlToBoardInfo = function (threadUrl) { return __awaiter(void 0, void 
                 return [3 /*break*/, 4];
             case 3:
                 e_2 = _a.sent();
-                log.error('なんかエラー');
+                log.error('なんかエラー error=' + JSON.stringify(e_2.message));
                 return [3 /*break*/, 4];
-            case 4: return [2 /*return*/, result];
+            case 4:
+                log.info(JSON.stringify(result));
+                return [2 /*return*/, result];
         }
     });
 }); };
@@ -1757,7 +1766,7 @@ exports.postRes = exports.readBoard = void 0;
 var axios_1 = __importDefault(__webpack_require__(/*! axios */ "axios"));
 var iconv_lite_1 = __importDefault(__webpack_require__(/*! iconv-lite */ "iconv-lite")); // 文字コード変換用パッケージ
 var electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "electron-log"));
-var log = electron_log_1.default.scope('bbs');
+var log = electron_log_1.default.scope('bbs 5ch');
 var https_1 = __importDefault(__webpack_require__(/*! https */ "https"));
 var encoding_japanese_1 = __importDefault(__webpack_require__(/*! encoding-japanese */ "encoding-japanese"));
 var instance = axios_1.default.create({
@@ -1775,6 +1784,7 @@ var readBoard = function (boardUrl) { return __awaiter(void 0, void 0, void 0, f
         switch (_a.label) {
             case 0:
                 requestUrl = boardUrl + "subject.txt";
+                log.debug("[readBoard] " + requestUrl);
                 list = [];
                 options = {
                     url: requestUrl,
@@ -2174,7 +2184,7 @@ var axios_1 = __importDefault(__webpack_require__(/*! axios */ "axios"));
 var https_1 = __importDefault(__webpack_require__(/*! https */ "https"));
 var iconv_lite_1 = __importDefault(__webpack_require__(/*! iconv-lite */ "iconv-lite")); // 文字コード変換用パッケージ
 var electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "electron-log"));
-var log = electron_log_1.default.scope('bbs');
+var log = electron_log_1.default.scope('bbs shitaraba');
 var encoding_japanese_1 = __importDefault(__webpack_require__(/*! encoding-japanese */ "encoding-japanese"));
 /** スレ一覧を読み込む */
 var readBoard = function (boardUrl) { return __awaiter(void 0, void 0, void 0, function () {
@@ -2183,6 +2193,7 @@ var readBoard = function (boardUrl) { return __awaiter(void 0, void 0, void 0, f
         switch (_a.label) {
             case 0:
                 requestUrl = boardUrl + "subject.txt";
+                log.debug("[readBoard] " + requestUrl);
                 list = [];
                 options = {
                     url: requestUrl,
@@ -2205,7 +2216,7 @@ var readBoard = function (boardUrl) { return __awaiter(void 0, void 0, void 0, f
                 return [3 /*break*/, 4];
             case 3:
                 error_1 = _a.sent();
-                log.error('[Read5ch.js]5ch系BBS板取得APIリクエストエラー、message=' + error_1.message);
+                log.error('5ch系BBS板取得APIリクエストエラー、message=' + error_1.message);
                 throw new Error('connection error');
             case 4: return [2 /*return*/, list];
         }
@@ -3470,7 +3481,7 @@ var createDom = function (message, type, isAA) {
     // サムネイル表示
     var isThumbnailShow = (globalThis.config.thumbnail == 1 && type === 'chat') || globalThis.config.thumbnail == 2;
     if (isThumbnailShow) {
-        var imgreg = new RegExp("(h?ttps?(://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+)(.jpg|.png|.gif))", 'g');
+        var imgreg = new RegExp("(h?ttps?(://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+)(.jpeg|.jpg|.png|.gif|.webp))", 'g');
         var imgUrls_2 = [];
         var matched = text.match(imgreg);
         if (matched) {
@@ -3850,6 +3861,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/* eslint-disable @typescript-eslint/camelcase */
 var const_1 = __webpack_require__(/*! ../const */ "./src/main/const.ts");
 var ffi_napi_1 = __importDefault(__webpack_require__(/*! ffi-napi */ "ffi-napi"));
 var ref_napi_1 = __importDefault(__webpack_require__(/*! ref-napi */ "ref-napi"));
@@ -3883,7 +3895,7 @@ var VoiceVoxClient = /** @class */ (function () {
         this.speaker = '';
         /**
          * 読み上げ音量 default=50 (0 ～ 100)
-        */
+         */
         this.volume = 50;
         /**
          * 読み上げの際先頭に付加する文字列
@@ -3901,7 +3913,7 @@ var VoiceVoxClient = /** @class */ (function () {
          * 抑揚倍率 default=1.0 (0.0 ～ 2.0)
          */
         this.intonation = 1.0;
-        var voicevox_path = (options === null || options === void 0 ? void 0 : options.path) || "";
+        var voicevox_path = (options === null || options === void 0 ? void 0 : options.path) || '';
         if (os_1.default.platform() == 'win32') {
             // パスが設定されていれば指定したパスから VOICEVOX を読み込む。
             // 設定されていない(空の場合)は VOICEVOX の既定のインストール先を検索する。
@@ -3909,16 +3921,21 @@ var VoiceVoxClient = /** @class */ (function () {
             // * C:/Program Files/VOICEVOX
             // * C:/Users/(ユーザー名)/AppData/Local/Programs/VOICEVOX
             // のいずれか
-            var search_paths = voicevox_path ? [voicevox_path] : [
-                path_1.default.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'VOICEVOX'),
-                path_1.default.join(os_1.default.homedir(), 'AppData\\Local\\Programs\\VOICEVOX'),
-            ];
-            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'voicevox_core.dll')); }) || "";
+            var programfilesPath = path_1.default.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'VOICEVOX');
+            var appdataPath = path_1.default.join(os_1.default.homedir(), 'AppData\\Local\\Programs\\VOICEVOX');
+            var search_paths = voicevox_path ? [voicevox_path] : [programfilesPath, appdataPath];
+            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'voicevox_core.dll')); }) || '';
+            if (!voicevox_path) {
+                // ver.0.16.1以降対応
+                var tmpDir = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'vv-engine/voicevox_core.dll')); }) || '';
+                if (tmpDir)
+                    voicevox_path = path_1.default.join(tmpDir, 'vv-engine');
+            }
             if (voicevox_path) {
-                var kernel32 = ffi_napi_1.default.Library("kernel32.dll", {
-                    'SetDllDirectoryW': ['bool', ['uint16*']],
+                var kernel32 = ffi_napi_1.default.Library('kernel32.dll', {
+                    SetDllDirectoryW: ['bool', ['uint16*']],
                 });
-                kernel32.SetDllDirectoryW(Buffer.from(voicevox_path + "\0", 'utf16le'));
+                kernel32.SetDllDirectoryW(Buffer.from(voicevox_path + '\0', 'utf16le'));
             }
         }
         else if (os_1.default.platform() == 'darwin') {
@@ -3926,23 +3943,22 @@ var VoiceVoxClient = /** @class */ (function () {
             // * /Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
             // * $HOME/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
             // のいずれか
-            var search_paths = voicevox_path ? [voicevox_path] : [
-                '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS',
-                path_1.default.join(os_1.default.homedir(), '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS'),
-            ];
-            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'libvoicevox_core.dylib')); }) || "";
+            var appDir = '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS';
+            var userAppDir = path_1.default.join(os_1.default.homedir(), '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS');
+            var search_paths = voicevox_path ? [voicevox_path] : [appDir, userAppDir];
+            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'libvoicevox_core.dylib')); }) || '';
         }
         try {
             this.voicevox_core = ffi_napi_1.default.Library('voicevox_core', {
-                'voicevox_initialize': ['int', [VoicevoxInitializeOptions]],
-                'voicevox_get_metas_json': ['string', []],
-                'voicevox_audio_query': ['int', ['string', 'uint32', VoicevoxAudioQueryOptions, 'char**']],
-                'voicevox_audio_query_json_free': ['void', ['char*']],
-                'voicevox_synthesis': ['int', ['string', 'uint32', VoicevoxSynthesisOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
-                'voicevox_tts': ['int', ['string', 'uint32', VoicevoxTtsOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
-                'voicevox_wav_free': ['void', ['uint8*']],
-                'voicevox_is_model_loaded': ['bool', ['uint32']],
-                'voicevox_load_model': ['int', ['uint32']],
+                voicevox_initialize: ['int', [VoicevoxInitializeOptions]],
+                voicevox_get_metas_json: ['string', []],
+                voicevox_audio_query: ['int', ['string', 'uint32', VoicevoxAudioQueryOptions, 'char**']],
+                voicevox_audio_query_json_free: ['void', ['char*']],
+                voicevox_synthesis: ['int', ['string', 'uint32', VoicevoxSynthesisOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
+                voicevox_tts: ['int', ['string', 'uint32', VoicevoxTtsOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
+                voicevox_wav_free: ['void', ['uint8*']],
+                voicevox_is_model_loaded: ['bool', ['uint32']],
+                voicevox_load_model: ['int', ['uint32']],
             });
             var opts = new VoicevoxInitializeOptions();
             opts.accelerationMode = 0; // 利用モードは自動(GPUが使えれば使う)
@@ -4016,6 +4032,10 @@ var VoiceVoxClient = /** @class */ (function () {
                         // VOICEVOX は WAV のデータを出力してくるので実際の再生は renderer プロセスにお願いする。
                         globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.SPEAK_WAV, { wavblob: buf, volume: this.volume, deviceId: undefined });
                     }
+                }
+                else {
+                    // 読み上げ対象が無い場合は読み上げ処理をスキップ
+                    globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.SPEAK_WAV, { wavblob: '', volume: this.volume, deviceId: undefined });
                 }
                 return [2 /*return*/, true];
             });

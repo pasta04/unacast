@@ -2,6 +2,7 @@ import axios, { AxiosRequestConfig } from 'axios';
 import iconv from 'iconv-lite'; // 文字コード変換用パッケージ
 import express from 'express';
 import bodyParser from 'body-parser'; // jsonパーサ
+import https from 'https';
 const router = express.Router();
 import electronlog from 'electron-log';
 const log = electronlog.scope('bbs');
@@ -12,6 +13,12 @@ import ReadSitaraba, { readBoard as readBoardShitaraba, postRes as postResShitar
 import Read5ch, { readBoard as readBoard5ch, postRes as postRes5ch } from './readBBS/Read5ch'; // 5ch互換板読み込み用モジュール
 const sitaraba = new ReadSitaraba();
 const read5ch = new Read5ch();
+
+const instance = axios.create({
+  httpsAgent: new https.Agent({
+    rejectUnauthorized: false,
+  }),
+});
 
 // 掲示板読み込みモジュール、一度決定したら使いまわすためにグローバル宣言
 let bbsModule: ReadSitaraba | ReadSitaraba = null as any;
@@ -198,7 +205,7 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
     }
   }
 
-  // log.debug(`[tempUrl] ${tempUrl} [boardUrl] ${boardUrl}`);
+  log.debug(`[SETTING.TXT] ${tempUrl} [BoardUrl] ${boardUrl}`);
   try {
     const options: AxiosRequestConfig = {
       url: tempUrl,
@@ -207,7 +214,7 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
       responseType: 'arraybuffer',
     };
 
-    const response = await axios(options);
+    const response = await instance(options);
     if (response.status < 400) {
       const str = iconv.decode(Buffer.from(response.data), encoding);
 
@@ -221,9 +228,10 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
       });
     }
   } catch (e) {
-    log.error('なんかエラー');
+    log.error('なんかエラー error=' + JSON.stringify(e.message));
   }
 
+  log.info(JSON.stringify(result));
   return result;
 };
 
