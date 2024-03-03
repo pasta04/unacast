@@ -1,6 +1,6 @@
 {
   "name": "unacast",
-  "version": "0.7.12",
+  "version": "0.7.13",
   "description": "掲示板のレスをYoutubeコメント風に表示したいという思想の元に開発されるツール",
   "main": "dist/index.js",
   "scripts": {
