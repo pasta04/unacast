@@ -957,7 +957,7 @@ export const createDom = (message: UserComment, type: 'chat' | 'server', isAA: b
   // サムネイル表示
   const isThumbnailShow = (globalThis.config.thumbnail == 1 && type === 'chat') || globalThis.config.thumbnail == 2;
   if (isThumbnailShow) {
-    const imgreg = new RegExp("(h?ttps?(://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+)(.jpg|.png|.gif))", 'g');
+    const imgreg = new RegExp("(h?ttps?(://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+)(.jpeg|.jpg|.png|.gif|.webp))", 'g');
     const imgUrls: string[] = [];
     const matched = text.match(imgreg);
     if (matched) {

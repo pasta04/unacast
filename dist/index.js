@@ -3470,7 +3470,7 @@ var createDom = function (message, type, isAA) {
     // サムネイル表示
     var isThumbnailShow = (globalThis.config.thumbnail == 1 && type === 'chat') || globalThis.config.thumbnail == 2;
     if (isThumbnailShow) {
-        var imgreg = new RegExp("(h?ttps?(://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+)(.jpg|.png|.gif))", 'g');
+        var imgreg = new RegExp("(h?ttps?(://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+)(.jpeg|.jpg|.png|.gif|.webp))", 'g');
         var imgUrls_2 = [];
         var matched = text.match(imgreg);
         if (matched) {
