@@ -210,6 +210,9 @@ class VoiceVoxClient {
         // VOICEVOX は WAV のデータを出力してくるので実際の再生は renderer プロセスにお願いする。
         globalThis.electron.mainWindow.webContents.send(electronEvent.SPEAK_WAV, { wavblob: buf, volume: this.volume, deviceId: undefined });
       }
+    } else {
+      // 読み上げ対象が無い場合は読み上げ処理をスキップ
+      globalThis.electron.mainWindow.webContents.send(electronEvent.SPEAK_WAV, { wavblob: '', volume: this.volume, deviceId: undefined });
     }
 
     return true;

@@ -4033,6 +4033,10 @@ var VoiceVoxClient = /** @class */ (function () {
                         globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.SPEAK_WAV, { wavblob: buf, volume: this.volume, deviceId: undefined });
                     }
                 }
+                else {
+                    // 読み上げ対象が無い場合は読み上げ処理をスキップ
+                    globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.SPEAK_WAV, { wavblob: '', volume: this.volume, deviceId: undefined });
+                }
                 return [2 /*return*/, true];
             });
         });
