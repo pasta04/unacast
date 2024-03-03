@@ -3861,6 +3861,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/* eslint-disable @typescript-eslint/camelcase */
 var const_1 = __webpack_require__(/*! ../const */ "./src/main/const.ts");
 var ffi_napi_1 = __importDefault(__webpack_require__(/*! ffi-napi */ "ffi-napi"));
 var ref_napi_1 = __importDefault(__webpack_require__(/*! ref-napi */ "ref-napi"));
@@ -3894,7 +3895,7 @@ var VoiceVoxClient = /** @class */ (function () {
         this.speaker = '';
         /**
          * 読み上げ音量 default=50 (0 ～ 100)
-        */
+         */
         this.volume = 50;
         /**
          * 読み上げの際先頭に付加する文字列
@@ -3912,7 +3913,7 @@ var VoiceVoxClient = /** @class */ (function () {
          * 抑揚倍率 default=1.0 (0.0 ～ 2.0)
          */
         this.intonation = 1.0;
-        var voicevox_path = (options === null || options === void 0 ? void 0 : options.path) || "";
+        var voicevox_path = (options === null || options === void 0 ? void 0 : options.path) || '';
         if (os_1.default.platform() == 'win32') {
             // パスが設定されていれば指定したパスから VOICEVOX を読み込む。
             // 設定されていない(空の場合)は VOICEVOX の既定のインストール先を検索する。
@@ -3920,16 +3921,21 @@ var VoiceVoxClient = /** @class */ (function () {
             // * C:/Program Files/VOICEVOX
             // * C:/Users/(ユーザー名)/AppData/Local/Programs/VOICEVOX
             // のいずれか
-            var search_paths = voicevox_path ? [voicevox_path] : [
-                path_1.default.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'VOICEVOX'),
-                path_1.default.join(os_1.default.homedir(), 'AppData\\Local\\Programs\\VOICEVOX'),
-            ];
-            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'voicevox_core.dll')); }) || "";
+            var programfilesPath = path_1.default.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'VOICEVOX');
+            var appdataPath = path_1.default.join(os_1.default.homedir(), 'AppData\\Local\\Programs\\VOICEVOX');
+            var search_paths = voicevox_path ? [voicevox_path] : [programfilesPath, appdataPath];
+            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'voicevox_core.dll')); }) || '';
+            if (!voicevox_path) {
+                // ver.0.16.1以降対応
+                var tmpDir = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'vv-engine/voicevox_core.dll')); }) || '';
+                if (tmpDir)
+                    voicevox_path = path_1.default.join(tmpDir, 'vv-engine');
+            }
             if (voicevox_path) {
-                var kernel32 = ffi_napi_1.default.Library("kernel32.dll", {
-                    'SetDllDirectoryW': ['bool', ['uint16*']],
+                var kernel32 = ffi_napi_1.default.Library('kernel32.dll', {
+                    SetDllDirectoryW: ['bool', ['uint16*']],
                 });
-                kernel32.SetDllDirectoryW(Buffer.from(voicevox_path + "\0", 'utf16le'));
+                kernel32.SetDllDirectoryW(Buffer.from(voicevox_path + '\0', 'utf16le'));
             }
         }
         else if (os_1.default.platform() == 'darwin') {
@@ -3937,23 +3943,22 @@ var VoiceVoxClient = /** @class */ (function () {
             // * /Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
             // * $HOME/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
             // のいずれか
-            var search_paths = voicevox_path ? [voicevox_path] : [
-                '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS',
-                path_1.default.join(os_1.default.homedir(), '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS'),
-            ];
-            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'libvoicevox_core.dylib')); }) || "";
+            var appDir = '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS';
+            var userAppDir = path_1.default.join(os_1.default.homedir(), '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS');
+            var search_paths = voicevox_path ? [voicevox_path] : [appDir, userAppDir];
+            voicevox_path = search_paths.find(function (p) { return fs_1.default.existsSync(path_1.default.join(p, 'libvoicevox_core.dylib')); }) || '';
         }
         try {
             this.voicevox_core = ffi_napi_1.default.Library('voicevox_core', {
-                'voicevox_initialize': ['int', [VoicevoxInitializeOptions]],
-                'voicevox_get_metas_json': ['string', []],
-                'voicevox_audio_query': ['int', ['string', 'uint32', VoicevoxAudioQueryOptions, 'char**']],
-                'voicevox_audio_query_json_free': ['void', ['char*']],
-                'voicevox_synthesis': ['int', ['string', 'uint32', VoicevoxSynthesisOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
-                'voicevox_tts': ['int', ['string', 'uint32', VoicevoxTtsOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
-                'voicevox_wav_free': ['void', ['uint8*']],
-                'voicevox_is_model_loaded': ['bool', ['uint32']],
-                'voicevox_load_model': ['int', ['uint32']],
+                voicevox_initialize: ['int', [VoicevoxInitializeOptions]],
+                voicevox_get_metas_json: ['string', []],
+                voicevox_audio_query: ['int', ['string', 'uint32', VoicevoxAudioQueryOptions, 'char**']],
+                voicevox_audio_query_json_free: ['void', ['char*']],
+                voicevox_synthesis: ['int', ['string', 'uint32', VoicevoxSynthesisOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
+                voicevox_tts: ['int', ['string', 'uint32', VoicevoxTtsOptions, ref_napi_1.default.sizeof.pointer == 8 ? 'uint64*' : 'uint32*', 'uint8**']],
+                voicevox_wav_free: ['void', ['uint8*']],
+                voicevox_is_model_loaded: ['bool', ['uint32']],
+                voicevox_load_model: ['int', ['uint32']],
             });
             var opts = new VoicevoxInitializeOptions();
             opts.accelerationMode = 0; // 利用モードは自動(GPUが使えれば使う)
