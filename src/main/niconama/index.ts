@@ -72,8 +72,10 @@ type NiconamaCommentChat = {
 };
 
 class NiconamaComment extends EventEmitter {
-  /** ニコニココミュニティID */
-  communityId?: string;
+  /** ニコニコユーザID */
+  userId?: string;
+  /** 配信URL */
+  liveUrl: string = '';
   /** 配信開始待ちのインターバル(ms) */
   waitBroadcastPollingInterval = 5000;
   /** 初期処理のコメントを受信し終わった */
@@ -86,17 +88,17 @@ class NiconamaComment extends EventEmitter {
   /** ニコ生チャットWebSocketに対する定期ping */
   commentPingIntervalObj: NodeJS.Timeout = null as any;
 
-  constructor(options: { communityId: string }) {
+  constructor(options: { userId: string }) {
     super();
-    if ('communityId' in options) {
-      this.communityId = options.communityId;
+    if ('userId' in options) {
+      this.userId = options.userId;
     } else {
       throw TypeError('Required channelId.');
     }
   }
 
   public async start() {
-    if (this.communityId) {
+    if (this.userId) {
       this.emit('wait');
       this.pollingStartBroadcast();
     }
@@ -104,40 +106,47 @@ class NiconamaComment extends EventEmitter {
 
   /** ニコ生の配信開始待ち */
   private pollingStartBroadcast = async () => {
-    const url = `https://live.nicovideo.jp/watch/${this.communityId}`;
-    log.info(`[pollingStartBroadcast] ${url}`);
-
     try {
-      const res = await axios.get(url);
-      const $ = cheerio.load(res.data);
+      /** 配信情報 */
+      const broadcastHisotoryUrl = `https://live.nicovideo.jp/front/api/v1/user-broadcast-history?providerId=${this.userId}&providerType=user&isIncludeNonPublic=false&offset=0&limit=100&withTotalCount=true`;
+      const broadcastHisotory = (await axios.get(broadcastHisotoryUrl)).data;
+      if (broadcastHisotory.meta.status !== 200) {
+        // たぶんサーバ側がエラーになってる
+        log.error(JSON.stringify(broadcastHisotory));
+        throw new Error(`user-broadcast-history request status code is ${broadcastHisotory.meta.status}`);
+      }
 
-      // 放送情報を取得
-      const embeddedData = JSON.parse($('#embedded-data').attr('data-props') ?? '');
-      // log.info(embeddedData);
-
-      // 終わってるステータスか終了日時が過去
-      if (embeddedData.program.status === 'ENDED' || embeddedData.program.endTime * 1000 < new Date().getTime()) {
+      // ON AIRなprogramを探索
+      let liveId = '';
+      for (const program of broadcastHisotory.data.programsList) {
+        if (program.program.schedule.status === 'ON AIR') {
+          liveId = program.id.value;
+          break;
+        }
+      }
+      if (!liveId) {
         await sleep(this.waitBroadcastPollingInterval);
         this.pollingStartBroadcast();
       } else {
-        // 始まってる
         this.emit('start');
+        this.liveUrl = `https://live.nicovideo.jp/watch/${liveId}`;
         this.fetchCommentServerThread();
       }
-    } catch (e) {
-      this.emit('error', new Error(`connection error to ${url}`));
+    } catch (e: any) {
+      this.emit('error', new Error(`connection error`));
       log.error(JSON.stringify(e, null, '  '));
       await sleep(this.waitBroadcastPollingInterval * 2);
       this.pollingStartBroadcast();
     }
   };
 
-  /** ニコ生のコメントを取得 */
+  /**
+   * ニコ生のコメントを取得
+   */
   private fetchCommentServerThread = async () => {
     log.info(`[fetchCommentServerThread]`);
     // ニコ生の配信ページにアクセス
-    const url = `https://live.nicovideo.jp/watch/${this.communityId}`;
-    const res = await axios.get(url);
+    const res = await axios.get(this.liveUrl);
     const $ = cheerio.load(res.data);
 
     // 放送情報を取得
@@ -291,7 +300,6 @@ class NiconamaComment extends EventEmitter {
         JSON.stringify([
           { ping: { content: 'rs:0' } },
           { ping: { content: 'ps:0' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
           { thread: { thread: threadId, version: '20061206', user_id: 'guest', res_from: -150, with_global: 1, scores: 1, nicoru: 0 } },
           { ping: { content: 'pf:0' } },
           { ping: { content: 'rf:0' } },

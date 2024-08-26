@@ -206,7 +206,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: typeof globalT
 
   // ニコ生
   if (globalThis.config.niconicoId) {
-    const nico = new NiconamaComment({ communityId: globalThis.config.niconicoId });
+    const nico = new NiconamaComment({ userId: globalThis.config.niconicoId });
     globalThis.electron.niconicoChat = nico;
     nico.on('start', () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'niconico', category: 'status', message: `connection waiting` });
