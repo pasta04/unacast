@@ -1,14 +1,24 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../EventEmitter';
 import axios, { AxiosResponse } from 'axios';
 import { actionToRenderer, CommentItem, getContinuation, parseData } from './parser';
 import { sleep } from '../util';
 import electronlog from 'electron-log';
 const log = electronlog.scope('Youtube-chat');
 
+type EventMap = {
+  start: [message: string];
+  end: [reason?: string];
+  firstComment: [item: CommentItem];
+  comment: [item: CommentItem];
+  open: [obj: { liveId: string; number: number }]
+  error: [error: Error];
+  wait: [];
+};
+
 /**
  * YouTubeライブチャット取得イベント
  */
-export class LiveChat extends EventEmitter {
+export class LiveChat extends EventEmitter<EventMap> {
   private static readonly headers = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36',
     'Content-Type': 'application/json',
@@ -84,7 +94,7 @@ export class LiveChat extends EventEmitter {
           await sleep(2000);
           this.fetchLiveId();
         }
-      } catch (e) {
+      } catch (e: any) {
         // 考えられるのは、LiveIdを指定していて、ページが取れたが、isLiveNowがfalseだった時
         this.emit('error', new Error(e.message));
         await sleep(2000);
@@ -120,7 +130,7 @@ export class LiveChat extends EventEmitter {
         .replace(/"/g, '')
         .replace(/,/g, '');
       log.debug(isLiveNow);
-    } catch (e) {
+    } catch (e: any) {
       log.error(e.message);
       return { api: '', continuation: '' };
     }
@@ -142,7 +152,7 @@ export class LiveChat extends EventEmitter {
       log.debug(`initial continuation is ${continuation}`);
 
       return { api: key as string, continuation: continuation as string };
-    } catch (e) {
+    } catch (e: any) {
       log.error(e.message);
       return { api: '', continuation: '' };
     }
@@ -175,8 +185,8 @@ export class LiveChat extends EventEmitter {
         .then((data) => {
           return data;
         })
-        .catch((err) => {
-          throw new Error(err.message);
+        .catch((error: any) => {
+          throw new Error(error.message);
         });
       // log.debug(JSON.stringify(res.data.continuationContents));
 
@@ -235,7 +245,7 @@ export class LiveChat extends EventEmitter {
   public on(event: 'start', listener: (liveId: string) => void): this;
   public on(event: 'end', listener: (reason?: string) => void): this;
   public on(event: 'error', listener: (err: Error) => void): this;
-  public on(event: string | symbol, listener: (...args: any[]) => void): this {
+  public on(event: keyof EventMap, listener: (...args: any[]) => void): this {
     return super.on(event, listener);
   }
 }

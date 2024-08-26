@@ -23,7 +23,7 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   log.info('[app] started');
 
-  app.allowRendererProcessReuse = true;
+  // app.allowRendererProcessReuse = true;
 
   const iconPath = path.resolve(__dirname, '../icon.png');
 
@@ -80,6 +80,7 @@ if (!app.requestSingleInstanceLock()) {
       icon: iconPath,
       webPreferences: {
         nodeIntegration: true,
+        contextIsolation: false,
       },
       skipTaskbar: true,
     });
@@ -89,7 +90,7 @@ if (!app.requestSingleInstanceLock()) {
     mainWin.setTitle('unacast');
     mainWin.setMenu(null);
 
-    // レンダラーで使用するhtmlファイルを指定する
+    // // レンダラーで使用するhtmlファイルを指定する
     mainWin.loadURL('file://' + path.resolve(__dirname, '../src/html/index.html'));
 
     // ウィンドウが閉じられたらアプリも終了
@@ -118,7 +119,7 @@ if (!app.requestSingleInstanceLock()) {
     // mainWin.webContents.openDevTools();
 
     // タスクトレイの設定
-    let tray = null;
+    let tray: Tray = null as any;
     app.whenReady().then(() => {
       tray = new Tray(iconPath);
       const contextMenu = Menu.buildFromTemplate([
@@ -190,6 +191,7 @@ const createChatWindow = () => {
     icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
     // タスクバーに表示しない
     skipTaskbar: true,
@@ -226,6 +228,7 @@ const createTranslateWindow = () => {
     icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
     // タスクバーに表示しない
     skipTaskbar: true,
@@ -264,6 +267,7 @@ const createImagePreviewWindow = () => {
     icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
     // タスクバーに表示しない
     skipTaskbar: true,

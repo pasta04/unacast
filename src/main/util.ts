@@ -15,7 +15,7 @@ const isExistFile = (file: string) => {
   try {
     fs.statSync(file).isFile();
     return true;
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOENT') return false;
   }
 };

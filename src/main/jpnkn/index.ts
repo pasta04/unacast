@@ -1,7 +1,7 @@
 /**
  * jpnkn fast
  */
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../EventEmitter';
 import pahoMqtt from 'paho-mqtt';
 import electronlog from 'electron-log';
 const log = electronlog.scope('jpnkn');
@@ -9,7 +9,15 @@ import WebSocket from 'ws';
 
 (global as any).WebSocket = WebSocket;
 
-class JpnknFast extends EventEmitter {
+type EventMap = {
+  comment: [item: UserComment];
+  start: [];
+  open: [];
+  end: [reason?: string];
+  error: [error: Error];
+};
+
+class JpnknFast extends EventEmitter<EventMap> {
   /** ニコニココミュニティID */
   boardId: string;
   /** コメント取得のWebSocket */
@@ -135,7 +143,7 @@ class JpnknFast extends EventEmitter {
   public on(event: 'end', listener: (reason?: string) => void): this;
   // 何かエラーあった時
   public on(event: 'error', listener: (err: Error) => void): this;
-  public on(event: string | symbol, listener: (...args: any[]) => void): this {
+  public on(event: keyof EventMap, listener: (...args: any[]) => void): this {
     return super.on(event, listener);
   }
 }

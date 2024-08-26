@@ -42,7 +42,7 @@ export const readBoard = async (boardUrl: string) => {
     // gzipで取得出来たら解凍処理も入れる
 
     // UTF-8に変換
-    const str = iconv.decode(Buffer.from(response.data), 'Shift_JIS');
+    const str = iconv.decode(Buffer.from(response.data as any), 'Shift_JIS');
     // パースして格納
     list.push(
       ...str
@@ -50,7 +50,7 @@ export const readBoard = async (boardUrl: string) => {
         .filter((item) => item)
         .map((line) => parseThreadList(boardUrl, line)),
     );
-  } catch (error) {
+  } catch (error: any) {
     if (error.status == NOT_MODIFIED) {
       log.error('5ch系BBS板取得APIリクエストエラー、NOT_MODIFIED');
     } else if (error.status == RANGE_NOT_SATISFIABLE) {
@@ -73,7 +73,7 @@ export const readBoard = async (boardUrl: string) => {
  */
 export const postRes = async (hostname: string, threadNumber: string, boardId: string, message: string) => {
   // Shift-JISに変換し、urlエンコードする
-  const unicodeArray = [];
+  const unicodeArray: number[] = [];
   for (let i = 0; i < message.length; i++) {
     unicodeArray.push(message.charCodeAt(i));
   }
@@ -184,7 +184,7 @@ class Read5ch {
       const headers = response.headers;
 
       // 文字コード変換
-      const str = iconv.decode(Buffer.from(response.data), 'Shift_JIS');
+      const str = iconv.decode(Buffer.from(response.data as any), 'Shift_JIS');
       // レスポンスオブジェクト作成、content-rangeがある場合とない場合で処理を分ける
       if (headers['content-range'] == null || this.lastByte == 0) {
         log.debug('content-range=' + headers['content-range']);
@@ -229,7 +229,7 @@ class Read5ch {
         this.lastByte = this.lastByte + parseInt(headers['content-length']) - 1;
         log.debug('lastByte=' + this.lastByte);
       }
-    } catch (error) {
+    } catch (error: any) {
       responseJson = [];
       if (error.status == NOT_MODIFIED) {
         log.error('5ch系BBSレス取得APIリクエストエラー、NOT_MODIFIED');

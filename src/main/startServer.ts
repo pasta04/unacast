@@ -14,13 +14,13 @@ import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihong
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
 import { CommentItem, ImageItem } from './youtube-chat/parser';
 import bouyomiChan from './bouyomi-chan';
-import VoiceVoxClient from './voicevox';
+// import VoiceVoxClient from './voicevox';
 import { spawn } from 'child_process';
 import { electronEvent } from './const';
 import NiconamaComment from './niconama';
 import JpnknFast from './jpnkn';
 import AzureSpeechToText from './azureStt';
-import tr from 'googletrans';
+// import tr from 'googletrans';
 import CommentIcons from './CommentIcons';
 
 let app: expressWs.Instance['app'];
@@ -32,7 +32,7 @@ let server: http.Server;
 let bouyomi: bouyomiChan;
 
 /** VoiceVoxインスタンス */
-let voiceVox: VoiceVoxClient;
+// let voiceVox: VoiceVoxClient;
 
 /** スレッド定期取得実行するか */
 let threadIntervalEvent = false;
@@ -48,28 +48,28 @@ let serverId = 0;
 /**
  * VOICEVOX の読み込み(Rendererからの要求による)
  */
-const loadVoiceVox = async (config_voicevox: typeof config['voicevox'], force = false) => {
-  if (!voiceVox?.available || force) {
-    voiceVox = new VoiceVoxClient({ path: config_voicevox.path });
-  }
-  const configuration = {
-    path: voiceVox.path,
-    available: voiceVox.available,
-    speakerAndStyle: config_voicevox.speakerAndStyle,
-    speakers: voiceVox.speakers.reduce((state: { speaker: string; style: string }[], speaker) => {
-      return state.concat(
-        speaker.styles.map((style) => {
-          return { speaker: speaker.name, style: style.name };
-        }),
-      );
-    }, []),
-  };
-  globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_VOICEVOX_CONFIG, configuration);
-};
+// const loadVoiceVox = async (config_voicevox: typeof config['voicevox'], force = false) => {
+//   if (!voiceVox?.available || force) {
+//     voiceVox = new VoiceVoxClient({ path: config_voicevox.path });
+//   }
+//   const configuration = {
+//     path: voiceVox.path,
+//     available: voiceVox.available,
+//     speakerAndStyle: config_voicevox.speakerAndStyle,
+//     speakers: voiceVox.speakers.reduce((state: { speaker: string; style: string }[], speaker) => {
+//       return state.concat(
+//         speaker.styles.map((style) => {
+//           return { speaker: speaker.name, style: style.name };
+//         }),
+//       );
+//     }, []),
+//   };
+//   globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_VOICEVOX_CONFIG, configuration);
+// };
 
-ipcMain.on(electronEvent.LOAD_VOICEVOX, async (event: any, config_voicevox: typeof config['voicevox']) => {
-  loadVoiceVox(config_voicevox, false);
-});
+// ipcMain.on(electronEvent.LOAD_VOICEVOX, async (event: any, config_voicevox: typeof config['voicevox']) => {
+//   loadVoiceVox(config_voicevox, false);
+// });
 
 /**
  * 設定の適用
@@ -120,21 +120,21 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: typeof globalT
   }
 
   // VOICE VOX 関連
-  if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
-    // VOICEVOX 利用の場合のみ
-    if (oldConfig.voicevox?.path !== config.voicevox?.path) {
-      // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
-      loadVoiceVox(config.voicevox, true);
-    } else {
-      // パスが変わっていない場合は未読み込みの時だけ読み込む
-      loadVoiceVox(config.voicevox, false);
-    }
-  }
-  if (voiceVox) {
-    voiceVox.speaker = config.voicevox?.speakerAndStyle || '';
-    voiceVox.prefix = config.bouyomiPrefix;
-    voiceVox.volume = config.bouyomiVolume;
-  }
+  // if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+  //   // VOICEVOX 利用の場合のみ
+  //   if (oldConfig.voicevox?.path !== config.voicevox?.path) {
+  //     // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
+  //     loadVoiceVox(config.voicevox, true);
+  //   } else {
+  //     // パスが変わっていない場合は未読み込みの時だけ読み込む
+  //     loadVoiceVox(config.voicevox, false);
+  //   }
+  // }
+  // if (voiceVox) {
+  //   voiceVox.speaker = config.voicevox?.speakerAndStyle || '';
+  //   voiceVox.prefix = config.bouyomiPrefix;
+  //   voiceVox.volume = config.bouyomiVolume;
+  // }
 });
 
 /**
@@ -303,22 +303,22 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: typeof globalT
   }
 
   // VoiceVox 接続
-  if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
-    if (config.voicevox) {
-      if (!voiceVox?.available) {
-        voiceVox = new VoiceVoxClient({
-          path: config.voicevox.path,
-          speaker: config.voicevox.speakerAndStyle,
-          volume: config.bouyomiVolume,
-          prefix: config.bouyomiPrefix,
-        });
-      } else {
-        voiceVox.speaker = config.voicevox.speakerAndStyle;
-        voiceVox.volume = config.bouyomiVolume;
-        voiceVox.prefix = config.bouyomiPrefix;
-      }
-    }
-  }
+  // if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+  //   if (config.voicevox) {
+  //     if (!voiceVox?.available) {
+  //       voiceVox = new VoiceVoxClient({
+  //         path: config.voicevox.path,
+  //         speaker: config.voicevox.speakerAndStyle,
+  //         volume: config.bouyomiVolume,
+  //         prefix: config.bouyomiPrefix,
+  //       });
+  //     } else {
+  //       voiceVox.speaker = config.voicevox.speakerAndStyle;
+  //       voiceVox.volume = config.bouyomiVolume;
+  //       voiceVox.prefix = config.bouyomiPrefix;
+  //     }
+  //   }
+  // }
 
   // Azure SpeechToText
   if (globalThis.config.azureStt && globalThis.config.azureStt.enable && globalThis.config.azureStt.key && globalThis.config.azureStt.region) {
@@ -820,11 +820,11 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
         // TODO:強制的に発話を終了する
         break;
       }
-      case 'voicevox': {
-        // 強制的に発話を終了する
-        if (voiceVox) voiceVox.abort();
-        break;
-      }
+      // case 'voicevox': {
+      //   // 強制的に発話を終了する
+      //   if (voiceVox) voiceVox.abort();
+      //   break;
+      // }
     }
   }
   isSpeaking = true;
@@ -848,14 +848,14 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
       }
       break;
     }
-    case 'voicevox': {
-      if (voiceVox) {
-        voiceVox.speak(msg);
-      } else {
-        isSpeaking = false;
-      }
-      break;
-    }
+    // case 'voicevox': {
+    //   if (voiceVox) {
+    //     voiceVox.speak(msg);
+    //   } else {
+    //     isSpeaking = false;
+    //   }
+    //   break;
+    // }
     default:
       isSpeaking = false;
       break;
@@ -1176,18 +1176,18 @@ const sendDomForTranslateWindow = async (message: UserComment) => {
       .replace(reg, '')
       .trim();
 
-    const translated = await tr(unescapeHtml(orgText), {
-      to: globalThis.config.translate.targetLang,
-      from: 'auto',
-      tld: globalThis.config.translate.targetLang === 'ja' ? 'co.jp' : 'com',
-    });
-    log.info(translated.text);
-    // もし何もテキストとして残らなかったら表示しない
-    if (!translated.text) return '';
+    // // // const translated = await tr(unescapeHtml(orgText), {
+    // // //   to: globalThis.config.translate.targetLang,
+    // // //   from: 'auto',
+    // // //   tld: globalThis.config.translate.targetLang === 'ja' ? 'co.jp' : 'com',
+    // // // });
+    // // // log.info(translated.text);
+    // // // // もし何もテキストとして残らなかったら表示しない
+    // // // if (!translated.text) return '';
 
-    const domStr = createTranslateDom({ ...message, text: orgText }, escapeHtml(translated.text));
+    // // const domStr = createTranslateDom({ ...message, text: orgText }, escapeHtml(translated.text));
 
-    globalThis.electron.translateWindow.webContents.send(electronEvent.SHOW_COMMENT_TL, { config: globalThis.config, dom: domStr });
+    // globalThis.electron.translateWindow.webContents.send(electronEvent.SHOW_COMMENT_TL, { config: globalThis.config, dom: domStr });
   } catch (e) {
     log.error(JSON.stringify(e));
     globalThis.electron.translateWindow.webContents.send(electronEvent.SHOW_COMMENT_TL, { config: globalThis.config, dom: '<div>翻訳でエラー</div>' });

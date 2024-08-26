@@ -7,8 +7,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [16.x]
-        os: [windows-latest, macOS-latest]
+        node-version: [20.x]
+        os: [windows-latest]
       fail-fast: false
     steps:
       - uses: actions/checkout@v1
@@ -19,5 +19,16 @@ jobs:
       - name: Install
         run: |
           yarn install --frozen-lockfile 
+      - name: Python Version Check
+        run: python -V
+      - name: node-gyp Version Check
+        run: npx node-gyp -v
       - name: Build
         run: yarn build
+      - name: Build
+        run: npm run buildwin  
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unacast-win32-x64_latest
+          path: unacast-win32-x64

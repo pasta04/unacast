@@ -33,7 +33,7 @@ export const readBoard = async (boardUrl: string) => {
     // gzipで取得出来たら解凍処理も入れる
 
     // UTF-8に変換
-    const str = iconv.decode(Buffer.from(response.data), 'EUC-JP');
+    const str = iconv.decode(Buffer.from(response.data as any), 'EUC-JP');
     // パースして格納
     list.push(
       ...str
@@ -58,7 +58,7 @@ export const readBoard = async (boardUrl: string) => {
  */
 export const postRes = async (hostname: string, threadNumber: string, boardId: string, message: string) => {
   // Shift-JISに変換し、urlエンコードする
-  const unicodeArray = [];
+  const unicodeArray: number[] = [];
   for (let i = 0; i < message.length; i++) {
     unicodeArray.push(message.charCodeAt(i));
   }
@@ -126,7 +126,7 @@ class ReadSitaraba {
     try {
       const response = await axios(options);
       // UTF-8に変換
-      const str = decodeUnicodeStr(iconv.decode(Buffer.from(response.data), 'EUC-JP'));
+      const str = decodeUnicodeStr(iconv.decode(Buffer.from(response.data as any), 'EUC-JP'));
 
       const responseJson = parseNewResponse(str);
       return responseJson;

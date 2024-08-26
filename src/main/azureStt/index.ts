@@ -3,11 +3,17 @@
  */
 import { ipcMain } from 'electron';
 import { electronEvent } from '../const';
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../EventEmitter';
 import electronlog from 'electron-log';
 const logger = electronlog.scope('azureStt');
 
-class AzureSpeechToText extends EventEmitter {
+type EventMap = {
+  comment: [item: UserComment];
+  start: [];
+  end: [reason: string];
+  error: [error: Error];
+};
+class AzureSpeechToText extends EventEmitter<EventMap> {
   name: string;
   key: string;
   region: string;
@@ -22,7 +28,7 @@ class AzureSpeechToText extends EventEmitter {
     this.region = region;
     this.language = language;
     this.inputDevice = inputDevice;
-    ipcMain.on(electronEvent.AZURE_STT_EVENT, (event: any, event_name: string, arg?: { date: string, text: string }) => {
+    ipcMain.on(electronEvent.AZURE_STT_EVENT, (event: any, event_name: keyof EventMap, arg?: { date: string, text: string }) => {
       if (arg) {
         const item: UserComment = {
           name: this.name,
@@ -31,9 +37,10 @@ class AzureSpeechToText extends EventEmitter {
           imgUrl: globalThis.electron.iconList.getBbs(),
           from: 'stt',
         };
-        this.emit(event_name, item);
-      }
-      else {
+        if(event_name === "comment") {
+          this.emit(event_name, item);
+        }
+      } else {
         this.emit(event_name);
       }
     });
@@ -57,7 +64,7 @@ class AzureSpeechToText extends EventEmitter {
   public on(event: 'end', listener: (reason?: string) => void): this;
   // 何かエラーあった時
   public on(event: 'error', listener: (err: Error) => void): this;
-  public on(event: string | symbol, listener: (...args: any[]) => void): this {
+  public on(event: keyof EventMap, listener: (...args: any[]) => void): this {
     return super.on(event, listener);
   }
 }

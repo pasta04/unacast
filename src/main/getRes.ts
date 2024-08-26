@@ -9,7 +9,7 @@ const log = electronlog.scope('bbs');
 
 import { createDom } from './startServer';
 import { judgeAaMessage } from './util';
-import ReadSitaraba, { readBoard as readBoardShitaraba, postRes as postResShitaraba } from './readBBS/readSitaraba'; // したらば読み込み用モジュール
+import ReadSitaraba, { readBoard as readBoardShitaraba, postRes as postResShitaraba } from './readBBS/ReadSitaraba'; // したらば読み込み用モジュール
 import Read5ch, { readBoard as readBoard5ch, postRes as postRes5ch } from './readBBS/Read5ch'; // 5ch互換板読み込み用モジュール
 const sitaraba = new ReadSitaraba();
 const read5ch = new Read5ch();
@@ -58,6 +58,8 @@ router.get('/', async (req, res, next) => {
  */
 export const getRes = async (threadUrl: string, resNum: number): Promise<UserComment[]> => {
   try {
+    if(!threadUrl) return [];
+    
     // リクエストURLを解析し、使用するモジュールを変更する
     bbsModule = analysBBSName(threadUrl) as any;
 
@@ -214,9 +216,9 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
       responseType: 'arraybuffer',
     };
 
-    const response = await instance(options);
+    const response = (await instance<ArrayBuffer>(options));
     if (response.status < 400) {
-      const str = iconv.decode(Buffer.from(response.data), encoding);
+      const str = iconv.decode(Buffer.from(response.data as any), encoding);
 
       str.split(/\n/g).map((text: string) => {
         const matched = text.match(/BBS_TITLE=(.+)/);
@@ -227,7 +229,7 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
         }
       });
     }
-  } catch (e) {
+  } catch (e: any) {
     log.error('なんかエラー error=' + JSON.stringify(e.message));
   }
 

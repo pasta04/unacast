@@ -2,13 +2,18 @@
   "editor.formatOnSave": true,
   "prettier.singleQuote": true,
   "prettier.printWidth": 300,
-  "prettier.disableLanguages": ["markdown"],
+  "prettier.disableLanguages": [
+    "markdown"
+  ],
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
     "source.fixAll.tslint": "explicit",
     "source.fixAll": "explicit"
   },
-  "eslint.validate": ["javascript", "typescript"],
+  "eslint.validate": [
+    "javascript",
+    "typescript"
+  ],
   "files.eol": "\n",
   "explorer.confirmDragAndDrop": false,
   "git.enableSmartCommit": true,
@@ -17,5 +22,6 @@
   "javascript.updateImportsOnFileMove.enabled": "always",
   "typescript.preferences.quoteStyle": "single",
   "window.zoomLevel": 0,
-  "terminal.integrated.scrollback": 20000
+  "terminal.integrated.scrollback": 20000,
+  "typescript.tsdk": "node_modules\\typescript\\lib"
 }

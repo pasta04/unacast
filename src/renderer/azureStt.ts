@@ -59,6 +59,9 @@ ipcRenderer.on(electronEvent.AZURE_STT_START, (event: any, arg: { key: string; r
   start(arg.key, arg.region, arg.language, arg.inputDevice);
 });
 
+
+
+
 ipcRenderer.on(electronEvent.AZURE_STT_STOP, (event: any) => {
   stop();
 });
