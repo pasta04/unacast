@@ -1,1 +1,2 @@
-declare module 'Nicolive-API/dist/node.mjs';
+declare module 'googletrans.js';
+declare module 'node.js';

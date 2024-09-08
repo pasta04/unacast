@@ -49,6 +49,11 @@ export const unescapeHtml = (str: string) => {
     .replace(/&amp;/g, '&');
 };
 
+export const convertUrltoImgTagSrc = (imgUrl: string) => {
+  return imgUrl.match(/.+\.(jpg|png|gif)$/)? imgUrl : `data:image/png;base64,${imgUrl}`;
+}
+
+
 export const judgeAaMessage = (messageList: UserComment[]) => {
   return messageList.map((message) => {
     let isAA = false;

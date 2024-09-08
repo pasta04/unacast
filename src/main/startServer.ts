@@ -9,7 +9,7 @@ import { ChatClient } from 'dank-twitch-irc';
 import { LiveChat } from './youtube-chat';
 import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
-import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihongo } from './util';
+import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
 import { CommentItem, ImageItem } from './youtube-chat/parser';
@@ -20,7 +20,7 @@ import { electronEvent } from './const';
 import NiconamaComment from './niconama';
 import JpnknFast from './jpnkn';
 import AzureSpeechToText from './azureStt';
-// import tr from 'googletrans';
+import tr from './googletrans';
 import CommentIcons from './CommentIcons';
 
 let app: expressWs.Instance['app'];
@@ -894,7 +894,7 @@ export const createDom = (message: UserComment, type: 'chat' | 'server', isAA: b
   if (globalThis.config.showIcon) {
     domStr += `
     <span class="icon-block">
-      <img class="icon" src="data:image/png;base64,${message.imgUrl}">
+      <img class="icon" src="${convertUrltoImgTagSrc(message.imgUrl)}">
     </span>
     `;
     isResNameShowed = true;
@@ -1111,7 +1111,7 @@ export const createTranslateDom = (message: UserComment, translated: string) => 
   if (globalThis.config.showIcon) {
     domStr += `
     <span class="icon-block">
-      <img class="icon" src="${message.imgUrl}">
+      <img class="icon" src="${convertUrltoImgTagSrc(message.imgUrl)}">
     </span>
     `;
   }
@@ -1176,18 +1176,18 @@ const sendDomForTranslateWindow = async (message: UserComment) => {
       .replace(reg, '')
       .trim();
 
-    // // // const translated = await tr(unescapeHtml(orgText), {
-    // // //   to: globalThis.config.translate.targetLang,
-    // // //   from: 'auto',
-    // // //   tld: globalThis.config.translate.targetLang === 'ja' ? 'co.jp' : 'com',
-    // // // });
-    // // // log.info(translated.text);
-    // // // // もし何もテキストとして残らなかったら表示しない
-    // // // if (!translated.text) return '';
+    const translated = await tr(unescapeHtml(orgText), {
+      to: globalThis.config.translate.targetLang,
+      from: 'auto',
+      tld: globalThis.config.translate.targetLang === 'ja' ? 'co.jp' : 'com',
+    });
+    log.info(`[sendDomForTranslateWindow] ${translated.text}`);
+    // もし何もテキストとして残らなかったら表示しない
+    if (!translated.text) return '';
 
-    // // const domStr = createTranslateDom({ ...message, text: orgText }, escapeHtml(translated.text));
+    const domStr = createTranslateDom({ ...message, text: orgText }, escapeHtml(translated.text));
 
-    // globalThis.electron.translateWindow.webContents.send(electronEvent.SHOW_COMMENT_TL, { config: globalThis.config, dom: domStr });
+    globalThis.electron.translateWindow.webContents.send(electronEvent.SHOW_COMMENT_TL, { config: globalThis.config, dom: domStr });
   } catch (e) {
     log.error(JSON.stringify(e));
     globalThis.electron.translateWindow.webContents.send(electronEvent.SHOW_COMMENT_TL, { config: globalThis.config, dom: '<div>翻訳でエラー</div>' });
