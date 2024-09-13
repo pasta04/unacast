@@ -5,6 +5,8 @@ import js from '@eslint/js';
 import typeScriptESLint from '@typescript-eslint/eslint-plugin';
 import typeScriptESLintParser from '@typescript-eslint/parser';
 import globals from 'globals';
+import tSESLint from 'typescript-eslint';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 
 const compat = new FlatCompat();
 
@@ -13,8 +15,10 @@ export default [
     ignores: ['**/node_modules/**', '**/build/**', 'webpack.config.ts', '*.mjs'],
   },
   js.configs.recommended,
+  ...tSESLint.configs.recommended,
   eslintConfigPrettier,
-  ...compat.extends('plugin:node/recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:prettier/recommended', 'prettier'),
+  eslintPluginPrettierRecommended,
+  ...compat.extends('plugin:@typescript-eslint/eslint-recommended'),
   {
     plugins: {
       typeScriptESLint,
@@ -50,7 +54,9 @@ export default [
       'node/no-missing-import': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      'node/no-unsupported-features/es-builtins': 'off'
+      'node/no-unsupported-features/es-builtins': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-require-imports': 'off'
     },
   },
 ];

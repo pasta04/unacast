@@ -1,10 +1,5 @@
 {
   "editor.formatOnSave": true,
-  "prettier.singleQuote": true,
-  "prettier.printWidth": 300,
-  "prettier.disableLanguages": [
-    "markdown"
-  ],
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
     "source.fixAll.tslint": "explicit",
