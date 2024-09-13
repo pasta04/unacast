@@ -13,7 +13,7 @@ class CommentIcons {
   niconicoIconList: string[] = [path.resolve(__dirname, `../public/img/niconico.png`)];
   sttIconList: string[] = [];
 
-  constructor(arg: { bbs: string; youtube: string; twitch: string; niconico: string, stt: string }) {
+  constructor(arg: { bbs: string; youtube: string; twitch: string; niconico: string; stt: string }) {
     const randomDir = fs.existsSync(arg.bbs) ? arg.bbs : path.resolve(__dirname, `../public/img/random/`);
     log.debug('loadRandomDir = ' + randomDir);
     this.bbsIconList = readDir(randomDir);

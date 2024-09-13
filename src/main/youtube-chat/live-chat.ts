@@ -10,7 +10,7 @@ type EventMap = {
   end: [reason?: string];
   firstComment: [item: CommentItem];
   comment: [item: CommentItem];
-  open: [obj: { liveId: string; number: number }]
+  open: [obj: { liveId: string; number: number }];
   error: [error: Error];
   wait: [];
 };
@@ -38,7 +38,10 @@ export class LiveChat extends EventEmitter<EventMap> {
   /** 停止要求をされた */
   private isStop = false;
 
-  constructor(options: { channelId: string } | { liveId: string }, private interval = 5000) {
+  constructor(
+    options: { channelId: string } | { liveId: string },
+    private interval = 5000,
+  ) {
     super();
     if ('channelId' in options) {
       this.channelId = options.channelId;
@@ -232,7 +235,6 @@ export class LiveChat extends EventEmitter<EventMap> {
       });
     } catch (e) {
       log.error(e);
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       if (res!) {
         log.error(JSON.stringify(res.data));
       }
