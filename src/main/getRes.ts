@@ -58,8 +58,8 @@ router.get('/', async (req, res, next) => {
  */
 export const getRes = async (threadUrl: string, resNum: number): Promise<UserComment[]> => {
   try {
-    if(!threadUrl) return [];
-    
+    if (!threadUrl) return [];
+
     // リクエストURLを解析し、使用するモジュールを変更する
     bbsModule = analysBBSName(threadUrl) as any;
 
@@ -216,7 +216,7 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
       responseType: 'arraybuffer',
     };
 
-    const response = (await instance<ArrayBuffer>(options));
+    const response = await instance<ArrayBuffer>(options);
     if (response.status < 400) {
       const str = iconv.decode(Buffer.from(response.data as any), encoding);
 

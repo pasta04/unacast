@@ -28,7 +28,7 @@ class AzureSpeechToText extends EventEmitter<EventMap> {
     this.region = region;
     this.language = language;
     this.inputDevice = inputDevice;
-    ipcMain.on(electronEvent.AZURE_STT_EVENT, (event: any, event_name: keyof EventMap, arg?: { date: string, text: string }) => {
+    ipcMain.on(electronEvent.AZURE_STT_EVENT, (event: any, event_name: keyof EventMap, arg?: { date: string; text: string }) => {
       if (arg) {
         const item: UserComment = {
           name: this.name,
@@ -37,7 +37,7 @@ class AzureSpeechToText extends EventEmitter<EventMap> {
           imgUrl: globalThis.electron.iconList.getBbs(),
           from: 'stt',
         };
-        if(event_name === "comment") {
+        if (event_name === 'comment') {
           this.emit(event_name, item);
         }
       } else {

@@ -19,7 +19,7 @@ type EventMap = {
   comment: [item: CommentItem];
   start: [];
   end: [reason?: string];
-  open: [obj: { liveId: string; number: number }]
+  open: [obj: { liveId: string; number: number }];
   error: [error: Error];
   wait: [];
 };
@@ -91,7 +91,7 @@ class NiconamaComment extends EventEmitter<EventMap> {
       this.pollingStartBroadcast();
     }
   };
- 
+
   /**
    * コメント取得
    * @param liveId liveID
@@ -100,8 +100,8 @@ class NiconamaComment extends EventEmitter<EventMap> {
     log.info(`[fetchComment] liveId = ${liveId}`);
 
     this.nicoliveClient = new NicoliveApi.NicoliveClient({ liveId: liveId });
-    
-    this.nicoliveClient.on("chat", (chat: any) => {
+
+    this.nicoliveClient.on('chat', (chat: any) => {
       const comment = chat.content;
       if (!comment) return;
 

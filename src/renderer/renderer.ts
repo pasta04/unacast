@@ -310,8 +310,8 @@ const buildConfigJson = () => {
   const bouyomiVolume = parseInt((document.getElementById('bouyomi-volume') as HTMLInputElement).value);
   const bouyomiPrefix = (document.getElementById('text-bouyomi-prefix') as HTMLInputElement).value;
   const voicevox = {
-    path: "",
-    speakerAndStyle: ""
+    path: '',
+    speakerAndStyle: '',
   };
   // const voicevox = {
   //   path: (document.getElementById('text-voicevox-path') as HTMLInputElement).value,
@@ -321,7 +321,7 @@ const buildConfigJson = () => {
 
   // 読み上げ文字列置き換え
   const yomikoDictionaryTableBody = document.getElementById('yomikoDictionary-table-body') as HTMLTableSectionElement;
-  const yomikoDictionary: {pattern: any, pronunciation: any}[] = [];
+  const yomikoDictionary: { pattern: any; pronunciation: any }[] = [];
   for (let i = 0; i < yomikoDictionaryTableBody.rows.length; i++) {
     const row = yomikoDictionaryTableBody.rows.item(i);
     const pattern = row?.cells.item(0)?.getElementsByTagName('input').item(0)?.value;
@@ -332,12 +332,12 @@ const buildConfigJson = () => {
   }
 
   // Azure Text To Speect
-  const azureStt: typeof globalThis['config']['azureStt'] = {
+  const azureStt: (typeof globalThis)['config']['azureStt'] = {
     enable: (document.getElementById('azureStt-enable') as any).checked === true,
     name: (document.getElementById('azureStt-name') as HTMLInputElement).value,
     key: (document.getElementById('azureStt-key') as HTMLInputElement).value,
     region: (document.getElementById('azureStt-region') as HTMLInputElement).value,
-    language: ((document.getElementById('azureStt-language') as HTMLSelectElement).value as typeof globalThis['config']['azureStt']['language']) ?? 'ja-JP',
+    language: ((document.getElementById('azureStt-language') as HTMLSelectElement).value as (typeof globalThis)['config']['azureStt']['language']) ?? 'ja-JP',
     inputDevice: (document.getElementById('azureStt-inputDevice') as HTMLSelectElement).value,
   };
 
@@ -375,49 +375,49 @@ const buildConfigJson = () => {
   const playSeStt = (document.getElementById('checkbox-playSeStt') as any).checked === true;
   const playSeVolume = parseInt((document.getElementById('playSe-volume') as HTMLInputElement).value);
 
-  let thumbnail: typeof globalThis['config']['thumbnail'] = 0;
+  let thumbnail: (typeof globalThis)['config']['thumbnail'] = 0;
   document.getElementsByName('thumbnail').forEach((v) => {
     const elem = v as HTMLInputElement;
-    if (elem.checked) thumbnail = Number(elem.value) as typeof globalThis['config']['thumbnail'];
+    if (elem.checked) thumbnail = Number(elem.value) as (typeof globalThis)['config']['thumbnail'];
   });
   const hideImgUrl = (document.getElementById('checkbox-hideImgUrl') as any).checked === true;
 
   // エモート表示
   const emoteAnimation = (document.getElementById('checkbox-emoteAnimation') as HTMLInputElement).checked === true;
 
-  let emoteSize: typeof globalThis['config']['emoteSize'] = 1;
+  let emoteSize: (typeof globalThis)['config']['emoteSize'] = 1;
   document.getElementsByName('emoteSize').forEach((v) => {
     const elem = v as HTMLInputElement;
-    if (elem.checked) emoteSize = Number(elem.value) as typeof globalThis['config']['emoteSize'];
+    if (elem.checked) emoteSize = Number(elem.value) as (typeof globalThis)['config']['emoteSize'];
   });
 
-  let typeYomiko: typeof globalThis['config']['typeYomiko'] = 'none';
+  let typeYomiko: (typeof globalThis)['config']['typeYomiko'] = 'none';
   document.getElementsByName('typeYomiko').forEach((v) => {
     const elem = v as HTMLInputElement;
-    if (elem.checked) typeYomiko = elem.value as typeof globalThis['config']['typeYomiko'];
+    if (elem.checked) typeYomiko = elem.value as (typeof globalThis)['config']['typeYomiko'];
   });
 
-  let typeYomikoStt: typeof globalThis['config']['typeYomikoStt'] = 'none';
+  let typeYomikoStt: (typeof globalThis)['config']['typeYomikoStt'] = 'none';
   document.getElementsByName('typeYomikoStt').forEach((v) => {
     const elem = v as HTMLInputElement;
-    if (elem.checked) typeYomikoStt = elem.value as typeof globalThis['config']['typeYomikoStt'];
+    if (elem.checked) typeYomikoStt = elem.value as (typeof globalThis)['config']['typeYomikoStt'];
   });
 
   // コメント処理
-  let commentProcessType: typeof globalThis['config']['commentProcessType'] = 0;
+  let commentProcessType: (typeof globalThis)['config']['commentProcessType'] = 0;
   document.getElementsByName('commentProcessType').forEach((v) => {
     const elem = v as HTMLInputElement;
-    if (elem.checked) commentProcessType = Number(elem.value) as typeof globalThis['config']['commentProcessType'];
+    if (elem.checked) commentProcessType = Number(elem.value) as (typeof globalThis)['config']['commentProcessType'];
   });
 
-  let dispType: typeof globalThis['config']['dispType'] = 0;
+  let dispType: (typeof globalThis)['config']['dispType'] = 0;
   document.getElementsByName('dispType').forEach((v) => {
     const elem = v as HTMLInputElement;
-    if (elem.checked) dispType = Number(elem.value) as typeof globalThis['config']['dispType'];
+    if (elem.checked) dispType = Number(elem.value) as (typeof globalThis)['config']['dispType'];
   });
 
   // AAモード
-  const aamode: typeof globalThis['config']['aamode'] = {
+  const aamode: (typeof globalThis)['config']['aamode'] = {
     enable: (document.getElementById('aamode_enable') as any).checked === true,
     condition: {
       length: parseInt((document.getElementById('aamode_condition_length') as HTMLInputElement).value),
@@ -430,11 +430,11 @@ const buildConfigJson = () => {
   aamode.condition.words = aamodeConditionWords.split(/\r|\r\n|\n/).filter((word) => !!word);
 
   // 翻訳
-  let translate: typeof globalThis['config']['translate'] = null as any;
+  let translate: (typeof globalThis)['config']['translate'] = null as any;
   try {
     translate = {
       enable: (document.getElementById('translate_enable') as any).checked === true,
-      targetLang: ((document.getElementById('translate_targetLang') as HTMLSelectElement).value as typeof globalThis['config']['translate']['targetLang']) ?? 'ja',
+      targetLang: ((document.getElementById('translate_targetLang') as HTMLSelectElement).value as (typeof globalThis)['config']['translate']['targetLang']) ?? 'ja',
     };
   } catch (e) {
     translate = {
@@ -454,7 +454,7 @@ const buildConfigJson = () => {
     }
   });
 
-  const config: typeof globalThis['config'] = {
+  const config: (typeof globalThis)['config'] = {
     url: url,
     yomikoDictionary,
     resNumber,
@@ -514,7 +514,7 @@ const buildConfigJson = () => {
  * 設定をローカルストレージへ保存する
  * サーバー起動時に呼び出される
  */
-const saveConfigToLocalStrage = (config: typeof globalThis['config']) => {
+const saveConfigToLocalStrage = (config: (typeof globalThis)['config']) => {
   localStorage.setItem('config', JSON.stringify(config));
   log.debug('config saved');
 };
@@ -523,7 +523,7 @@ const saveConfigToLocalStrage = (config: typeof globalThis['config']) => {
  * ローカルストレージから設定をロードする
  */
 const loadConfigToLocalStrage = async () => {
-  const initConfig: typeof globalThis['config'] = {
+  const initConfig: (typeof globalThis)['config'] = {
     url: '',
     resNumber: '',
     initMessage: 'スレッド読み込みを開始しました',
@@ -601,7 +601,7 @@ const loadConfigToLocalStrage = async () => {
   };
 
   const storageStr = localStorage.getItem('config');
-  const storageJson: typeof globalThis['config'] = storageStr ? JSON.parse(storageStr) : {};
+  const storageJson: (typeof globalThis)['config'] = storageStr ? JSON.parse(storageStr) : {};
 
   globalThis.config = {
     ...initConfig,
@@ -659,7 +659,7 @@ const loadConfigToLocalStrage = async () => {
   (document.getElementById('checkbox-emoteAnimation') as any).checked = config.emoteAnimation;
   (document.getElementById(`emoteSize_${config.emoteSize}`) as any).checked = config.emoteSize;
 
-  (document.getElementById('yomiko-replace-newline') as any).checked == config.yomikoReplaceNewline;
+  (document.getElementById('yomiko-replace-newline') as any).checked = config.yomikoReplaceNewline;
 
   // Iconパス
   (document.getElementById('icon_dir_bbs') as any).value = config.iconDirBbs;
@@ -725,7 +725,7 @@ const loadConfigToLocalStrage = async () => {
   // (document.getElementById('text-voicevox-path') as any).value = config.voicevox?.path || '';
   (document.getElementById('text-notify-threadConnectionErrorLimit') as any).value = config.notifyThreadConnectionErrorLimit;
   (document.getElementById('text-notify-threadResLimit') as any).value = config.notifyThreadResLimit;
-  (document.getElementById('moveThread') as any).checked == config.moveThread;
+  (document.getElementById('moveThread') as any).checked = config.moveThread;
 
   (document.getElementById('aamode_enable') as any).checked = config.aamode.enable;
   (document.getElementById('aamode_condition_length') as HTMLInputElement).value = config.aamode.condition.length.toString();

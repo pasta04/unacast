@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import http from 'http';
 import path from 'path';
 import express, { Request, Response } from 'express';
@@ -74,7 +73,7 @@ let serverId = 0;
 /**
  * 設定の適用
  */
-ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: typeof globalThis['config']) => {
+ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof globalThis)['config']) => {
   log.info('[apply-config] start');
   log.info(config);
 
@@ -140,7 +139,7 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: typeof globalT
 /**
  * サーバー起動
  */
-ipcMain.on(electronEvent.START_SERVER, async (event: any, config: typeof globalThis['config']) => {
+ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof globalThis)['config']) => {
   globalThis.electron.chatWindow.webContents.send(electronEvent.CLEAR_COMMENT);
   globalThis.electron.translateWindow.webContents.send(electronEvent.CLEAR_COMMENT);
   globalThis.electron.threadNumber = 0;
@@ -398,7 +397,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: typeof globalT
   event.returnValue = 'success';
 });
 
-ipcMain.on(electronEvent.COMMENT_TEST, async (event: any, config: typeof globalThis['config']) => {
+ipcMain.on(electronEvent.COMMENT_TEST, async (event: any, config: (typeof globalThis)['config']) => {
   globalThis.config = config;
   return commentTest();
 });

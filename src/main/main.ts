@@ -28,7 +28,6 @@ if (!app.requestSingleInstanceLock()) {
   const iconPath = path.resolve(__dirname, '../icon.png');
 
   // サーバー起動モジュール
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const ss = require('./startServer');
   console.trace(ss);
 

@@ -27,14 +27,16 @@ export const escapeHtml = (string: string): string => {
     return string;
   }
   return string.replace(/[&'`"<>]/g, (match) => {
-    return ({
-      '&': '&amp;',
-      "'": '&#x27;',
-      '`': '&#x60;',
-      '"': '&quot;',
-      '<': '&lt;',
-      '>': '&gt;',
-    } as any)[match];
+    return (
+      {
+        '&': '&amp;',
+        "'": '&#x27;',
+        '`': '&#x60;',
+        '"': '&quot;',
+        '<': '&lt;',
+        '>': '&gt;',
+      } as any
+    )[match];
   });
 };
 
@@ -50,9 +52,8 @@ export const unescapeHtml = (str: string) => {
 };
 
 export const convertUrltoImgTagSrc = (imgUrl: string) => {
-  return imgUrl.match(/.+\.(jpg|png|gif)$/)? imgUrl : `data:image/png;base64,${imgUrl}`;
-}
-
+  return imgUrl.match(/.+\.(jpg|png|gif)$/) ? imgUrl : `data:image/png;base64,${imgUrl}`;
+};
 
 export const judgeAaMessage = (messageList: UserComment[]) => {
   return messageList.map((message) => {
