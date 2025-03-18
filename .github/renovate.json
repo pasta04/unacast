@@ -6,5 +6,7 @@
 		":semanticCommits"
 	],
 	"rangeStrategy": "update-lockfile",
-	"postUpdateOptions": ["npmDedupe", "yarnDedupeHighest"]
+	"postUpdateOptions": [
+		"npmDedupe"
+	]
 }

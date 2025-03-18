@@ -1,4 +1,5 @@
 # unacast
+
 掲示板のレスをYoutubeコメント風に表示したいという思想の元に開発されるツール
 
 ## 対応サービス
@@ -16,12 +17,14 @@
 - [見た目のカスタム](./documents/見た目のカスタム.md)
 
 ## ビルド方法
-Node.jsとyarnが入ってることが前提。
+
+Node.jsが入ってることが前提。
+
 ```
 git clone https://github.com/pasta04/unacast.git
 cd unacast
-yarn
-yarn buildwin
+npm ci
+npm run buildwin
 ```
 
-Macの場合は`yarn buildmac`とすること。
+Macの場合は`npm run buildmac`とすること。
