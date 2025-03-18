@@ -87,5 +87,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: unacast-win32-x64_${{ matrix.node-version }}_latest
+          name: unacast-win32-x64_unpack_${{ matrix.node-version }}_latest
           path: unacast-win32-x64
