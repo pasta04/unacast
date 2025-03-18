@@ -1,6 +1,6 @@
 {
   "name": "unacast",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "掲示板のレスをYoutubeコメント風に表示したいという思想の元に開発されるツール",
   "main": "dist/index.js",
   "scripts": {
@@ -26,13 +26,13 @@
   },
   "homepage": "https://github.com/yudeunagi/unacast#readme",
   "dependencies": {
-    "axios": "^0.28.0",
+    "axios": "^1.8.3",
     "body-parser": "^1.19.0",
     "cheerio": "1.0.0-rc.12",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dank-twitch-irc": "^3.0.7",
-    "ejs": "^2.7.1",
+    "ejs": "^3.1.10",
     "electron-log": "^5.1.7",
     "electron-window-state": "^5.0.3",
     "encoding-japanese": "^1.0.30",
@@ -46,6 +46,8 @@
     "ws": "^7.3.1"
   },
   "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "@electron/remote": "^2.1.2",
     "@eslint/compat": "^1.1.1",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.10.0",
@@ -62,8 +64,7 @@
     "@types/paho-mqtt": "^1.0.4",
     "@typescript-eslint/eslint-plugin": "^8.5.0",
     "@typescript-eslint/parser": "^8.5.0",
-    "electron": "8.2.1",
-    "electron-packager": "14",
+    "electron": "^35.0.2",
     "electron-rebuild": "^3.2.9",
     "eslint": "^9.10.0",
     "eslint-config-prettier": "^9.1.0",

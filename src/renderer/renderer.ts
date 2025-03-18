@@ -1,4 +1,5 @@
-import electron, { remote } from 'electron';
+import electron from 'electron';
+import { Menu, MenuItem, getCurrentWindow } from '@electron/remote';
 import electronlog from 'electron-log';
 const log = electronlog.scope('renderer-main');
 import { electronEvent } from '../main/const';
@@ -155,10 +156,10 @@ ipcRenderer.on(
 );
 
 const mainContextMenuInText = (target: HTMLInputElement) => {
-  const menu = new remote.Menu();
+  const menu = new Menu();
 
   menu.append(
-    new remote.MenuItem({
+    new MenuItem({
       label: 'Cut',
       type: 'normal',
       click: (menu, browser, event) => {
@@ -172,7 +173,7 @@ const mainContextMenuInText = (target: HTMLInputElement) => {
   );
 
   menu.append(
-    new remote.MenuItem({
+    new MenuItem({
       label: 'Copy',
       type: 'normal',
       click: (menu, browser, event) => {
@@ -185,7 +186,7 @@ const mainContextMenuInText = (target: HTMLInputElement) => {
   );
 
   menu.append(
-    new remote.MenuItem({
+    new MenuItem({
       label: 'Paste',
       type: 'normal',
       click: (menu, browser, event) => {
@@ -198,14 +199,14 @@ const mainContextMenuInText = (target: HTMLInputElement) => {
   return menu;
 };
 
-const mainContextMenu = new remote.Menu();
+const mainContextMenu = new Menu();
 mainContextMenu.append(
-  new remote.MenuItem({
+  new MenuItem({
     label: '最前面表示',
     type: 'checkbox',
     checked: false,
     click: (e) => {
-      remote.getCurrentWindow().setAlwaysOnTop(e.checked);
+      getCurrentWindow().setAlwaysOnTop(e.checked);
     },
   }),
 );
@@ -216,10 +217,10 @@ document.oncontextmenu = (e) => {
   const nodeName = (e.target as HTMLInputElement).nodeName;
   if (nodeName === 'INPUT') {
     // テキストボックスとか
-    mainContextMenuInText(e.target as HTMLInputElement).popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+    mainContextMenuInText(e.target as HTMLInputElement).popup({ window: getCurrentWindow(), x: e.x, y: e.y });
   } else {
     // それ以外
-    mainContextMenu.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+    mainContextMenu.popup({ window: getCurrentWindow(), x: e.x, y: e.y });
   }
 };
 
