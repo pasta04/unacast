@@ -1,7 +1,7 @@
 // マイクからの入力は Renderer 側でしかできないので、こちらで認識全体を行う
 
 import electron from 'electron';
-import electronlog from 'electron-log';
+import electronlog from 'electron-log/renderer';
 const logger = electronlog.scope('renderer-azureStt');
 import { electronEvent } from '../main/const';
 import { SpeechConfig, SpeechRecognizer, AudioConfig, CancellationReason } from 'microsoft-cognitiveservices-speech-sdk';

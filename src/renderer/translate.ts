@@ -1,5 +1,6 @@
-import electron, { remote } from 'electron';
-import electronlog from 'electron-log';
+import electron from 'electron';
+import { Menu, MenuItem, getCurrentWindow } from '@electron/remote';
+import electronlog from 'electron-log/renderer';
 const log = electronlog.scope('renderer-translate');
 import { electronEvent } from '../main/const';
 
@@ -11,9 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
   log.debug('DOM Content Loaded');
 });
 
-const contextMenuInText = new remote.Menu();
+const contextMenuInText = new Menu();
 contextMenuInText.append(
-  new remote.MenuItem({
+  new MenuItem({
     label: 'Copy',
     type: 'normal',
     click: (menu, browser, event) => {
@@ -25,25 +26,25 @@ contextMenuInText.append(
   }),
 );
 
-const contextMenu = new remote.Menu();
+const contextMenu = new Menu();
 contextMenu.append(
-  new remote.MenuItem({
+  new MenuItem({
     label: '最前面表示',
     type: 'checkbox',
     checked: false,
     click: (e) => {
-      remote.getCurrentWindow().setAlwaysOnTop(e.checked);
+      getCurrentWindow().setAlwaysOnTop(e.checked);
     },
   }),
 );
 
 contextMenu.append(
-  new remote.MenuItem({
+  new MenuItem({
     label: 'スクロールが端以外の時もコメント受信時に端に飛ぶ',
     type: 'checkbox',
     checked: true,
     click: (e) => {
-      remote.getCurrentWindow().webContents.send(electronEvent.FORCE_SCROLL, e.checked);
+      getCurrentWindow().webContents.send(electronEvent.FORCE_SCROLL, e.checked);
     },
   }),
 );
@@ -55,9 +56,9 @@ document.oncontextmenu = (e) => {
   // 選択範囲があるならCopyのメニューを出す
   const selectText = window.getSelection()?.toString() ?? '';
   if (selectText) {
-    contextMenuInText.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+    contextMenuInText.popup({ window: getCurrentWindow(), x: e.x, y: e.y });
   } else {
-    contextMenu.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+    contextMenu.popup({ window: getCurrentWindow(), x: e.x, y: e.y });
   }
 };
 

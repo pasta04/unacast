@@ -1,9 +1,12 @@
 // Electronのモジュール
 import path from 'path';
 import electron, { Tray, Menu, dialog } from 'electron';
+import * as remote from '@electron/remote/main';
 import log from 'electron-log';
 import { sleep } from './util';
 import windowStateKeeper from 'electron-window-state';
+remote.initialize();
+log.initialize();
 
 console.trace = () => {
   //
@@ -83,6 +86,7 @@ if (!app.requestSingleInstanceLock()) {
       },
       skipTaskbar: true,
     });
+    remote.enable(mainWin.webContents);
     globalThis.electron.mainWindow = mainWin;
     windowState.manage(mainWin);
 
@@ -197,6 +201,7 @@ const createChatWindow = () => {
     // 閉じれなくする
     closable: false,
   });
+  remote.enable(chatWindow.webContents);
   windowState.manage(chatWindow);
 
   chatWindow.setTitle('unacast');
@@ -234,6 +239,7 @@ const createTranslateWindow = () => {
     // 閉じれなくする
     closable: false,
   });
+  remote.enable(translateWindow.webContents);
   windowState.manage(translateWindow);
 
   translateWindow.setTitle('unacast');
@@ -275,6 +281,7 @@ const createImagePreviewWindow = () => {
     minHeight: 100,
     closable: true,
   });
+  remote.enable(childwindow.webContents);
   windowState.manage(childwindow);
 
   childwindow.setTitle('unacast');

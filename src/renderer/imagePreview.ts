@@ -1,5 +1,6 @@
-import electron, { remote, shell } from 'electron';
-import electronlog from 'electron-log';
+import electron, { shell } from 'electron';
+import { Menu, MenuItem, getCurrentWindow } from '@electron/remote';
+import electronlog from 'electron-log/renderer';
 import path from 'path';
 const log = electronlog.scope('renderer-imagePreview');
 import { electronEvent } from '../main/const';
@@ -74,9 +75,9 @@ const activeTab = (url: string, id: string) => () => {
 
 /** タブ右クリック時の処理 */
 const handleTabRightClick = (e: MouseEvent, id: string) => {
-  const contextMenu = new remote.Menu();
+  const contextMenu = new Menu();
   contextMenu.append(
-    new remote.MenuItem({
+    new MenuItem({
       label: 'Close',
       type: 'normal',
       click: (menu, browser, event) => {
@@ -110,7 +111,7 @@ const handleTabRightClick = (e: MouseEvent, id: string) => {
 
   // ブラウザで画像開く
   contextMenu.append(
-    new remote.MenuItem({
+    new MenuItem({
       label: 'Open By Browser',
       type: 'normal',
       click: (menu, browser, event) => {
@@ -122,7 +123,7 @@ const handleTabRightClick = (e: MouseEvent, id: string) => {
       },
     }),
   );
-  contextMenu.popup({ window: remote.getCurrentWindow(), x: e.x, y: e.y });
+  contextMenu.popup({ window: getCurrentWindow(), x: e.x, y: e.y });
 };
 
 // // 右クリックメニュー

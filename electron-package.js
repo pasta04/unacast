@@ -22,7 +22,7 @@ npx electron-packager ./ unacast --platform=${PLATFORM} --arch=x64 --overwrite -
     --ignore="README.md"
     --ignore="tsconfig.json"
     --ignore="webpack.config.js"
-    --ignore="yarn.lock"
+    --ignore="package-lock.json"
 `;
 
 execSync(execParam.replace(/\n/g, ' '));
