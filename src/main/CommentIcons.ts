@@ -7,31 +7,53 @@ import electronlog from 'electron-log';
 const log = electronlog.scope('ReadIcons');
 
 class CommentIcons {
-  bbsIconList: string[] = [];
+  bbsIconDir: string = path.resolve(__dirname, `../public/img/random/`);
+  bbsIconList: string[] = readDir(this.bbsIconDir);
+  youtubeIconDir: string = '';
   youtubeIconList: string[] = [];
-  twitchIconList: string[] = [path.resolve(__dirname, `../public/img/twitch.png`)];
-  niconicoIconList: string[] = [path.resolve(__dirname, `../public/img/niconico.png`)];
+  twitchIconDir: string = path.resolve(__dirname, `../public/img/`);
+  twitchIconList: string[] = ['twitch.png'];
+  niconicoIconDir: string = path.resolve(__dirname, `../public/img/`);
+  niconicoIconList: string[] = ['niconico.png'];
+  sttIconDir: string = '';
   sttIconList: string[] = [];
 
   constructor(arg: { bbs: string; youtube: string; twitch: string; niconico: string; stt: string }) {
-    const randomDir = fs.existsSync(arg.bbs) ? arg.bbs : path.resolve(__dirname, `../public/img/random/`);
-    log.debug('loadRandomDir = ' + randomDir);
-    this.bbsIconList = readDir(randomDir);
+    if (fs.existsSync(arg.bbs)) {
+      const list = readDir(arg.bbs);
+      if (list.length > 0) {
+        this.bbsIconList = list;
+        this.bbsIconDir = arg.bbs;
+      }
+    }
 
     if (fs.existsSync(arg.youtube)) {
-      this.youtubeIconList = readDir(arg.youtube);
+      const list = readDir(arg.youtube);
+      if (list.length > 0) {
+        this.youtubeIconList = list;
+        this.youtubeIconDir = arg.youtube;
+      }
     }
     if (fs.existsSync(arg.twitch)) {
       const list = readDir(arg.twitch);
-      if (list.length > 0) this.twitchIconList = list;
+      if (list.length > 0) {
+        this.twitchIconList = list;
+        this.twitchIconDir = arg.twitch;
+      }
     }
     if (fs.existsSync(arg.niconico)) {
       const list = readDir(arg.niconico);
-      if (list.length > 0) this.niconicoIconList = list;
+      if (list.length > 0) {
+        this.niconicoIconList = list;
+        this.niconicoIconDir = arg.niconico;
+      }
     }
     if (fs.existsSync(arg.stt)) {
       const list = readDir(arg.stt);
-      if (list.length > 0) this.sttIconList = list;
+      if (list.length > 0) {
+        this.sttIconList = list;
+        this.sttIconDir = arg.stt;
+      }
     }
 
     log.debug(this.bbsIconList);
@@ -63,7 +85,7 @@ class CommentIcons {
     try {
       const num = Math.floor(this.bbsIconList.length * Math.random());
       const iconPath = this.bbsIconList[num];
-      icon = fs.readFileSync(iconPath, { encoding: 'base64' });
+      icon = `/bbs/${iconPath}`;
     } catch (e) {
       log.error(e);
     }
@@ -74,20 +96,14 @@ class CommentIcons {
     try {
       const num = Math.floor(this.youtubeIconList.length * Math.random());
       const iconPath = this.youtubeIconList[num];
-      icon = fs.readFileSync(iconPath, { encoding: 'base64' });
+      icon = `/youtube/${iconPath}`;
     } catch (e) {
       log.error(e);
     }
     return icon;
   };
   getYoutubeLogo = () => {
-    let icon = '';
-    try {
-      const iconPath = path.resolve(__dirname, `../public/img/youtube.png`);
-      icon = fs.readFileSync(iconPath, { encoding: 'base64' });
-    } catch (e) {
-      log.error(e);
-    }
+    const icon = `/img/youtube.png`;
     return icon;
   };
   getTwitch = () => {
@@ -95,7 +111,7 @@ class CommentIcons {
     try {
       const num = Math.floor(this.twitchIconList.length * Math.random());
       const iconPath = this.twitchIconList[num];
-      icon = fs.readFileSync(iconPath, { encoding: 'base64' });
+      icon = `/twitch/${iconPath}`;
     } catch (e) {
       log.error(e);
     }
@@ -107,7 +123,7 @@ class CommentIcons {
     try {
       const num = Math.floor(this.niconicoIconList.length * Math.random());
       const iconPath = this.niconicoIconList[num];
-      icon = fs.readFileSync(iconPath, { encoding: 'base64' });
+      icon = `/niconico/${iconPath}`;
     } catch (e) {
       log.error(e);
     }
@@ -120,7 +136,7 @@ class CommentIcons {
     try {
       const num = Math.floor(list.length * Math.random());
       const iconPath = list[num];
-      icon = fs.readFileSync(iconPath, { encoding: 'base64' });
+      icon = `/stt/${iconPath}`;
     } catch (e) {
       log.error(e);
     }
@@ -139,7 +155,8 @@ const readDir = (imgDir: string): string[] => {
     const target = typeof file.name !== 'string' ? file : file.name;
     const regx = /.*\.png$/.test(target as any);
     if (regx) {
-      iconFileList.push(path.join(imgDir, target as any) as any);
+      // iconFileList.push(path.join(imgDir, target as any) as any);
+      iconFileList.push(target as any);
     }
   });
 

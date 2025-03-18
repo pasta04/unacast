@@ -49,13 +49,43 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install
         run: |
-          yarn install --frozen-lockfile 
+          yarn install --frozen-lockfile
       - name: Build
         run: yarn build
       - name: Build
-        run: npm run buildwin  
+        run: npm run buildwin
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: unacast-win32-x64_${{ matrix.node-version }}_latest
+          path: unacast-win32-x64
+  build_unpack:
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+        os: [windows-latest]
+      fail-fast: false
+    steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install
+        run: |
+          yarn install --frozen-lockfile
+      - name: Build
+        run: yarn build
+      - name: Build
+        run: npm run buildwinunpack
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unacast-win32-x64_unpack_${{ matrix.node-version }}_latest
           path: unacast-win32-x64

@@ -60,7 +60,7 @@ class NiconamaComment extends EventEmitter<EventMap> {
   private pollingStartBroadcast = async () => {
     try {
       /** 配信情報 */
-      const broadcastHisotoryUrl = `https://live.nicovideo.jp/front/api/v1/user-broadcast-history?providerId=${this.userId}&providerType=user&isIncludeNonPublic=false&offset=0&limit=100&withTotalCount=true`;
+      const broadcastHisotoryUrl = `https://live.nicovideo.jp/front/api/v2/user-broadcast-history?providerId=${this.userId}&providerType=user&isIncludeNonPublic=false&offset=0&limit=100&withTotalCount=true`;
       const broadcastHisotory = (await axios.get(broadcastHisotoryUrl)).data;
       if (broadcastHisotory.meta.status !== 200) {
         // たぶんサーバ側がエラーになってる

@@ -10,6 +10,7 @@
     "build": "electron-rebuild && webpack",
     "start": "electron . --asar",
     "buildwin": "electron-rebuild && node electron-package.js win32 asar",
+    "buildwinunpack": "electron-rebuild && node electron-package.js win32",
     "buildmac": "electron-rebuild && node electron-package.js darwin asar",
     "macbuildmemo": "echo macのビルドで --icon=icon.ico を指定するとなぜか The path argument must be one of type string, Buffer, or URL. Received type undefined って言われるので外しておく、あと管理者権限のコマンドプロンプトで実行してね（シンボリックリンク作れないので）",
     "changecode": "chcp 65001"

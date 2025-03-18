@@ -52,7 +52,8 @@ export const unescapeHtml = (str: string) => {
 };
 
 export const convertUrltoImgTagSrc = (imgUrl: string) => {
-  return imgUrl.match(/.+\.(jpg|png|gif)$/) ? imgUrl : `data:image/png;base64,${imgUrl}`;
+  // return imgUrl.match(/.+\.(jpg|png|gif)$/) ? imgUrl : `data:image/png;base64,${imgUrl}`;
+  return imgUrl;
 };
 
 export const judgeAaMessage = (messageList: UserComment[]) => {

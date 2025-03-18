@@ -99,7 +99,7 @@ ipcRenderer.on(electronEvent.FORCE_SCROLL, (event: any, args: boolean) => {
 
 // コメント表示
 ipcRenderer.on(electronEvent.SHOW_COMMENT, (event: any, args: { config: (typeof globalThis)['config']; dom: string }) => {
-  log.info('[show-comment] received');
+  // log.info('[show-comment] received');
   const dom = document.getElementById('res-list') as HTMLInputElement;
 
   // スクロール位置が端であるなら、スクロール位置も追従する
@@ -130,7 +130,7 @@ ipcRenderer.on(electronEvent.SHOW_COMMENT, (event: any, args: { config: (typeof 
 
 // リセット
 ipcRenderer.on(electronEvent.CLEAR_COMMENT, (event: any) => {
-  log.info('[clear-comment] received');
+  // log.info('[clear-comment] received');
   const dom = document.getElementById('res-list') as HTMLInputElement;
   dom.innerHTML = '';
 });

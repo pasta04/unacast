@@ -188,6 +188,13 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     stt: globalThis.config.iconDirStt,
   });
 
+  // 各種アイコンをホストするためのパスを設定
+  if (globalThis.electron.iconList.bbsIconDir) app.use('/bbs', express.static(globalThis.electron.iconList.bbsIconDir));
+  if (globalThis.electron.iconList.youtubeIconDir) app.use('/youtube', express.static(globalThis.electron.iconList.youtubeIconDir));
+  if (globalThis.electron.iconList.twitchIconDir) app.use('/twitch', express.static(globalThis.electron.iconList.twitchIconDir));
+  if (globalThis.electron.iconList.niconicoIconDir) app.use('/niconico', express.static(globalThis.electron.iconList.niconicoIconDir));
+  if (globalThis.electron.iconList.sttIconDir) app.use('/stt', express.static(globalThis.electron.iconList.niconicoIconDir));
+
   // SEを取得する
   if (globalThis.config.sePath) {
     findSeList();
@@ -521,13 +528,11 @@ const startYoutubeChat = async () => {
 
     const createYoutubeComment = async (comment: CommentItem): Promise<UserComment> => {
       // log.info(JSON.stringify(comment, null, '  '));
-      let icon: string = globalThis.electron.iconList.getYoutube();
+      let icon: string = globalThis.electron.iconList.youtubeIconDir ? globalThis.electron.iconList.getYoutube() : '';
       const thumbnail = comment.author.thumbnail?.url ?? '';
       if (!icon && thumbnail) {
         try {
-          const thumbnailImgBuf = await axios.get<ArrayBuffer>(thumbnail, { responseType: 'arraybuffer' });
-          const b64 = Buffer.from(thumbnailImgBuf.data).toString('base64');
-          icon = b64;
+          icon = thumbnail;
         } catch (e) {
           log.warn(e);
         }
@@ -1077,7 +1082,15 @@ export const sendDom = async (messageList: UserComment[]) => {
 const sendDomForChatWindow = (messageList: UserComment[]) => {
   const domStr2 = judgeAaMessage(messageList)
     .map((message) => {
-      const imgUrl = message.imgUrl && message.imgUrl.match(/^\./) ? '../../public/' + message.imgUrl : message.imgUrl;
+      let imgUrl = message.imgUrl;
+      // expressでホストしてそうなファイルパスならlocalhostを付与する
+      if (message.imgUrl.match(/^\//)) {
+        imgUrl = `http://localhost:${globalThis.config.port}${message.imgUrl}`;
+      }
+      // ローカルのファイルパスならpublicに補正する
+      if (message.imgUrl.match(/^\./)) {
+        imgUrl = `'../../public/${message.imgUrl}`;
+      }
       return {
         ...message,
         imgUrl,
