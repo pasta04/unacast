@@ -1,9 +1,12 @@
 // Electronのモジュール
 import path from 'path';
 import electron, { Tray, Menu, dialog } from 'electron';
+import * as remote from '@electron/remote/main';
 import log from 'electron-log';
 import { sleep } from './util';
 import windowStateKeeper from 'electron-window-state';
+remote.initialize();
+log.initialize();
 
 console.trace = () => {
   //
@@ -115,6 +118,7 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     // 開発者ツールを開く
+    remote.enable(mainWin.webContents);
     // mainWin.webContents.openDevTools();
 
     // タスクトレイの設定
@@ -206,6 +210,7 @@ const createChatWindow = () => {
   chatWindow.loadURL('file://' + path.resolve(__dirname, '../src/html/chat.html'));
 
   globalThis.electron.chatWindow = chatWindow;
+  remote.enable(chatWindow.webContents);
   // chatWindow.webContents.openDevTools();
 };
 
@@ -245,6 +250,7 @@ const createTranslateWindow = () => {
   // 初期表示は最小化
   translateWindow.minimize();
   globalThis.electron.translateWindow = translateWindow;
+  remote.enable(translateWindow.webContents);
   // translateWindow.webContents.openDevTools();
 };
 
@@ -292,5 +298,6 @@ const createImagePreviewWindow = () => {
   });
 
   globalThis.electron.imagePreviewWindow = childwindow;
+  remote.enable(childwindow.webContents);
   // childwindow.webContents.openDevTools();
 };

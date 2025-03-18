@@ -1,6 +1,6 @@
 import electron from 'electron';
 import { Menu, MenuItem, getCurrentWindow } from '@electron/remote';
-import electronlog from 'electron-log';
+import electronlog from 'electron-log/renderer';
 const log = electronlog.scope('renderer-main');
 import { electronEvent } from '../main/const';
 import { sleep } from '../main/util';
