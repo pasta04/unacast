@@ -244,6 +244,13 @@ const toggleInputFormDisable = (isDisabled: boolean) => {
     (v.parentNode as HTMLElement).style.backgroundColor = isDisabled ? 'lightgray' : '';
   });
 
+  // アイコンパス
+  (document.getElementById('icon_dir_bbs') as any).disabled = isDisabled;
+  (document.getElementById('icon_dir_youtube') as any).disabled = isDisabled;
+  (document.getElementById('icon_dir_twitch') as any).disabled = isDisabled;
+  (document.getElementById('icon_dir_niconico') as any).disabled = isDisabled;
+  (document.getElementById('icon_dir_stt') as any).disabled = isDisabled;
+
   (document.getElementById('checkbox-wordBreak') as any).disabled = isDisabled;
   (document.getElementById('checkbox-wordBreak') as any).parentNode.style.backgroundColor = isDisabled ? 'lightgray' : '';
 

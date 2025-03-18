@@ -22,10 +22,15 @@ const electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "
 const log = electron_log_1.default.scope('ReadIcons');
 class CommentIcons {
     constructor(arg) {
-        this.bbsIconList = [];
+        this.bbsIconDir = path_1.default.resolve(__dirname, `../public/img/random/`);
+        this.bbsIconList = readDir(this.bbsIconDir);
+        this.youtubeIconDir = '';
         this.youtubeIconList = [];
-        this.twitchIconList = [path_1.default.resolve(__dirname, `../public/img/twitch.png`)];
-        this.niconicoIconList = [path_1.default.resolve(__dirname, `../public/img/niconico.png`)];
+        this.twitchIconDir = path_1.default.resolve(__dirname, `../public/img/`);
+        this.twitchIconList = ['twitch.png'];
+        this.niconicoIconDir = path_1.default.resolve(__dirname, `../public/img/`);
+        this.niconicoIconList = ['niconico.png'];
+        this.sttIconDir = '';
         this.sttIconList = [];
         // /**
         //  * アイコンランダム表示機能（デフォルト）
@@ -49,7 +54,7 @@ class CommentIcons {
             try {
                 const num = Math.floor(this.bbsIconList.length * Math.random());
                 const iconPath = this.bbsIconList[num];
-                icon = fs_1.default.readFileSync(iconPath, { encoding: 'base64' });
+                icon = `/bbs/${iconPath}`;
             }
             catch (e) {
                 log.error(e);
@@ -61,7 +66,7 @@ class CommentIcons {
             try {
                 const num = Math.floor(this.youtubeIconList.length * Math.random());
                 const iconPath = this.youtubeIconList[num];
-                icon = fs_1.default.readFileSync(iconPath, { encoding: 'base64' });
+                icon = `/youtube/${iconPath}`;
             }
             catch (e) {
                 log.error(e);
@@ -69,14 +74,7 @@ class CommentIcons {
             return icon;
         };
         this.getYoutubeLogo = () => {
-            let icon = '';
-            try {
-                const iconPath = path_1.default.resolve(__dirname, `../public/img/youtube.png`);
-                icon = fs_1.default.readFileSync(iconPath, { encoding: 'base64' });
-            }
-            catch (e) {
-                log.error(e);
-            }
+            const icon = `/img/youtube.png`;
             return icon;
         };
         this.getTwitch = () => {
@@ -84,7 +82,7 @@ class CommentIcons {
             try {
                 const num = Math.floor(this.twitchIconList.length * Math.random());
                 const iconPath = this.twitchIconList[num];
-                icon = fs_1.default.readFileSync(iconPath, { encoding: 'base64' });
+                icon = `/twitch/${iconPath}`;
             }
             catch (e) {
                 log.error(e);
@@ -96,7 +94,7 @@ class CommentIcons {
             try {
                 const num = Math.floor(this.niconicoIconList.length * Math.random());
                 const iconPath = this.niconicoIconList[num];
-                icon = fs_1.default.readFileSync(iconPath, { encoding: 'base64' });
+                icon = `/niconico/${iconPath}`;
             }
             catch (e) {
                 log.error(e);
@@ -110,33 +108,47 @@ class CommentIcons {
             try {
                 const num = Math.floor(list.length * Math.random());
                 const iconPath = list[num];
-                icon = fs_1.default.readFileSync(iconPath, { encoding: 'base64' });
+                icon = `/stt/${iconPath}`;
             }
             catch (e) {
                 log.error(e);
             }
             return icon;
         };
-        const randomDir = fs_1.default.existsSync(arg.bbs) ? arg.bbs : path_1.default.resolve(__dirname, `../public/img/random/`);
-        log.debug('loadRandomDir = ' + randomDir);
-        this.bbsIconList = readDir(randomDir);
+        if (fs_1.default.existsSync(arg.bbs)) {
+            const list = readDir(arg.bbs);
+            if (list.length > 0) {
+                this.bbsIconList = list;
+                this.bbsIconDir = arg.bbs;
+            }
+        }
         if (fs_1.default.existsSync(arg.youtube)) {
-            this.youtubeIconList = readDir(arg.youtube);
+            const list = readDir(arg.youtube);
+            if (list.length > 0) {
+                this.youtubeIconList = list;
+                this.youtubeIconDir = arg.youtube;
+            }
         }
         if (fs_1.default.existsSync(arg.twitch)) {
             const list = readDir(arg.twitch);
-            if (list.length > 0)
+            if (list.length > 0) {
                 this.twitchIconList = list;
+                this.twitchIconDir = arg.twitch;
+            }
         }
         if (fs_1.default.existsSync(arg.niconico)) {
             const list = readDir(arg.niconico);
-            if (list.length > 0)
+            if (list.length > 0) {
                 this.niconicoIconList = list;
+                this.niconicoIconDir = arg.niconico;
+            }
         }
         if (fs_1.default.existsSync(arg.stt)) {
             const list = readDir(arg.stt);
-            if (list.length > 0)
+            if (list.length > 0) {
                 this.sttIconList = list;
+                this.sttIconDir = arg.stt;
+            }
         }
         log.debug(this.bbsIconList);
         log.debug(this.youtubeIconList);
@@ -155,7 +167,8 @@ const readDir = (imgDir) => {
         const target = typeof file.name !== 'string' ? file : file.name;
         const regx = /.*\.png$/.test(target);
         if (regx) {
-            iconFileList.push(path_1.default.join(imgDir, target));
+            // iconFileList.push(path.join(imgDir, target as any) as any);
+            iconFileList.push(target);
         }
     });
     return iconFileList;
@@ -295,7 +308,7 @@ class AzureSpeechToText extends EventEmitter_1.EventEmitter {
                     imgUrl: globalThis.electron.iconList.getBbs(),
                     from: 'stt',
                 };
-                if (event_name === "comment") {
+                if (event_name === 'comment') {
                     this.emit(event_name, item);
                 }
             }
@@ -707,7 +720,7 @@ const threadUrlToBoardInfo = (threadUrl) => __awaiter(void 0, void 0, void 0, fu
             timeout: 3 * 1000,
             responseType: 'arraybuffer',
         };
-        const response = (yield instance(options));
+        const response = yield instance(options);
         if (response.status < 400) {
             const str = iconv_lite_1.default.decode(Buffer.from(response.data), encoding);
             str.split(/\n/g).map((text) => {
@@ -938,7 +951,6 @@ else {
     // app.allowRendererProcessReuse = true;
     const iconPath = path_1.default.resolve(__dirname, '../icon.png');
     // サーバー起動モジュール
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const ss = __webpack_require__(/*! ./startServer */ "./src/main/startServer.ts");
     console.trace(ss);
     // メインウィンドウはGCされないようにグローバル宣言
@@ -1225,7 +1237,7 @@ class NiconamaComment extends EventEmitter_1.EventEmitter {
         this.pollingStartBroadcast = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 /** 配信情報 */
-                const broadcastHisotoryUrl = `https://live.nicovideo.jp/front/api/v1/user-broadcast-history?providerId=${this.userId}&providerType=user&isIncludeNonPublic=false&offset=0&limit=100&withTotalCount=true`;
+                const broadcastHisotoryUrl = `https://live.nicovideo.jp/front/api/v2/user-broadcast-history?providerId=${this.userId}&providerType=user&isIncludeNonPublic=false&offset=0&limit=100&withTotalCount=true`;
                 const broadcastHisotory = (yield axios_1.default.get(broadcastHisotoryUrl)).data;
                 if (broadcastHisotory.meta.status !== 200) {
                     // たぶんサーバ側がエラーになってる
@@ -1264,7 +1276,7 @@ class NiconamaComment extends EventEmitter_1.EventEmitter {
         this.fetchComment = (liveId) => __awaiter(this, void 0, void 0, function* () {
             log.info(`[fetchComment] liveId = ${liveId}`);
             this.nicoliveClient = new NicoliveApi.NicoliveClient({ liveId: liveId });
-            this.nicoliveClient.on("chat", (chat) => {
+            this.nicoliveClient.on('chat', (chat) => {
                 const comment = chat.content;
                 if (!comment)
                     return;
@@ -1981,7 +1993,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createTranslateDom = exports.sendDom = exports.createDom = exports.findSeList = void 0;
 const path_1 = __importDefault(__webpack_require__(/*! path */ "path"));
 const express_1 = __importDefault(__webpack_require__(/*! express */ "express"));
-const axios_1 = __importDefault(__webpack_require__(/*! axios */ "axios"));
 const cors_1 = __importDefault(__webpack_require__(/*! cors */ "cors"));
 const electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "electron-log"));
 const dank_twitch_irc_1 = __webpack_require__(/*! dank-twitch-irc */ "dank-twitch-irc");
@@ -2138,6 +2149,17 @@ electron_1.ipcMain.on(const_1.electronEvent.START_SERVER, (event, config) => __a
         niconico: globalThis.config.iconDirNiconico,
         stt: globalThis.config.iconDirStt,
     });
+    // 各種アイコンをホストするためのパスを設定
+    if (globalThis.electron.iconList.bbsIconDir)
+        app.use('/bbs', express_1.default.static(globalThis.electron.iconList.bbsIconDir));
+    if (globalThis.electron.iconList.youtubeIconDir)
+        app.use('/youtube', express_1.default.static(globalThis.electron.iconList.youtubeIconDir));
+    if (globalThis.electron.iconList.twitchIconDir)
+        app.use('/twitch', express_1.default.static(globalThis.electron.iconList.twitchIconDir));
+    if (globalThis.electron.iconList.niconicoIconDir)
+        app.use('/niconico', express_1.default.static(globalThis.electron.iconList.niconicoIconDir));
+    if (globalThis.electron.iconList.sttIconDir)
+        app.use('/stt', express_1.default.static(globalThis.electron.iconList.niconicoIconDir));
     // SEを取得する
     if (globalThis.config.sePath) {
         (0, exports.findSeList)();
@@ -2442,13 +2464,11 @@ const startYoutubeChat = () => __awaiter(void 0, void 0, void 0, function* () {
         const createYoutubeComment = (comment) => __awaiter(void 0, void 0, void 0, function* () {
             var _a, _b;
             // log.info(JSON.stringify(comment, null, '  '));
-            let icon = globalThis.electron.iconList.getYoutube();
+            let icon = globalThis.electron.iconList.youtubeIconDir ? globalThis.electron.iconList.getYoutube() : '';
             const thumbnail = (_b = (_a = comment.author.thumbnail) === null || _a === void 0 ? void 0 : _a.url) !== null && _b !== void 0 ? _b : '';
             if (!icon && thumbnail) {
                 try {
-                    const thumbnailImgBuf = yield axios_1.default.get(thumbnail, { responseType: 'arraybuffer' });
-                    const b64 = Buffer.from(thumbnailImgBuf.data).toString('base64');
-                    icon = b64;
+                    icon = thumbnail;
                 }
                 catch (e) {
                     electron_log_1.default.warn(e);
@@ -2959,7 +2979,15 @@ exports.sendDom = sendDom;
 const sendDomForChatWindow = (messageList) => {
     const domStr2 = (0, util_1.judgeAaMessage)(messageList)
         .map((message) => {
-        const imgUrl = message.imgUrl && message.imgUrl.match(/^\./) ? '../../public/' + message.imgUrl : message.imgUrl;
+        let imgUrl = message.imgUrl;
+        // expressでホストしてそうなファイルパスならlocalhostを付与する
+        if (message.imgUrl.match(/^\//)) {
+            imgUrl = `http://localhost:${globalThis.config.port}${message.imgUrl}`;
+        }
+        // ローカルのファイルパスならpublicに補正する
+        if (message.imgUrl.match(/^\./)) {
+            imgUrl = `'../../public/${message.imgUrl}`;
+        }
         return Object.assign(Object.assign({}, message), { imgUrl });
     })
         .map((message) => (0, exports.createDom)(message, 'chat', message.isAA))
@@ -3133,7 +3161,8 @@ const unescapeHtml = (str) => {
 };
 exports.unescapeHtml = unescapeHtml;
 const convertUrltoImgTagSrc = (imgUrl) => {
-    return imgUrl.match(/.+\.(jpg|png|gif)$/) ? imgUrl : `data:image/png;base64,${imgUrl}`;
+    // return imgUrl.match(/.+\.(jpg|png|gif)$/) ? imgUrl : `data:image/png;base64,${imgUrl}`;
+    return imgUrl;
 };
 exports.convertUrltoImgTagSrc = convertUrltoImgTagSrc;
 const judgeAaMessage = (messageList) => {
@@ -3408,7 +3437,6 @@ class LiveChat extends EventEmitter_1.EventEmitter {
             }
             catch (e) {
                 log.error(e);
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 if (res) {
                     log.error(JSON.stringify(res.data));
                 }
