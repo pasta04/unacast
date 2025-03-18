@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/yudeunagi/unacast#readme",
   "dependencies": {
+    "@electron/remote": "^2.1.2",
     "axios": "^1.8.3",
     "body-parser": "^1.20.3",
     "cheerio": "1.0.0-rc.12",
@@ -47,7 +48,6 @@
   },
   "devDependencies": {
     "@electron/packager": "^18.3.6",
-    "@electron/remote": "^2.1.2",
     "@eslint/compat": "^1.2.7",
     "@eslint/eslintrc": "^3.3.0",
     "@eslint/js": "^9.22.0",
