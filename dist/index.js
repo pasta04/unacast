@@ -1050,6 +1050,7 @@ else {
             },
             skipTaskbar: true,
         });
+        remote.enable(mainWin.webContents);
         globalThis.electron.mainWindow = mainWin;
         windowState.manage(mainWin);
         mainWin.setTitle('unacast');
@@ -1078,7 +1079,6 @@ else {
             app.exit();
         });
         // 開発者ツールを開く
-        remote.enable(mainWin.webContents);
         // mainWin.webContents.openDevTools();
         // タスクトレイの設定
         let tray = null;
@@ -1156,13 +1156,13 @@ const createChatWindow = () => {
         // 閉じれなくする
         closable: false,
     });
+    remote.enable(chatWindow.webContents);
     windowState.manage(chatWindow);
     chatWindow.setTitle('unacast');
     chatWindow.setMenu(null);
     // レンダラーで使用するhtmlファイルを指定する
     chatWindow.loadURL('file://' + path_1.default.resolve(__dirname, '../src/html/chat.html'));
     globalThis.electron.chatWindow = chatWindow;
-    remote.enable(chatWindow.webContents);
     // chatWindow.webContents.openDevTools();
 };
 const createTranslateWindow = () => {
@@ -1188,6 +1188,7 @@ const createTranslateWindow = () => {
         // 閉じれなくする
         closable: false,
     });
+    remote.enable(translateWindow.webContents);
     windowState.manage(translateWindow);
     translateWindow.setTitle('unacast');
     translateWindow.setMenu(null);
@@ -1196,7 +1197,6 @@ const createTranslateWindow = () => {
     // 初期表示は最小化
     translateWindow.minimize();
     globalThis.electron.translateWindow = translateWindow;
-    remote.enable(translateWindow.webContents);
     // translateWindow.webContents.openDevTools();
 };
 const createImagePreviewWindow = () => {
@@ -1223,6 +1223,7 @@ const createImagePreviewWindow = () => {
         minHeight: 100,
         closable: true,
     });
+    remote.enable(childwindow.webContents);
     windowState.manage(childwindow);
     childwindow.setTitle('unacast');
     childwindow.setMenu(null);
@@ -1236,7 +1237,6 @@ const createImagePreviewWindow = () => {
         }, 10);
     });
     globalThis.electron.imagePreviewWindow = childwindow;
-    remote.enable(childwindow.webContents);
     // childwindow.webContents.openDevTools();
 };
 
