@@ -44,6 +44,7 @@
     "koffi": "^2.11.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.42.0",
     "paho-mqtt": "^1.1.0",
+    "sherpa-onnx": "^1.13.6",
     "ws": "^8.18.1"
   },
   "devDependencies": {

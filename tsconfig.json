@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     /* Basic Options */
-    "target": "ES2015" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */,
+    "target": "ES2020" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */,
     "module": "esnext" /* electron-vite が bundle する前提なので tsc は ESM 構文を受け入れるだけにする */,
     "noEmit": true /* 出力は electron-vite が行う。tsc は型チェック専用。これにより allowJs+src 配下の .js (googletrans.js / niconama/node.js) を上書きしようとする衝突を回避 */,
     // "lib": [],                             /* Specify library files to be included in the compilation. */

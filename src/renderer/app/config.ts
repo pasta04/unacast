@@ -85,6 +85,11 @@ export const defaultConfig: AppConfig = {
     language: 'ja-JP',
     inputDevice: 'default',
   },
+  sherpaStt: {
+    enable: false,
+    name: '',
+    inputDevice: 'default',
+  },
   audioOutputDevices: ['default'],
   external: {
     enabled: false,

@@ -26,6 +26,7 @@ import NiconamaComment from './niconama';
 import TwicasComment from './twicas';
 import JpnknFast from './jpnkn';
 import AzureSpeechToText from './azureStt';
+import SherpaSpeechToText from './sherpaStt';
 import tr from './googletrans';
 import CommentIcons from './CommentIcons';
 import { recordConnectionError, recordConnectionSuccess, resetAllConnectionErrors, setNotifyCallback } from './connectionErrorNotifier';
@@ -41,6 +42,9 @@ let bouyomi: bouyomiChan;
 
 /** VoiceVoxインスタンス */
 let voiceVox: VoiceVoxClient;
+
+/** SherpaSttインスタンス */
+let sherpaStt: SherpaSpeechToText;
 
 /** スレッド定期取得実行するか */
 let threadIntervalEvent = false;
@@ -531,6 +535,14 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     stt.start();
   }
 
+  // Local SpeechToText
+  if (globalThis.config.sherpaStt && globalThis.config.sherpaStt.enable) {
+    const stt = globalThis.electron.sherpaStt;
+    stt.name = globalThis.config.sherpaStt.name;
+    stt.inputDevice = globalThis.config.sherpaStt.inputDevice;
+    stt.start();
+  }
+
   // レス取得定期実行
   threadIntervalEvent = true;
   getResInterval(serverId);
@@ -838,6 +850,11 @@ ipcMain.on(electronEvent.STOP_SERVER, (event) => {
     globalThis.electron.azureStt.stop();
     globalThis.electron.azureStt.removeAllListeners();
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'stt', category: 'status', message: `connection end` });
+  }
+
+  // Local Speech To Textインターフェース
+  if (globalThis.electron.sherpaStt) {
+    globalThis.electron.sherpaStt.stop();
   }
 
   // 連続通信エラー検知の停止 (停止後に飛んでくる close 等で誤通知しないよう callback も外す)

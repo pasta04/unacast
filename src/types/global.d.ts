@@ -6,6 +6,7 @@ import TwicasComment from '../main/twicas';
 import JpnknFast from '../main/jpnkn';
 import CommentIcons from '../main/CommentIcons';
 import AzureSpeechToText from '../main/azureStt';
+import SherpaSpeechToText from '../main/sherpaStt';
 
 declare global {
   namespace electron {
@@ -30,6 +31,8 @@ declare global {
     let twitcastingChat: TwicasComment;
     /** Azure Speech To Text */
     let azureStt: AzureSpeechToText;
+    /** Sherpa Speech To Text */
+    let sherpaStt: SherpaSpeechToText;
     /** 掲示板の読み込み済みのレス番号 */
     let threadNumber: number;
     /** bbs 板のデフォルトネーム (SETTING.TXT の BBS_NONAME_NAME。匿名判定に使う) */
@@ -79,6 +82,15 @@ declare global {
       name: string;
       /** 認識言語 **/
       language: 'ja-JP' | 'en-US';
+      /** 入力デバイスID **/
+      inputDevice: string;
+    };
+
+    let sherpaStt: {
+      /** 有効にするかどうか **/
+      enable: boolean;
+      /** 発言者表示名 **/
+      name: string;
       /** 入力デバイスID **/
       inputDevice: string;
     };

@@ -1,6 +1,6 @@
 // Electronのモジュール
 import path from 'path';
-import electron, { Tray, Menu, dialog } from 'electron';
+import electron, { Tray, Menu, dialog, ipcMain } from 'electron';
 import * as remote from '@electron/remote/main';
 import log from 'electron-log';
 import { sleep } from './util';
@@ -9,6 +9,8 @@ import ElectronStore from 'electron-store';
 // サーバー起動モジュール (IPC ハンドラ等の副作用登録目的)
 import './startServer';
 import { initThreadBrowser } from './threadBrowser';
+import SherpaSpeechToText from './sherpaStt';
+import { electronEvent } from './const';
 remote.initialize();
 
 /**
@@ -76,6 +78,7 @@ if (!app.requestSingleInstanceLock()) {
     twitcastingChat: null as any,
     jpnknFast: null as any,
     azureStt: null as any,
+    sherpaStt: new SherpaSpeechToText(),
     threadNumber: 0,
     bbsDefaultName: '',
     jpnknDefaultName: '',
@@ -95,7 +98,7 @@ if (!app.requestSingleInstanceLock()) {
   // });
 
   // Electronの初期化完了後に実行
-  app.on('ready', () => {
+  app.on('ready', async () => {
     const windowState = windowStateKeeper({
       defaultWidth: 700,
       defaultHeight: 720,
@@ -127,7 +130,7 @@ if (!app.requestSingleInstanceLock()) {
     mainWin.setMenu(null);
 
     // // レンダラーで使用するhtmlファイルを指定する
-    mainWin.loadURL(resolveRendererUrl('index'));
+    await mainWin.loadURL(resolveRendererUrl('index'));
 
     // ウィンドウが閉じられたらアプリも終了
     mainWin.on('close', (event) => {
@@ -254,6 +257,7 @@ if (!app.requestSingleInstanceLock()) {
     createTranslateWindow();
     createImagePreviewWindow();
     initThreadBrowser(() => resolveRendererUrl('threadBrowser'));
+    initializeSherpaStt(globalThis.electron.sherpaStt);
 
     applyTaskbarState();
   });
@@ -408,3 +412,81 @@ const applyTaskbarState = () => {
     }
   }
 };
+
+const initializeSherpaStt = (stt: SherpaSpeechToText) => {
+  stt.on('start', () => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: `読み取り開始`,
+    });
+  });
+
+  stt.on('comment', (event) => {
+    globalThis.electron.commentQueueList.push({ ...event, imgUrl: globalThis.electron.iconList.getStt() });
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: `ok`,
+    });
+  });
+  // 読み取り終了
+  stt.on('end', () => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: `読み取り終了`,
+    });
+  });
+  stt.on('error', (error, message) => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: `${message}: ${error}`,
+    });
+  });
+  stt.on('status', (message) => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: message,
+    });
+  });
+
+  ipcMain.on(electronEvent.SHERPA_STT, async (event: any, command: string, args: any) => {
+    switch (command) {
+      case 'downloadModels':
+        {
+          await globalThis.electron.sherpaStt.downloadModels();
+          const status = globalThis.electron.sherpaStt.checkModels();
+          globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+            commentType: 'stt',
+            category: 'modelStatus',
+            message: status ? 'ダウンロード済み' : '未ダウンロード',
+          });
+        }
+        break;
+      case 'checkModelStatus':
+        {
+          const status = globalThis.electron.sherpaStt.checkModels();
+          globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+            commentType: 'stt',
+            category: 'modelStatus',
+            message: status ? 'ダウンロード済み' : '未ダウンロード',
+          });
+        }
+        break;
+    }
+  });
+
+  {
+    const status = globalThis.electron.sherpaStt.checkModels();
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'modelStatus',
+      message: status ? 'ダウンロード済み' : '未ダウンロード',
+    });
+  }
+
+};
+
