@@ -318,13 +318,9 @@ const buildConfigJson = () => {
   const bouyomiVolume = parseInt((document.getElementById('bouyomi-volume') as HTMLInputElement).value);
   const bouyomiPrefix = (document.getElementById('text-bouyomi-prefix') as HTMLInputElement).value;
   const voicevox = {
-    path: '',
-    speakerAndStyle: '',
+    path: (document.getElementById('text-voicevox-path') as HTMLInputElement).value,
+    speakerAndStyle: (document.getElementById('select-voicevox-style') as HTMLInputElement).value,
   };
-  // const voicevox = {
-  //   path: (document.getElementById('text-voicevox-path') as HTMLInputElement).value,
-  //   speakerAndStyle: (document.getElementById('select-voicevox-style') as HTMLInputElement).value,
-  // };
   const yomikoReplaceNewline = (document.getElementById('yomiko-replace-newline') as any).checked === true;
 
   // 読み上げ文字列置き換え
@@ -730,7 +726,7 @@ const loadConfigToLocalStrage = async () => {
   (document.getElementById('disp-bouyomi-volume') as any).innerHTML = config.bouyomiVolume;
   (document.getElementById('text-bouyomi-prefix') as any).value = config.bouyomiPrefix;
   (document.getElementById('bouyomi-volume') as any).value = config.bouyomiVolume;
-  // (document.getElementById('text-voicevox-path') as any).value = config.voicevox?.path || '';
+  (document.getElementById('text-voicevox-path') as any).value = config.voicevox?.path || '';
   (document.getElementById('text-notify-threadConnectionErrorLimit') as any).value = config.notifyThreadConnectionErrorLimit;
   (document.getElementById('text-notify-threadResLimit') as any).value = config.notifyThreadResLimit;
   (document.getElementById('moveThread') as any).checked = config.moveThread;

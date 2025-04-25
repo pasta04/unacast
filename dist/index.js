@@ -2094,7 +2094,7 @@ const util_1 = __webpack_require__(/*! ./util */ "./src/main/util.ts");
 // レス取得APIをセット
 const getRes_1 = __importStar(__webpack_require__(/*! ./getRes */ "./src/main/getRes.ts"));
 const bouyomi_chan_1 = __importDefault(__webpack_require__(/*! ./bouyomi-chan */ "./src/main/bouyomi-chan/index.ts"));
-// import VoiceVoxClient from './voicevox';
+const voicevox_1 = __importDefault(__webpack_require__(/*! ./voicevox */ "./src/main/voicevox/index.ts"));
 const child_process_1 = __webpack_require__(/*! child_process */ "child_process");
 const const_1 = __webpack_require__(/*! ./const */ "./src/main/const.ts");
 const niconama_1 = __importDefault(__webpack_require__(/*! ./niconama */ "./src/main/niconama/index.ts"));
@@ -2108,7 +2108,7 @@ let server;
 /** 棒読みちゃんインスタンス */
 let bouyomi;
 /** VoiceVoxインスタンス */
-// let voiceVox: VoiceVoxClient;
+let voiceVox;
 /** スレッド定期取得実行するか */
 let threadIntervalEvent = false;
 /** キュー処理実行するか */
@@ -2119,31 +2119,30 @@ let serverId = 0;
 /**
  * VOICEVOX の読み込み(Rendererからの要求による)
  */
-// const loadVoiceVox = async (config_voicevox: typeof config['voicevox'], force = false) => {
-//   if (!voiceVox?.available || force) {
-//     voiceVox = new VoiceVoxClient({ path: config_voicevox.path });
-//   }
-//   const configuration = {
-//     path: voiceVox.path,
-//     available: voiceVox.available,
-//     speakerAndStyle: config_voicevox.speakerAndStyle,
-//     speakers: voiceVox.speakers.reduce((state: { speaker: string; style: string }[], speaker) => {
-//       return state.concat(
-//         speaker.styles.map((style) => {
-//           return { speaker: speaker.name, style: style.name };
-//         }),
-//       );
-//     }, []),
-//   };
-//   globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_VOICEVOX_CONFIG, configuration);
-// };
-// ipcMain.on(electronEvent.LOAD_VOICEVOX, async (event: any, config_voicevox: typeof config['voicevox']) => {
-//   loadVoiceVox(config_voicevox, false);
-// });
+const loadVoiceVox = (config_voicevox_1, ...args_1) => __awaiter(void 0, [config_voicevox_1, ...args_1], void 0, function* (config_voicevox, force = false) {
+    if (!(voiceVox === null || voiceVox === void 0 ? void 0 : voiceVox.available) || force) {
+        voiceVox = new voicevox_1.default({ path: config_voicevox.path });
+    }
+    const configuration = {
+        path: voiceVox.path,
+        available: voiceVox.available,
+        speakerAndStyle: config_voicevox.speakerAndStyle,
+        speakers: voiceVox.speakers.reduce((state, speaker) => {
+            return state.concat(speaker.styles.map((style) => {
+                return { speaker: speaker.name, style: style.name };
+            }));
+        }, []),
+    };
+    globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_VOICEVOX_CONFIG, configuration);
+});
+electron_1.ipcMain.on(const_1.electronEvent.LOAD_VOICEVOX, (event, config_voicevox) => __awaiter(void 0, void 0, void 0, function* () {
+    loadVoiceVox(config_voicevox, false);
+}));
 /**
  * 設定の適用
  */
 electron_1.ipcMain.on(const_1.electronEvent.APPLY_CONFIG, (event, config) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
     electron_log_1.default.info('[apply-config] start');
     electron_log_1.default.info(config);
     // Configの変更内容に応じて何かする
@@ -2182,21 +2181,22 @@ electron_1.ipcMain.on(const_1.electronEvent.APPLY_CONFIG, (event, config) => __a
         globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'title', message: ret[0].threadTitle });
     }
     // VOICE VOX 関連
-    // if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
-    //   // VOICEVOX 利用の場合のみ
-    //   if (oldConfig.voicevox?.path !== config.voicevox?.path) {
-    //     // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
-    //     loadVoiceVox(config.voicevox, true);
-    //   } else {
-    //     // パスが変わっていない場合は未読み込みの時だけ読み込む
-    //     loadVoiceVox(config.voicevox, false);
-    //   }
-    // }
-    // if (voiceVox) {
-    //   voiceVox.speaker = config.voicevox?.speakerAndStyle || '';
-    //   voiceVox.prefix = config.bouyomiPrefix;
-    //   voiceVox.volume = config.bouyomiVolume;
-    // }
+    if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+        // VOICEVOX 利用の場合のみ
+        if (((_a = oldConfig.voicevox) === null || _a === void 0 ? void 0 : _a.path) !== ((_b = config.voicevox) === null || _b === void 0 ? void 0 : _b.path)) {
+            // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
+            loadVoiceVox(config.voicevox, true);
+        }
+        else {
+            // パスが変わっていない場合は未読み込みの時だけ読み込む
+            loadVoiceVox(config.voicevox, false);
+        }
+    }
+    if (voiceVox) {
+        voiceVox.speaker = ((_c = config.voicevox) === null || _c === void 0 ? void 0 : _c.speakerAndStyle) || '';
+        voiceVox.prefix = config.bouyomiPrefix;
+        voiceVox.volume = config.bouyomiVolume;
+    }
 }));
 /**
  * サーバー起動
@@ -2354,22 +2354,23 @@ electron_1.ipcMain.on(const_1.electronEvent.START_SERVER, (event, config) => __a
         }
     }
     // VoiceVox 接続
-    // if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
-    //   if (config.voicevox) {
-    //     if (!voiceVox?.available) {
-    //       voiceVox = new VoiceVoxClient({
-    //         path: config.voicevox.path,
-    //         speaker: config.voicevox.speakerAndStyle,
-    //         volume: config.bouyomiVolume,
-    //         prefix: config.bouyomiPrefix,
-    //       });
-    //     } else {
-    //       voiceVox.speaker = config.voicevox.speakerAndStyle;
-    //       voiceVox.volume = config.bouyomiVolume;
-    //       voiceVox.prefix = config.bouyomiPrefix;
-    //     }
-    //   }
-    // }
+    if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
+        if (config.voicevox) {
+            if (!(voiceVox === null || voiceVox === void 0 ? void 0 : voiceVox.available)) {
+                voiceVox = new voicevox_1.default({
+                    path: config.voicevox.path,
+                    speaker: config.voicevox.speakerAndStyle,
+                    volume: config.bouyomiVolume,
+                    prefix: config.bouyomiPrefix,
+                });
+            }
+            else {
+                voiceVox.speaker = config.voicevox.speakerAndStyle;
+                voiceVox.volume = config.bouyomiVolume;
+                voiceVox.prefix = config.bouyomiPrefix;
+            }
+        }
+    }
     // Azure SpeechToText
     if (globalThis.config.azureStt && globalThis.config.azureStt.enable && globalThis.config.azureStt.key && globalThis.config.azureStt.region) {
         const stt = new azureStt_1.default(globalThis.config.azureStt.name || '', globalThis.config.azureStt.key, globalThis.config.azureStt.region, globalThis.config.azureStt.language || 'ja-JP', globalThis.config.azureStt.inputDevice);
@@ -2829,11 +2830,12 @@ const playYomiko = (typeYomiko, msg) => __awaiter(void 0, void 0, void 0, functi
                 // TODO:強制的に発話を終了する
                 break;
             }
-            // case 'voicevox': {
-            //   // 強制的に発話を終了する
-            //   if (voiceVox) voiceVox.abort();
-            //   break;
-            // }
+            case 'voicevox': {
+                // 強制的に発話を終了する
+                if (voiceVox)
+                    voiceVox.abort();
+                break;
+            }
         }
     }
     isSpeaking = true;
@@ -2857,14 +2859,15 @@ const playYomiko = (typeYomiko, msg) => __awaiter(void 0, void 0, void 0, functi
             }
             break;
         }
-        // case 'voicevox': {
-        //   if (voiceVox) {
-        //     voiceVox.speak(msg);
-        //   } else {
-        //     isSpeaking = false;
-        //   }
-        //   break;
-        // }
+        case 'voicevox': {
+            if (voiceVox) {
+                voiceVox.speak(msg);
+            }
+            else {
+                isSpeaking = false;
+            }
+            break;
+        }
         default:
             isSpeaking = false;
             break;
@@ -3277,6 +3280,286 @@ const isNihongo = (message) => {
     return reg.test(message);
 };
 exports.isNihongo = isNihongo;
+
+
+/***/ }),
+
+/***/ "./src/main/voicevox/index.ts":
+/*!************************************!*\
+  !*** ./src/main/voicevox/index.ts ***!
+  \************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const const_1 = __webpack_require__(/*! ../const */ "./src/main/const.ts");
+const koffi_1 = __importDefault(__webpack_require__(/*! koffi */ "koffi"));
+const os_1 = __importDefault(__webpack_require__(/*! os */ "os"));
+const path_1 = __importDefault(__webpack_require__(/*! path */ "path"));
+const fs_1 = __importDefault(__webpack_require__(/*! fs */ "fs"));
+class UnavailableVoiceVoxCore {
+    constructor() {
+        this.available = false;
+        this.speakers = [];
+    }
+    speak(opts, message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return null;
+        });
+    }
+}
+class VoiceVoxCore_0_15 {
+    constructor(libpath, lib) {
+        const VoicevoxInitializeOptions = koffi_1.default.struct('VoicevoxInitializeOptions', {
+            accelerationMode: 'int',
+            cpuNumThreads: 'uint16',
+            loadAllModels: 'bool',
+            openJTalkDictDir: 'string',
+        });
+        const VoicevoxAudioQueryOptions = koffi_1.default.struct('VoicevoxAudioQueryOptions', {
+            kana: 'bool',
+        });
+        const VoicevoxSynthesisOptions = koffi_1.default.struct('VoicevoxSynthesisOptions', {
+            enable_interrogative_upspeak: 'bool',
+        });
+        const VoicevoxTtsOptions = koffi_1.default.struct('VoicevoxTtsOptions', {
+            kana: 'bool',
+            enable_interrogative_upspeak: 'bool',
+        });
+        try {
+            const voicevox_audio_query_json_free = lib.func('voicevox_audio_query_json_free', 'void', ['void*']);
+            const audio_query_json_type = koffi_1.default.disposable('audio_query_json_type', 'string', voicevox_audio_query_json_free);
+            this.voicevox_core = {
+                voicevox_initialize: lib.func('voicevox_initialize', 'int', [VoicevoxInitializeOptions]),
+                voicevox_get_metas_json: lib.func('voicevox_get_metas_json', 'string', []),
+                voicevox_make_default_audio_query_options: lib.func('voicevox_make_default_audio_query_options', VoicevoxAudioQueryOptions, []),
+                voicevox_audio_query: lib.func('voicevox_audio_query', 'int', ['string', 'uint32', VoicevoxAudioQueryOptions, koffi_1.default.out(koffi_1.default.pointer(audio_query_json_type))]),
+                voicevox_synthesis: lib.func('voicevox_synthesis', 'int', ['string', 'uint32', VoicevoxSynthesisOptions, koffi_1.default.out('uintptr_t*'), koffi_1.default.out('uint8**')]),
+                voicevox_wav_free: lib.func('voicevox_wav_free', 'void', ['uint8*']),
+                voicevox_is_model_loaded: lib.func('voicevox_is_model_loaded', 'bool', ['uint32']),
+                voicevox_load_model: lib.func('voicevox_load_model', 'int', ['uint32']),
+            };
+            const opts = {
+                accelerationMode: 0, // 利用モードは自動(GPUが使えれば使う)
+                cpuNumThreads: 0,
+                loadAllModels: false,
+                // 辞書ファイルの場所は今のところ固定(VOICEVOXインストール先/pyopenjtalk/open_jtalk_dic_utf_8-1.11)
+                openJTalkDictDir: path_1.default.join(libpath, 'pyopenjtalk', 'open_jtalk_dic_utf_8-1.11'),
+            };
+            if (this.voicevox_core.voicevox_initialize(opts) == 0) {
+                const metas = JSON.parse(this.voicevox_core.voicevox_get_metas_json());
+                this.speakers = metas;
+                this.available = true;
+            }
+            else {
+                this.speakers = [];
+                this.available = false;
+            }
+        }
+        catch (_a) {
+            this.available = false;
+            this.voicevox_core = null;
+            this.speakers = [];
+        }
+    }
+    /**
+     * 読み上げを開始します。
+     * @param opts VOICEVOX に読み上げオプション
+     * @param message VOICEVOX に読み上げてもらう文章
+     */
+    speak(opts, message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b, _c, _d, _e, _f;
+            /** 読み前に文字列を処理する */
+            const concatMessage = ((_a = opts.prefix) !== null && _a !== void 0 ? _a : '').concat(message);
+            const speakerAndStyle = ((_b = opts.speaker) !== null && _b !== void 0 ? _b : '\\').split('\\');
+            const speaker = this.speakers.find((speaker) => speaker.name === speakerAndStyle[0]) || this.speakers[0];
+            if (!speaker) {
+                return null;
+            }
+            const style = speaker.styles.find((style) => style.name === speakerAndStyle[1]) || speaker.styles[0];
+            if (!style) {
+                return null;
+            }
+            if (!this.voicevox_core.voicevox_is_model_loaded(style.id)) {
+                this.voicevox_core.voicevox_load_model(style.id);
+            }
+            const query_option = this.voicevox_core.voicevox_make_default_audio_query_options();
+            const audio_query = [null];
+            if (this.voicevox_core.voicevox_audio_query(concatMessage, style.id, query_option, audio_query) == 0) {
+                let audio_query_json = (_c = audio_query[0]) !== null && _c !== void 0 ? _c : '';
+                const audio_query_obj = JSON.parse(audio_query_json);
+                audio_query_obj.speed_scale = (_d = opts.speed) !== null && _d !== void 0 ? _d : 1.0;
+                audio_query_obj.pitch_scale = (_e = opts.pitch) !== null && _e !== void 0 ? _e : 0.0;
+                audio_query_obj.intonation_scale = (_f = opts.intonation) !== null && _f !== void 0 ? _f : 1.0;
+                audio_query_json = JSON.stringify(audio_query_obj);
+                const synthesis_opts = {
+                    enable_interrogative_upspeak: true,
+                };
+                const len = [0];
+                const wav = [null];
+                const result = this.voicevox_core.voicevox_synthesis(audio_query_json, style.id, synthesis_opts, len, wav);
+                if (result == 0) {
+                    const buf = koffi_1.default.decode(wav[0], 'uint8', len[0]);
+                    this.voicevox_core.voicevox_wav_free(wav[0]);
+                    return buf;
+                }
+            }
+            return null;
+        });
+    }
+}
+class VoiceVoxClient {
+    constructor(options) {
+        var _a, _b, _c;
+        /**
+         * 読み上げに使用する話者。
+         * 話者名とスタイル名を\で接続した文字列を格納する。
+         */
+        this.speaker = '';
+        /**
+         * 読み上げ音量 default=50 (0 ～ 100)
+         */
+        this.volume = 50;
+        /**
+         * 読み上げの際先頭に付加する文字列
+         */
+        this.prefix = '';
+        /**
+         * 速度倍率 default=1.0 (0.5 ～ 2.0)
+         */
+        this.speed = 1.0;
+        /**
+         * 音声ピッチ default=0.0 (-0.15 ～ 0.15)
+         */
+        this.pitch = 0.0;
+        /**
+         * 抑揚倍率 default=1.0 (0.0 ～ 2.0)
+         */
+        this.intonation = 1.0;
+        let voicevox_path = (options === null || options === void 0 ? void 0 : options.path) || '';
+        if (os_1.default.platform() == 'win32') {
+            // パスが設定されていれば指定したパスから VOICEVOX を読み込む。
+            // 設定されていない(空の場合)は VOICEVOX の既定のインストール先を検索する。
+            // Windows の場合は
+            // * C:/Program Files/VOICEVOX
+            // * C:/Users/(ユーザー名)/AppData/Local/Programs/VOICEVOX
+            // のいずれか
+            const programfilesPath = path_1.default.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'VOICEVOX');
+            const appdataPath = path_1.default.join(os_1.default.homedir(), 'AppData\\Local\\Programs\\VOICEVOX');
+            const search_paths = voicevox_path ? [voicevox_path] : [programfilesPath, appdataPath];
+            voicevox_path = search_paths.find((p) => fs_1.default.existsSync(path_1.default.join(p, 'voicevox_core.dll'))) || '';
+            if (!voicevox_path) {
+                // ver.0.16.1以降対応
+                const tmpDir = search_paths.find((p) => fs_1.default.existsSync(path_1.default.join(p, 'vv-engine/voicevox_core.dll'))) || '';
+                if (tmpDir)
+                    voicevox_path = path_1.default.join(tmpDir, 'vv-engine');
+            }
+            if (voicevox_path) {
+                const kernel32 = koffi_1.default.load('kernel32.dll');
+                const SetDllDirectoryW = kernel32.func('__stdcall', 'SetDllDirectoryW', 'int', ['str16']);
+                SetDllDirectoryW(voicevox_path);
+            }
+        }
+        else if (os_1.default.platform() == 'darwin') {
+            // macOS の場合は
+            // * /Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
+            // * $HOME/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
+            // のいずれか
+            const appDir = '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS';
+            const userAppDir = path_1.default.join(os_1.default.homedir(), '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS');
+            const search_paths = voicevox_path ? [voicevox_path] : [appDir, userAppDir];
+            voicevox_path = search_paths.find((p) => fs_1.default.existsSync(path_1.default.join(p, 'libvoicevox_core.dylib'))) || '';
+        }
+        try {
+            const voicevox_core = koffi_1.default.load('voicevox_core');
+            const voicevox_get_version = voicevox_core.func('string voicevox_get_version()');
+            const version = voicevox_get_version()
+                .split('.')
+                .map((v) => parseInt(v, 10));
+            const major = version[0];
+            const minor = version[1];
+            if (major === 0 && minor <= 15) {
+                this.voicevox_core = new VoiceVoxCore_0_15(voicevox_path, voicevox_core);
+            }
+            else {
+                // VOICEVOX Core の 0.16 以降(VOICEVOXの0.16以降ではない)は API が変わっている。
+                // 未対応
+                this.voicevox_core = new UnavailableVoiceVoxCore();
+            }
+            if (this.voicevox_core.available) {
+                this.path = voicevox_path;
+            }
+            else {
+                this.path = options === null || options === void 0 ? void 0 : options.path;
+            }
+        }
+        catch (_d) {
+            this.voicevox_core = new UnavailableVoiceVoxCore();
+            this.path = options === null || options === void 0 ? void 0 : options.path;
+        }
+        this.speaker = (_a = options === null || options === void 0 ? void 0 : options.speaker) !== null && _a !== void 0 ? _a : '';
+        this.volume = (_b = options === null || options === void 0 ? void 0 : options.volume) !== null && _b !== void 0 ? _b : 50;
+        this.prefix = (_c = options === null || options === void 0 ? void 0 : options.prefix) !== null && _c !== void 0 ? _c : '';
+    }
+    /**
+     * VOICEVOX が使えるかどうか。
+     * 読み込めたら true になる。
+     */
+    get available() {
+        return this.voicevox_core.available;
+    }
+    /**
+     * 読み込んだ VOICEVOX で利用できる話者のリスト。
+     */
+    get speakers() {
+        return this.voicevox_core.speakers;
+    }
+    /**
+     * 読み上げを開始します。
+     * @param message VOICEVOX に読み上げてもらう文章
+     */
+    speak(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const opts = {
+                speaker: this.speaker,
+                prefix: this.prefix,
+                volume: this.volume,
+                speed: this.speed,
+                pitch: this.pitch,
+                intonation: this.intonation,
+            };
+            const buf = yield this.voicevox_core.speak(opts, message);
+            if (buf !== null) {
+                // VOICEVOX は WAV のデータを出力してくるので実際の再生は renderer プロセスにお願いする。
+                globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.SPEAK_WAV, { wavblob: buf, volume: this.volume, deviceId: undefined });
+                return true;
+            }
+            else {
+                return false;
+            }
+        });
+    }
+    /**
+     * 読み上げを中断します。
+     */
+    abort() {
+        globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.ABORT_WAV);
+    }
+}
+exports["default"] = VoiceVoxClient;
 
 
 /***/ }),
@@ -3899,6 +4182,16 @@ module.exports = require("https");
 /***/ ((module) => {
 
 module.exports = require("iconv-lite");
+
+/***/ }),
+
+/***/ "koffi":
+/*!************************!*\
+  !*** external "koffi" ***!
+  \************************/
+/***/ ((module) => {
+
+module.exports = require("koffi");
 
 /***/ }),
 
