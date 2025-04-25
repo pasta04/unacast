@@ -47,7 +47,7 @@ let serverId = 0;
 /**
  * VOICEVOX の読み込み(Rendererからの要求による)
  */
-const loadVoiceVox = async (config_voicevox: typeof config['voicevox'], force = false) => {
+const loadVoiceVox = async (config_voicevox: (typeof config)['voicevox'], force = false) => {
   if (!voiceVox?.available || force) {
     voiceVox = new VoiceVoxClient({ path: config_voicevox.path });
   }
@@ -66,7 +66,7 @@ const loadVoiceVox = async (config_voicevox: typeof config['voicevox'], force = 
   globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_VOICEVOX_CONFIG, configuration);
 };
 
-ipcMain.on(electronEvent.LOAD_VOICEVOX, async (event: any, config_voicevox: typeof config['voicevox']) => {
+ipcMain.on(electronEvent.LOAD_VOICEVOX, async (event: any, config_voicevox: (typeof config)['voicevox']) => {
   loadVoiceVox(config_voicevox, false);
 });
 
