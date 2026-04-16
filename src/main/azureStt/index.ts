@@ -35,6 +35,7 @@ class AzureSpeechToText extends EventEmitter<EventMap> {
           date: arg.date,
           text: arg.text,
           imgUrl: globalThis.electron.iconList.getBbs(),
+          type: 'comment',
           from: 'stt',
         };
         if (event_name === 'comment') {

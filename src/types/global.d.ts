@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import { ChatClient } from 'dank-twitch-irc';
 import { LiveChat } from '../main/youtube-chat';
 import NiconamaComment from '../main/niconama';
+import TwicasComment from '../main/twicas';
 import JpnknFast from '../main/jpnkn';
 import CommentIcons from '../main/CommentIcons';
 import AzureSpeechToText from '../main/azureStt';
@@ -25,6 +26,8 @@ declare global {
     let jpnknFast: JpnknFast;
     /** ニコ生チャットインスタンス */
     let niconicoChat: NiconamaComment;
+    /** ツイキャス */
+    let twitcastingChat: TwicasComment;
     /** Azure Speech To Text */
     let azureStt: AzureSpeechToText;
     /** 掲示板の読み込み済みのレス番号 */
@@ -49,6 +52,8 @@ declare global {
     let twitchId: string;
     /** ニコニココミュニティID */
     let niconicoId: string;
+    /** ツイキャスユーザID */
+    let twitcastingId: string;
 
     /** Azure Speech To Text 設定 **/
     let azureStt: {
@@ -123,6 +128,8 @@ declare global {
     let iconDirTwitch: string;
     /** iconのパス niconico */
     let iconDirNiconico: string;
+    /** iconのパス twicas */
+    let iconDirTwitcasting: string;
     /** iconのパス 音声認識 */
     let iconDirStt: string;
     /** レス着信音のパス */
