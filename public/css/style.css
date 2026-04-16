@@ -57,3 +57,16 @@ h5 {
   font-weight: bold;
   margin-right: 0.3em;
 }
+
+/* VOICEVOX 設定は読み子に VOCIEVOX が指定されているときのみ表示する。 */
+#config-section-voicevox {
+  display: none;
+}
+
+div:has(#yomiko_voicevox:checked) ~ #config-section-voicevox {
+  display: block;
+}
+
+div:has(#yomiko_stt_voicevox:checked) ~ #config-section-voicevox {
+  display: block;
+}
