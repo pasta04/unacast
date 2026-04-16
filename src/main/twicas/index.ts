@@ -180,6 +180,7 @@ class TwicasComment extends EventEmitter<EventMap> {
 
   private reconnect() {
     clearTimeout(this.reconnectTimer);
+    if (this.status === 'wait') return;
 
     this.status = 'polling';
     this.reconnectTimer = setTimeout(() => {
@@ -246,6 +247,7 @@ class TwicasComment extends EventEmitter<EventMap> {
     this.commentSocket = new WebSocket(url);
     this.commentSocket.on('open', () => {
       log.info('接続成功');
+      this.emit('open', { liveId: this.liveId, number: -1 });
     });
 
     this.commentSocket.on('message', (data) => {
@@ -259,6 +261,7 @@ class TwicasComment extends EventEmitter<EventMap> {
 
     this.commentSocket.on('error', (err) => {
       log.error('WebSocketエラー:', err);
+      this.emit('error', new Error('コメントサーバの接続でエラー'));
     });
   };
 
@@ -321,12 +324,12 @@ class TwicasComment extends EventEmitter<EventMap> {
 
   /** コメント取得の停止 */
   public stop = () => {
+    this.status = 'wait';
     this.isFirstCommentReceived = false;
     this.latestNo = NaN;
     this.liveId = '';
     this.commentSocket?.close();
     this.emit('end');
-    this.status = 'wait';
     clearTimeout(this.reconnectTimer);
   };
 

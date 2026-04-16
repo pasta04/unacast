@@ -281,10 +281,11 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
 
     twicas.on('open', (event) => {
+      const message = event.number ? `ok No=${event.number}` : 'ok';
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
         commentType: 'twitcasting',
         category: 'status',
-        message: `ok No=${event.number}`,
+        message: message,
       });
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
         commentType: 'twitcasting',
@@ -294,7 +295,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
     // 初期チャット受信
     twicas.on('firstComment', (comments) => {
-      const list: UserComment[] = comments.map((item) => {
+      let list: UserComment[] = comments.map((item) => {
         return {
           name: item.name,
           number: item.number,
@@ -302,6 +303,9 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
           text: item.comment,
         } as UserComment;
       });
+      if (!globalThis.config.dispSort) {
+        list = list.reverse();
+      }
       // チャットウィンドウだけに出力
       sendDomForChatWindow(list);
     });
