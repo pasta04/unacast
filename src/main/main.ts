@@ -45,6 +45,7 @@ if (!app.requestSingleInstanceLock()) {
     twitchChat: null as any,
     youtubeChat: null as any,
     niconicoChat: null as any,
+    twitcastingChat: null as any,
     jpnknFast: null as any,
     azureStt: null as any,
     threadConnectionError: 0,

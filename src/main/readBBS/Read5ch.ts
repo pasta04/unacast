@@ -389,6 +389,7 @@ const parseResponse = (res: string, num: number) => {
     threadTitle: splitRes[4] ? splitRes[4] : '',
     id: id,
     imgUrl: '',
+    type: 'comment',
     from: 'bbs',
   };
 

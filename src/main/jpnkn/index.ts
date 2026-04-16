@@ -102,6 +102,7 @@ class JpnknFast extends EventEmitter<EventMap> {
         threadTitle: '',
         id: '',
         email: res[1],
+        type: 'comment',
         from: 'jpnkn',
       };
       this.emit('comment', item);

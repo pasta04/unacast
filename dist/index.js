@@ -30,6 +30,8 @@ class CommentIcons {
         this.twitchIconList = ['twitch.png'];
         this.niconicoIconDir = path_1.default.resolve(__dirname, `../public/img/`);
         this.niconicoIconList = ['niconico.png'];
+        this.twitcastingIconDir = path_1.default.resolve(__dirname, `../public/img/`);
+        this.twitcastingIconList = ['twitcasting.png'];
         this.sttIconDir = '';
         this.sttIconList = [];
         // /**
@@ -101,6 +103,18 @@ class CommentIcons {
             }
             return icon;
         };
+        this.getTwitcasting = () => {
+            let icon = '';
+            try {
+                const num = Math.floor(this.twitcastingIconList.length * Math.random());
+                const iconPath = this.twitcastingIconList[num];
+                icon = `/twitcasting/${iconPath}`;
+            }
+            catch (e) {
+                log.error(e);
+            }
+            return icon;
+        };
         this.getStt = () => {
             let icon = '';
             // 専用アイコンがなければ BBS のアイコンを使う
@@ -143,6 +157,13 @@ class CommentIcons {
                 this.niconicoIconDir = arg.niconico;
             }
         }
+        if (fs_1.default.existsSync(arg.twitcasting)) {
+            const list = readDir(arg.twitcasting);
+            if (list.length > 0) {
+                this.twitcastingIconList = list;
+                this.twitcastingIconDir = arg.twitcasting;
+            }
+        }
         if (fs_1.default.existsSync(arg.stt)) {
             const list = readDir(arg.stt);
             if (list.length > 0) {
@@ -154,6 +175,7 @@ class CommentIcons {
         log.debug(this.youtubeIconList);
         log.debug(this.twitchIconList);
         log.debug(this.niconicoIconList);
+        log.debug(this.twitcastingIconList);
         log.debug(this.sttIconList);
     }
 }
@@ -306,6 +328,7 @@ class AzureSpeechToText extends EventEmitter_1.EventEmitter {
                     date: arg.date,
                     text: arg.text,
                     imgUrl: globalThis.electron.iconList.getBbs(),
+                    type: 'comment',
                     from: 'stt',
                 };
                 if (event_name === 'comment') {
@@ -617,6 +640,7 @@ const getRes = (threadUrl, resNum) => __awaiter(void 0, void 0, void 0, function
                         name: 'unacastより',
                         imgUrl: './img/unacast.png',
                         text: '掲示板が規定回数通信エラーになりました。設定を見直すか、掲示板URLを変更してください。',
+                        type: 'comment',
                         from: 'system',
                     },
                 ];
@@ -872,6 +896,7 @@ class JpnknFast extends EventEmitter_1.EventEmitter {
                     threadTitle: '',
                     id: '',
                     email: res[1],
+                    type: 'comment',
                     from: 'jpnkn',
                 };
                 this.emit('comment', item);
@@ -1014,6 +1039,7 @@ else {
         twitchChat: null,
         youtubeChat: null,
         niconicoChat: null,
+        twitcastingChat: null,
         jpnknFast: null,
         azureStt: null,
         threadConnectionError: 0,
@@ -1788,6 +1814,7 @@ const parseResponse = (res, num) => {
         threadTitle: splitRes[4] ? splitRes[4] : '',
         id: id,
         imgUrl: '',
+        type: 'comment',
         from: 'bbs',
     };
     // オブジェクトを返却
@@ -2014,6 +2041,7 @@ const purseResponse = (res) => {
         threadTitle: splitRes[5] ? splitRes[5] : '',
         id: splitRes[6],
         imgUrl: '',
+        type: 'comment',
         from: 'bbs',
     };
     // オブジェクトを返却
@@ -2098,6 +2126,7 @@ const bouyomi_chan_1 = __importDefault(__webpack_require__(/*! ./bouyomi-chan */
 const child_process_1 = __webpack_require__(/*! child_process */ "child_process");
 const const_1 = __webpack_require__(/*! ./const */ "./src/main/const.ts");
 const niconama_1 = __importDefault(__webpack_require__(/*! ./niconama */ "./src/main/niconama/index.ts"));
+const twicas_1 = __importDefault(__webpack_require__(/*! ./twicas */ "./src/main/twicas/index.ts"));
 const jpnkn_1 = __importDefault(__webpack_require__(/*! ./jpnkn */ "./src/main/jpnkn/index.ts"));
 const azureStt_1 = __importDefault(__webpack_require__(/*! ./azureStt */ "./src/main/azureStt/index.ts"));
 const googletrans_1 = __importDefault(__webpack_require__(/*! ./googletrans */ "./src/main/googletrans.js"));
@@ -2163,6 +2192,7 @@ electron_1.ipcMain.on(const_1.electronEvent.APPLY_CONFIG, (event, config) => __a
         youtube: config.iconDirYoutube,
         twitch: config.iconDirTwitch,
         niconico: config.iconDirNiconico,
+        twitcasting: config.iconDirTwitcasting,
         stt: config.iconDirStt,
     });
     // スレのURLが変わった
@@ -2238,6 +2268,7 @@ electron_1.ipcMain.on(const_1.electronEvent.START_SERVER, (event, config) => __a
         youtube: globalThis.config.iconDirYoutube,
         twitch: globalThis.config.iconDirTwitch,
         niconico: globalThis.config.iconDirNiconico,
+        twitcasting: globalThis.config.iconDirTwitcasting,
         stt: globalThis.config.iconDirStt,
     });
     // 各種アイコンをホストするためのパスを設定
@@ -2249,8 +2280,10 @@ electron_1.ipcMain.on(const_1.electronEvent.START_SERVER, (event, config) => __a
         app.use('/twitch', express_1.default.static(globalThis.electron.iconList.twitchIconDir));
     if (globalThis.electron.iconList.niconicoIconDir)
         app.use('/niconico', express_1.default.static(globalThis.electron.iconList.niconicoIconDir));
+    if (globalThis.electron.iconList.twitcastingIconDir)
+        app.use('/twitcasting', express_1.default.static(globalThis.electron.iconList.twitcastingIconDir));
     if (globalThis.electron.iconList.sttIconDir)
-        app.use('/stt', express_1.default.static(globalThis.electron.iconList.niconicoIconDir));
+        app.use('/stt', express_1.default.static(globalThis.electron.iconList.sttIconDir));
     // SEを取得する
     if (globalThis.config.sePath) {
         (0, exports.findSeList)();
@@ -2291,6 +2324,7 @@ electron_1.ipcMain.on(const_1.electronEvent.START_SERVER, (event, config) => __a
                 number: event.number,
                 name: event.name,
                 text: event.comment,
+                type: 'comment',
                 from: 'niconico',
             });
             globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, {
@@ -2311,6 +2345,79 @@ electron_1.ipcMain.on(const_1.electronEvent.START_SERVER, (event, config) => __a
             globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'niconico', category: 'status', message: `error` });
         });
         nico.start();
+    }
+    // ツイキャス
+    if (globalThis.config.twitcastingId) {
+        const twicas = new twicas_1.default({ userId: globalThis.config.twitcastingId });
+        globalThis.electron.twitcastingChat = twicas;
+        twicas.on('start', () => {
+            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `connection waiting` });
+        });
+        twicas.on('wait', () => {
+            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `wait for starting boradcast` });
+        });
+        twicas.on('open', (event) => {
+            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, {
+                commentType: 'twitcasting',
+                category: 'status',
+                message: `ok No=${event.number}`,
+            });
+            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, {
+                commentType: 'twitcasting',
+                category: 'liveId',
+                message: `${event.liveId}`,
+            });
+        });
+        // 初期チャット受信
+        twicas.on('firstComment', (comments) => {
+            const list = comments.map((item) => {
+                return {
+                    name: item.name,
+                    number: item.number,
+                    imgUrl: item.imgUrl,
+                    text: item.comment,
+                };
+            });
+            // チャットウィンドウだけに出力
+            sendDomForChatWindow(list);
+        });
+        twicas.on('comment', (event) => {
+            globalThis.electron.commentQueueList.push({
+                imgUrl: event.imgUrl,
+                number: event.number,
+                name: event.name,
+                text: event.comment,
+                type: 'comment',
+                from: 'twitcasting',
+            });
+            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, {
+                commentType: 'twitcasting',
+                category: 'status',
+                message: `ok No=${event.number}`,
+            });
+        });
+        twicas.on('gift', (event) => {
+            globalThis.electron.commentQueueList.push({
+                imgUrl: event.imgUrl,
+                name: event.name,
+                text: event.comment,
+                gift: event.gift,
+                type: 'gift',
+                from: 'twitcasting',
+            });
+        });
+        // 切断とか枠終了とか
+        twicas.on('end', () => {
+            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, {
+                commentType: 'twitcasting',
+                category: 'status',
+                message: `disconnect`,
+            });
+        });
+        twicas.on('error', () => {
+            globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `error` });
+        });
+        twicas.start();
     }
     // jpnkn
     if (globalThis.config.jpnknFastBoardId) {
@@ -2455,6 +2562,7 @@ const commentTest = () => __awaiter(void 0, void 0, void 0, function* () {
                 name: 'ななしさん',
                 text: text,
                 imgUrl: './img/unacast.png',
+                type: 'comment',
                 from: 'bbs',
             },
         ]);
@@ -2513,7 +2621,7 @@ const startTwitchChat = () => __awaiter(void 0, void 0, void 0, function* () {
                     text = text.replace(emote.code, `<img src="https://static-cdn.jtvnw.net/emoticons/v1/${emote.id}/${globalThis.config.emoteSize}.0" />`);
                 });
             }
-            globalThis.electron.commentQueueList.push({ imgUrl, name, text, from: 'twitch' });
+            globalThis.electron.commentQueueList.push({ imgUrl, name, text, type: 'comment', from: 'twitch' });
         });
         globalThis.electron.twitchChat = twitchChat;
         // なんかエラーがあった
@@ -2583,7 +2691,7 @@ const startYoutubeChat = () => __awaiter(void 0, void 0, void 0, function* () {
                 }
             }
             // const text = escapeHtml((comment.message[0] as any).text);
-            return { imgUrl, name, text, from: 'youtube' };
+            return { imgUrl, name, text, type: 'comment', from: 'youtube' };
         });
         // 初期チャット受信
         globalThis.electron.youtubeChat.on('firstComment', (comment) => {
@@ -2645,6 +2753,13 @@ electron_1.ipcMain.on(const_1.electronEvent.STOP_SERVER, (event) => {
         globalThis.electron.niconicoChat.removeAllListeners();
         globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'niconico', category: 'status', message: `connection end` });
         globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'niconico', category: 'liveId', message: `none` });
+    }
+    // ツイキャスチャットの停止
+    if (globalThis.electron.twitcastingChat) {
+        globalThis.electron.twitcastingChat.stop();
+        globalThis.electron.twitcastingChat.removeAllListeners();
+        globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `connection end` });
+        globalThis.electron.mainWindow.webContents.send(const_1.electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'liveId', message: `none` });
     }
     // jpnkn Fastインターフェース
     if (globalThis.electron.jpnknFast) {
@@ -2726,6 +2841,7 @@ const notifyThreadResLimit = () => __awaiter(void 0, void 0, void 0, function* (
                 name: 'unacastより',
                 imgUrl: './img/unacast.png',
                 text: `レスが${globalThis.config.notifyThreadResLimit}を超えました。次スレを立ててください。`,
+                type: 'comment',
                 from: 'system',
             },
         ]);
@@ -2750,6 +2866,7 @@ const checkAutoMoveThread = () => __awaiter(void 0, void 0, void 0, function* ()
         name: 'unacastより',
         imgUrl: './img/unacast.png',
         text: `レス1000を超えました。次スレ候補 「${target.name}」 に移動します`,
+        type: 'comment',
         from: 'system',
     });
     globalThis.config.url = target.url;
@@ -3182,6 +3299,273 @@ electron_1.ipcMain.on(const_1.electronEvent.PREVIEW_IMAGE, (event, url) => {
     globalThis.electron.imagePreviewWindow.show();
 });
 exports["default"] = {};
+
+
+/***/ }),
+
+/***/ "./src/main/twicas/index.ts":
+/*!**********************************!*\
+  !*** ./src/main/twicas/index.ts ***!
+  \**********************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+/**
+ * ニコ生コメント
+ */
+const EventEmitter_1 = __webpack_require__(/*! ../EventEmitter */ "./src/main/EventEmitter.ts");
+const axios_1 = __importDefault(__webpack_require__(/*! axios */ "axios"));
+const electron_log_1 = __importDefault(__webpack_require__(/*! electron-log */ "electron-log"));
+const log = electron_log_1.default.scope('twicas');
+const util_1 = __webpack_require__(/*! ../util */ "./src/main/util.ts");
+const ws_1 = __importDefault(__webpack_require__(/*! ws */ "ws"));
+class TwicasComment extends EventEmitter_1.EventEmitter {
+    constructor(options) {
+        super();
+        /** TwicasユーザID */
+        this.userId = '';
+        /** 配信開始待ちのインターバル(ms) */
+        this.waitBroadcastPollingInterval = 5000;
+        /** 初期処理のコメントを受信し終わった */
+        this.isFirstCommentReceived = false;
+        /** 最新のコメント番号 */
+        this.latestNo = NaN;
+        this.liveId = '';
+        this.status = 'wait';
+        /** コメント取得のWebSocket */
+        this.commentSocket = null;
+        this.fetchLatestMovie = (userid) => __awaiter(this, void 0, void 0, function* () {
+            const url = `https://twitcasting.tv/streamserver.php?target=${userid}&mode=client`;
+            try {
+                log.info(url);
+                const res = (yield axios_1.default.get(url)).data;
+                log.info(JSON.stringify(res.movie));
+                if (res.movie) {
+                    return res.movie;
+                }
+                else {
+                    // 配信履歴が無いパターン
+                    return { id: '', live: false };
+                }
+            }
+            catch (e) {
+                return { id: '', live: false };
+            }
+        });
+        this.fetchEventpubsuburl = (movie_id_1, ...args_1) => __awaiter(this, [movie_id_1, ...args_1], void 0, function* (movie_id, password = '') {
+            const url = `https://twitcasting.tv/eventpubsuburl.php`;
+            const formdata = new FormData();
+            formdata.append('movie_id', movie_id);
+            formdata.append('__n', new Date().getTime().toString());
+            formdata.append('password', password);
+            try {
+                log.info(`${url} body= ${JSON.stringify(formdata)}`);
+                const res = (yield axios_1.default.post(url, formdata)).data;
+                log.info(res);
+                return res.url;
+            }
+            catch (e) {
+                log.error(e);
+                return '';
+            }
+        });
+        /** 配信開始待ち */
+        this.pollingStartBroadcast = () => __awaiter(this, void 0, void 0, function* () {
+            if (this.status !== 'polling')
+                return;
+            try {
+                // 動画IDの取得
+                const movie = yield this.fetchLatestMovie(this.userId);
+                if (!movie.id || !movie.live) {
+                    log.info(`Twicas live is not broadcasting. userId = ${this.userId}`);
+                    yield (0, util_1.sleep)(this.waitBroadcastPollingInterval);
+                    this.pollingStartBroadcast();
+                }
+                else {
+                    this.emit('start');
+                    this.status = 'start';
+                    this.liveId = movie.id.toString();
+                    this.fetchComment();
+                }
+            }
+            catch (e) {
+                this.emit('error', new Error(`connection error`));
+                log.error(JSON.stringify(e, null, '  '));
+                yield (0, util_1.sleep)(this.waitBroadcastPollingInterval * 2);
+                this.pollingStartBroadcast();
+            }
+        });
+        /**
+         * 初期コメント取得
+         */
+        this.fetchInitComment = () => __awaiter(this, void 0, void 0, function* () {
+            const time = new Date().getTime();
+            const commentNum = 50;
+            const url = `https://twitcasting.tv/${this.userId}/userajax.php?c=listall&m=${this.liveId}&n=${commentNum}&f=0&k=0&format=json&__n=${time}`;
+            try {
+                const res = (yield axios_1.default.get(url)).data;
+                const list = res.comments.map((item) => {
+                    switch (item.type) {
+                        case 'comment': {
+                            return {
+                                name: item.author.name,
+                                imgUrl: item.author.profileImage,
+                                comment: item.message,
+                                number: '',
+                            };
+                        }
+                        case 'gift': {
+                            return {
+                                name: item.sender.name,
+                                imgUrl: item.sender.profileImage,
+                                comment: `${item.item.name}\n${item.message}`,
+                                number: '',
+                            };
+                        }
+                    }
+                });
+                return list;
+            }
+            catch (e) {
+                log.error(e);
+                return [];
+            }
+        });
+        /**
+         * コメント取得
+         * @param liveId liveID
+         */
+        this.fetchComment = () => __awaiter(this, void 0, void 0, function* () {
+            if (!this.liveId)
+                return;
+            log.info(`[fetchComment] liveId = ${this.liveId}`);
+            /** コメントサーバのURL */
+            const url = yield this.fetchEventpubsuburl(this.liveId);
+            if (!url)
+                throw new Error('failed to fetch comment server URL');
+            // 初期コメント取得
+            if (!this.isFirstCommentReceived) {
+                const list = yield this.fetchInitComment();
+                this.emit('firstComment', list);
+                this.isFirstCommentReceived = true;
+            }
+            this.commentSocket = new ws_1.default(url);
+            this.commentSocket.on('open', () => {
+                log.info('接続成功');
+            });
+            this.commentSocket.on('message', (data) => {
+                this.handleMessage(data.toString());
+            });
+            this.commentSocket.on('close', () => {
+                log.info('切断されました。5秒後に再接続します...');
+                this.reconnect();
+            });
+            this.commentSocket.on('error', (err) => {
+                log.error('WebSocketエラー:', err);
+            });
+        });
+        /** コメント取得の停止 */
+        this.stop = () => {
+            var _a;
+            this.isFirstCommentReceived = false;
+            this.latestNo = NaN;
+            this.liveId = '';
+            (_a = this.commentSocket) === null || _a === void 0 ? void 0 : _a.close();
+            this.emit('end');
+            this.status = 'wait';
+            clearTimeout(this.reconnectTimer);
+        };
+        if ('userId' in options) {
+            this.userId = options.userId;
+        }
+        else {
+            throw TypeError('Required channelId.');
+        }
+    }
+    start() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.userId) {
+                this.emit('wait');
+                this.status = 'polling';
+                this.pollingStartBroadcast();
+            }
+        });
+    }
+    reconnect() {
+        clearTimeout(this.reconnectTimer);
+        this.status = 'polling';
+        this.reconnectTimer = setTimeout(() => {
+            this.pollingStartBroadcast();
+        }, 5000);
+    }
+    handleMessage(raw) {
+        try {
+            const parsed = JSON.parse(raw);
+            for (const event of parsed) {
+                switch (event.type) {
+                    case 'comment':
+                        this.handleComment(event);
+                        break;
+                    case 'gift':
+                        this.handleGift(event);
+                        break;
+                    default:
+                        log.info('その他イベント:', event);
+                }
+            }
+        }
+        catch (err) {
+            log.error('JSON解析失敗:', raw);
+        }
+    }
+    handleComment(comment) {
+        const time = new Date(comment.createdAt).toLocaleString('ja-JP');
+        const name = comment.author.name;
+        const message = comment.message;
+        const num = comment.numComments;
+        const icon = comment.author.profileImage;
+        const payload = {
+            name: name,
+            imgUrl: icon,
+            comment: message,
+            number: num.toString(),
+        };
+        this.emit('comment', payload);
+    }
+    handleGift(gift) {
+        const time = new Date(gift.createdAt).toLocaleString('ja-JP');
+        const name = gift.sender.name;
+        const icon = gift.sender.profileImage;
+        const message = gift.message;
+        const payload = {
+            name: name,
+            imgUrl: icon,
+            comment: message,
+            gift: {
+                name: gift.item.name,
+                image: gift.item.image,
+            },
+        };
+        this.emit('gift', payload);
+    }
+    on(event, listener) {
+        return super.on(event, listener);
+    }
+}
+exports["default"] = TwicasComment;
 
 
 /***/ }),

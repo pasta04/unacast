@@ -214,6 +214,7 @@ const purseResponse = (res: string) => {
     threadTitle: splitRes[5] ? splitRes[5] : '',
     id: splitRes[6],
     imgUrl: '',
+    type: 'comment',
     from: 'bbs',
   };
   // オブジェクトを返却
