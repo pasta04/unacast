@@ -146,7 +146,7 @@ const parseNewResponse = (res: string) => {
   const result: ReturnType<typeof purseResponse>[] = [];
 
   // 新着レスを改行ごとにSplitする
-  const resArray = res.split(/\r\n|\r|\n/);
+  const resArray = res.split(/\n/);
   // 1行ごとにパースする
   resArray.forEach((value) => {
     // パースメソッド呼び出し
@@ -214,6 +214,7 @@ const purseResponse = (res: string) => {
     threadTitle: splitRes[5] ? splitRes[5] : '',
     id: splitRes[6],
     imgUrl: '',
+    type: 'comment',
     from: 'bbs',
   };
   // オブジェクトを返却

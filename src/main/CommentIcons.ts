@@ -15,10 +15,13 @@ class CommentIcons {
   twitchIconList: string[] = ['twitch.png'];
   niconicoIconDir: string = path.resolve(__dirname, `../public/img/`);
   niconicoIconList: string[] = ['niconico.png'];
+  twitcastingIconDir: string = path.resolve(__dirname, `../public/img/`);
+  twitcastingIconList: string[] = ['twitcasting.png'];
+
   sttIconDir: string = '';
   sttIconList: string[] = [];
 
-  constructor(arg: { bbs: string; youtube: string; twitch: string; niconico: string; stt: string }) {
+  constructor(arg: { bbs: string; youtube: string; twitch: string; niconico: string; twitcasting: string; stt: string }) {
     if (fs.existsSync(arg.bbs)) {
       const list = readDir(arg.bbs);
       if (list.length > 0) {
@@ -48,6 +51,13 @@ class CommentIcons {
         this.niconicoIconDir = arg.niconico;
       }
     }
+    if (fs.existsSync(arg.twitcasting)) {
+      const list = readDir(arg.twitcasting);
+      if (list.length > 0) {
+        this.twitcastingIconList = list;
+        this.twitcastingIconDir = arg.twitcasting;
+      }
+    }
     if (fs.existsSync(arg.stt)) {
       const list = readDir(arg.stt);
       if (list.length > 0) {
@@ -60,6 +70,7 @@ class CommentIcons {
     log.debug(this.youtubeIconList);
     log.debug(this.twitchIconList);
     log.debug(this.niconicoIconList);
+    log.debug(this.twitcastingIconList);
     log.debug(this.sttIconList);
   }
 
@@ -124,6 +135,17 @@ class CommentIcons {
       const num = Math.floor(this.niconicoIconList.length * Math.random());
       const iconPath = this.niconicoIconList[num];
       icon = `/niconico/${iconPath}`;
+    } catch (e) {
+      log.error(e);
+    }
+    return icon;
+  };
+  getTwitcasting = () => {
+    let icon = '';
+    try {
+      const num = Math.floor(this.twitcastingIconList.length * Math.random());
+      const iconPath = this.twitcastingIconList[num];
+      icon = `/twitcasting/${iconPath}`;
     } catch (e) {
       log.error(e);
     }

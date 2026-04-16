@@ -234,6 +234,7 @@ const toggleInputFormDisable = (isDisabled: boolean) => {
   (document.getElementById('text-youtube-liveid') as HTMLInputElement).disabled = isDisabled;
   (document.getElementById('text-twitch-id') as HTMLInputElement).disabled = isDisabled;
   (document.getElementById('text-niconico-id') as HTMLInputElement).disabled = isDisabled;
+  (document.getElementById('text-twitcasting-id') as HTMLInputElement).disabled = isDisabled;
   (document.getElementById('text-jpnknFast-id') as HTMLInputElement).disabled = isDisabled;
 
   document.getElementsByName('dispSort').forEach((v, i) => {
@@ -250,6 +251,7 @@ const toggleInputFormDisable = (isDisabled: boolean) => {
   (document.getElementById('icon_dir_youtube') as any).disabled = isDisabled;
   (document.getElementById('icon_dir_twitch') as any).disabled = isDisabled;
   (document.getElementById('icon_dir_niconico') as any).disabled = isDisabled;
+  (document.getElementById('icon_dir_twitcasting') as any).disabled = isDisabled;
   (document.getElementById('icon_dir_stt') as any).disabled = isDisabled;
 
   (document.getElementById('checkbox-wordBreak') as any).disabled = isDisabled;
@@ -311,6 +313,7 @@ const buildConfigJson = () => {
   const youtubeLiveId = (document.getElementById('text-youtube-liveid') as HTMLInputElement).value;
   const twitchUrl = (document.getElementById('text-twitch-id') as HTMLInputElement).value;
   const niconicoUrl = (document.getElementById('text-niconico-id') as HTMLInputElement).value;
+  const twitcastingUrl = (document.getElementById('text-twitcasting-id') as HTMLInputElement).value;
   const jpnknFastBoardId = (document.getElementById('text-jpnknFast-id') as HTMLInputElement).value;
   const sePath = (document.getElementById('text-se-path') as HTMLInputElement).value;
   const tamiyasuPath = (document.getElementById('text-tamiyasu-path') as HTMLInputElement).value;
@@ -372,6 +375,7 @@ const buildConfigJson = () => {
   const iconDirYoutube = (document.getElementById('icon_dir_youtube') as HTMLInputElement).value.trim();
   const iconDirTwitch = (document.getElementById('icon_dir_twitch') as HTMLInputElement).value.trim();
   const iconDirNiconico = (document.getElementById('icon_dir_niconico') as HTMLInputElement).value.trim();
+  const iconDirTwitcasting = (document.getElementById('icon_dir_twitcasting') as HTMLInputElement).value.trim();
   const iconDirStt = (document.getElementById('icon_dir_stt') as HTMLInputElement).value.trim();
 
   // SE再生設定
@@ -470,6 +474,7 @@ const buildConfigJson = () => {
     youtubeLiveId: youtubeLiveId,
     twitchId: twitchUrl,
     niconicoId: niconicoUrl,
+    twitcastingId: twitcastingUrl,
     jpnknFastBoardId,
     dispSort,
     minDisplayTime,
@@ -487,6 +492,7 @@ const buildConfigJson = () => {
     iconDirYoutube,
     iconDirTwitch,
     iconDirNiconico,
+    iconDirTwitcasting,
     iconDirStt,
     sePath,
     playSe,
@@ -538,6 +544,7 @@ const loadConfigToLocalStrage = async () => {
     youtubeLiveId: '',
     twitchId: '',
     niconicoId: '',
+    twitcastingId: '',
     jpnknFastBoardId: '',
     dispSort: false,
     minDisplayTime: 2.5,
@@ -555,6 +562,7 @@ const loadConfigToLocalStrage = async () => {
     iconDirYoutube: '',
     iconDirTwitch: '',
     iconDirNiconico: '',
+    iconDirTwitcasting: '',
     iconDirStt: '',
     sePath: '',
     playSeVolume: 100,
@@ -647,6 +655,7 @@ const loadConfigToLocalStrage = async () => {
   (document.getElementById('text-youtube-liveid') as any).value = config.youtubeLiveId;
   (document.getElementById('text-twitch-id') as any).value = config.twitchId;
   (document.getElementById('text-niconico-id') as any).value = config.niconicoId;
+  (document.getElementById('text-twitcasting-id') as any).value = config.twitcastingId;
   (document.getElementById('text-jpnknFast-id') as any).value = config.jpnknFastBoardId;
   // レス着信音
   (document.getElementById('text-se-path') as any).value = config.sePath;
@@ -670,6 +679,7 @@ const loadConfigToLocalStrage = async () => {
   (document.getElementById('icon_dir_youtube') as any).value = config.iconDirYoutube;
   (document.getElementById('icon_dir_twitch') as any).value = config.iconDirTwitch;
   (document.getElementById('icon_dir_niconico') as any).value = config.iconDirNiconico;
+  (document.getElementById('icon_dir_twitcasting') as any).value = config.iconDirTwitcasting;
   (document.getElementById('icon_dir_stt') as any).value = config.iconDirStt;
 
   // 読み子の種類
@@ -889,7 +899,7 @@ ipcRenderer.on(electronEvent.SHOW_ALERT, async (event: any, args: string) => {
 // 何かしら通知したいことがあったら表示する
 ipcRenderer.on(
   electronEvent.UPDATE_STATUS,
-  async (event: any, args: { commentType: 'bbs' | 'jpnkn' | 'youtube' | 'twitch' | 'niconico' | 'stt'; category: string; message: string }) => {
+  async (event: any, args: { commentType: 'bbs' | 'jpnkn' | 'youtube' | 'twitch' | 'niconico' | 'twitcasting' | 'stt'; category: string; message: string }) => {
     log.debug(`[UPDATE_STATUS] commentType = ${args.commentType} category = ${args.category}`);
     switch (args.commentType) {
       case 'bbs': {
@@ -921,6 +931,12 @@ ipcRenderer.on(
       case 'niconico': {
         if (args.category === 'status') {
           (document.getElementById('niconico-connection-status') as HTMLElement).innerText = args.message;
+        }
+        break;
+      }
+      case 'twitcasting': {
+        if (args.category === 'status') {
+          (document.getElementById('twitcasting-connection-status') as HTMLElement).innerText = args.message;
         }
         break;
       }

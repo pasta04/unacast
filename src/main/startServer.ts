@@ -17,6 +17,7 @@ import VoiceVoxClient from './voicevox';
 import { spawn } from 'child_process';
 import { electronEvent } from './const';
 import NiconamaComment from './niconama';
+import TwicasComment from './twicas';
 import JpnknFast from './jpnkn';
 import AzureSpeechToText from './azureStt';
 import tr from './googletrans';
@@ -97,6 +98,7 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
     youtube: config.iconDirYoutube,
     twitch: config.iconDirTwitch,
     niconico: config.iconDirNiconico,
+    twitcasting: config.iconDirTwitcasting,
     stt: config.iconDirStt,
   });
 
@@ -185,6 +187,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     youtube: globalThis.config.iconDirYoutube,
     twitch: globalThis.config.iconDirTwitch,
     niconico: globalThis.config.iconDirNiconico,
+    twitcasting: globalThis.config.iconDirTwitcasting,
     stt: globalThis.config.iconDirStt,
   });
 
@@ -193,7 +196,8 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   if (globalThis.electron.iconList.youtubeIconDir) app.use('/youtube', express.static(globalThis.electron.iconList.youtubeIconDir));
   if (globalThis.electron.iconList.twitchIconDir) app.use('/twitch', express.static(globalThis.electron.iconList.twitchIconDir));
   if (globalThis.electron.iconList.niconicoIconDir) app.use('/niconico', express.static(globalThis.electron.iconList.niconicoIconDir));
-  if (globalThis.electron.iconList.sttIconDir) app.use('/stt', express.static(globalThis.electron.iconList.niconicoIconDir));
+  if (globalThis.electron.iconList.twitcastingIconDir) app.use('/twitcasting', express.static(globalThis.electron.iconList.twitcastingIconDir));
+  if (globalThis.electron.iconList.sttIconDir) app.use('/stt', express.static(globalThis.electron.iconList.sttIconDir));
 
   // SEを取得する
   if (globalThis.config.sePath) {
@@ -241,6 +245,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
         number: event.number,
         name: event.name,
         text: event.comment,
+        type: 'comment',
         from: 'niconico',
       });
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
@@ -261,6 +266,84 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'niconico', category: 'status', message: `error` });
     });
     nico.start();
+  }
+
+  // ツイキャス
+  if (globalThis.config.twitcastingId) {
+    const twicas = new TwicasComment({ userId: globalThis.config.twitcastingId });
+    globalThis.electron.twitcastingChat = twicas;
+    twicas.on('start', () => {
+      globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `connection waiting` });
+    });
+
+    twicas.on('wait', () => {
+      globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `wait for starting boradcast` });
+    });
+
+    twicas.on('open', (event) => {
+      globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+        commentType: 'twitcasting',
+        category: 'status',
+        message: `ok No=${event.number}`,
+      });
+      globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+        commentType: 'twitcasting',
+        category: 'liveId',
+        message: `${event.liveId}`,
+      });
+    });
+    // 初期チャット受信
+    twicas.on('firstComment', (comments) => {
+      const list: UserComment[] = comments.map((item) => {
+        return {
+          name: item.name,
+          number: item.number,
+          imgUrl: item.imgUrl,
+          text: item.comment,
+        } as UserComment;
+      });
+      // チャットウィンドウだけに出力
+      sendDomForChatWindow(list);
+    });
+    twicas.on('comment', (event) => {
+      globalThis.electron.commentQueueList.push({
+        imgUrl: event.imgUrl,
+        number: event.number,
+        name: event.name,
+        text: event.comment,
+        type: 'comment',
+        from: 'twitcasting',
+      });
+      globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+        commentType: 'twitcasting',
+        category: 'status',
+        message: `ok No=${event.number}`,
+      });
+    });
+
+    twicas.on('gift', (event) => {
+      globalThis.electron.commentQueueList.push({
+        imgUrl: event.imgUrl,
+        name: event.name,
+        text: event.comment,
+        gift: event.gift,
+        type: 'gift',
+        from: 'twitcasting',
+      });
+    });
+
+    // 切断とか枠終了とか
+    twicas.on('end', () => {
+      globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+        commentType: 'twitcasting',
+        category: 'status',
+        message: `disconnect`,
+      });
+    });
+    twicas.on('error', () => {
+      globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `error` });
+    });
+    twicas.start();
   }
 
   // jpnkn
@@ -425,6 +508,7 @@ const commentTest = async () => {
         name: 'ななしさん',
         text: text,
         imgUrl: './img/unacast.png',
+        type: 'comment',
         from: 'bbs',
       },
     ]);
@@ -484,7 +568,7 @@ const startTwitchChat = async () => {
         });
       }
 
-      globalThis.electron.commentQueueList.push({ imgUrl, name, text, from: 'twitch' });
+      globalThis.electron.commentQueueList.push({ imgUrl, name, text, type: 'comment', from: 'twitch' });
     });
     globalThis.electron.twitchChat = twitchChat;
 
@@ -554,7 +638,7 @@ const startYoutubeChat = async () => {
         }
       }
       // const text = escapeHtml((comment.message[0] as any).text);
-      return { imgUrl, name, text, from: 'youtube' };
+      return { imgUrl, name, text, type: 'comment', from: 'youtube' };
     };
     // 初期チャット受信
     globalThis.electron.youtubeChat.on('firstComment', (comment: CommentItem) => {
@@ -625,6 +709,15 @@ ipcMain.on(electronEvent.STOP_SERVER, (event) => {
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'niconico', category: 'status', message: `connection end` });
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'niconico', category: 'liveId', message: `none` });
   }
+
+  // ツイキャスチャットの停止
+  if (globalThis.electron.twitcastingChat) {
+    globalThis.electron.twitcastingChat.stop();
+    globalThis.electron.twitcastingChat.removeAllListeners();
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `connection end` });
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'liveId', message: `none` });
+  }
+
   // jpnkn Fastインターフェース
   if (globalThis.electron.jpnknFast) {
     globalThis.electron.jpnknFast.stop();
@@ -715,6 +808,7 @@ const notifyThreadResLimit = async () => {
         name: 'unacastより',
         imgUrl: './img/unacast.png',
         text: `レスが${globalThis.config.notifyThreadResLimit}を超えました。次スレを立ててください。`,
+        type: 'comment',
         from: 'system',
       },
     ]);
@@ -740,6 +834,7 @@ const checkAutoMoveThread = async () => {
     name: 'unacastより',
     imgUrl: './img/unacast.png',
     text: `レス1000を超えました。次スレ候補 「${target.name}」 に移動します`,
+    type: 'comment',
     from: 'system',
   });
 

@@ -88,6 +88,7 @@ export const getRes = async (threadUrl: string, resNum: number): Promise<UserCom
             name: 'unacastより',
             imgUrl: './img/unacast.png',
             text: '掲示板が規定回数通信エラーになりました。設定を見直すか、掲示板URLを変更してください。',
+            type: 'comment',
             from: 'system',
           },
         ];

@@ -146,6 +146,18 @@
         <div class="niconicoStatusArea">
           <span class="status"><span class="status-label">status:</span><span id="niconico-connection-status">none</span></span>
         </div>
+
+        <div class="mdl-textfield mdl-js-textfield" style="width: 100%">
+          <div class="subtitle">ツイキャスユーザーID</div>
+          <div class="labeledInputArea">
+            <span>https://twitcasting.tv/</span>
+            <input class="mdl-textfield__input" type="text" id="text-twitcasting-id" pattern="^(?!.*http.?:)(?!.*/.*).*$" />
+            /
+          </div>
+        </div>
+        <div class="twitcastingStatusArea">
+          <span class="status"><span class="status-label">status:</span><span id="twitcasting-connection-status">none</span></span>
+        </div>
       </div>
 
       <div class="block">
@@ -210,6 +222,11 @@
           <label class="mdl-textfield mdl-js-textfield" for="icon_dir_niconico">
             <span class="subtitle">niconico</span>
             <input id="icon_dir_niconico" class="mdl-textfield__input" type="text" value="" placeholder="C:\hogehoge\fugafuga" />
+          </label>
+
+          <label class="mdl-textfield mdl-js-textfield" for="icon_dir_twitcasting">
+            <span class="subtitle">twitcasting</span>
+            <input id="icon_dir_twitcasting" class="mdl-textfield__input" type="text" value="" placeholder="C:\hogehoge\fugafuga" />
           </label>
 
           <label class="mdl-textfield mdl-js-textfield" for="icon_dir_stt">
