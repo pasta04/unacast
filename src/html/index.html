@@ -20,11 +20,11 @@
 
       <div>サーバー起動、適用ボタンクリックで設定が反映されます。</div>
       <div style="position:sticky; top: 0; z-index: 10; background-color: white; height: 50px; width: 100%;">
-        <button type="button" id="button-config-apply" class="mdl-button mdl-js-button mdl-button--raised">
+        <button type="button" id="button-config-apply" class="mdl-button mdl-js-button mdl-button--raised" disabled="true">
           適用
         </button>
 
-        <button type="button" id="button-server-start" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
+        <button type="button" id="button-server-start" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" disabled="true">
           サーバー起動
         </button>
 
@@ -471,8 +471,8 @@
             <input class="mdl-textfield__input" type="text" id="text-voicevox-path" />
             <div class="subtitle">話者</div>
             <select id="select-voicevox-style"> -->
-          <!-- スクリプトで入れる -->
-          </select>
+              <!-- スクリプトで入れる -->
+            </select>
             <div class="voiceVoxStatusArea">
               <span class="status"><span class="status-label">status:</span><span id="voicevox-status">none</span></span>
             </div>

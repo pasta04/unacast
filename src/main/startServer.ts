@@ -465,6 +465,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   isExecuteQue = true;
   taskScheduler(serverId);
   if (globalThis.config.translate.enable) {
+    globalThis.electron.translateWindow.show();
     globalThis.electron.translateWindow.focus();
     translateTaskScheduler(serverId);
   }

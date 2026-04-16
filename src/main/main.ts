@@ -5,8 +5,12 @@ import * as remote from '@electron/remote/main';
 import log from 'electron-log';
 import { sleep } from './util';
 import windowStateKeeper from 'electron-window-state';
+import ElectronStore from 'electron-store';
 remote.initialize();
 log.initialize();
+
+// HTMLで出ないウインドウの表示設定
+type WindowConfig = (typeof globalThis)['window_config'];
 
 console.trace = () => {
   //
@@ -22,9 +26,21 @@ const app = electron.app;
 // 多重起動防止
 if (!app.requestSingleInstanceLock()) {
   log.error('[app] It is terminated for multiple launches.');
-  app.quit();
+  app.exit();
 } else {
   log.info('[app] started');
+
+  const store = new ElectronStore<WindowConfig>({
+    name: 'unacast-window-config',
+    defaults: {
+      taskbar: {
+        mainWindow: true,
+        chatWindow: true,
+        translateWindow: true,
+        imagePreviewWindow: false,
+      },
+    },
+  }) as any;
 
   // app.allowRendererProcessReuse = true;
 
@@ -54,12 +70,14 @@ if (!app.requestSingleInstanceLock()) {
     translateQueueList: [],
   };
 
-  globalThis.config = {} as any;
+  globalThis.window_config = {
+    taskbar: store.get('taskbar'),
+  };
 
   // 全てのウィンドウが閉じたら終了
   // app.on('window-all-closed', () => {
   //   if (process.platform != 'darwin') {
-  //     app.quit();
+  //     app.exit();
   //   }
   // });
 
@@ -85,7 +103,8 @@ if (!app.requestSingleInstanceLock()) {
         nodeIntegration: true,
         contextIsolation: false,
       },
-      skipTaskbar: true,
+      // タスクバー非表示
+      skipTaskbar: globalThis.window_config.taskbar?.mainWindow ?? false,
     });
     remote.enable(mainWin.webContents);
     globalThis.electron.mainWindow = mainWin;
@@ -130,21 +149,69 @@ if (!app.requestSingleInstanceLock()) {
         {
           label: '設定',
           click: function () {
+            globalThis.electron.mainWindow.show();
             globalThis.electron.mainWindow.focus();
           },
         },
         {
           label: 'コメント',
           click: function () {
+            globalThis.electron.chatWindow.show();
             globalThis.electron.chatWindow.focus();
           },
         },
         {
           label: '翻訳',
           click: function () {
+            globalThis.electron.translateWindow.show();
             globalThis.electron.translateWindow.focus();
           },
         },
+        {
+          label: 'タスクバー表示設定',
+          submenu: [
+            {
+              label: '設定',
+              type: 'checkbox',
+              checked: globalThis.window_config.taskbar?.mainWindow ?? false,
+              click(item) {
+                globalThis.window_config.taskbar.mainWindow = item.checked;
+                store.set('taskbar', globalThis.window_config.taskbar);
+                applyTaskbarState();
+              },
+            },
+            {
+              label: 'チャット',
+              type: 'checkbox',
+              checked: globalThis.window_config.taskbar?.chatWindow ?? false,
+              click(item) {
+                globalThis.window_config.taskbar.chatWindow = item.checked;
+                store.set('taskbar', globalThis.window_config.taskbar);
+                applyTaskbarState();
+              },
+            },
+            {
+              label: '翻訳',
+              type: 'checkbox',
+              checked: globalThis.window_config.taskbar?.translateWindow ?? false,
+              click(item) {
+                globalThis.window_config.taskbar.translateWindow = item.checked;
+                store.set('taskbar', globalThis.window_config.taskbar);
+                applyTaskbarState();
+              },
+            },
+            // {
+            //   label: '画像プレビュー',
+            //   type: 'checkbox',
+            //   checked: globalThis.config.showTaskbar.imagepreview,
+            //   click(item) {
+            //     globalThis.config.showTaskbar.imagepreview = item.checked;
+            //     applyTaskbarState();
+            //   },
+            // },
+          ],
+        },
+        { type: 'separator' },
         {
           label: '終了',
           click: function () {
@@ -160,10 +227,12 @@ if (!app.requestSingleInstanceLock()) {
         isDoubleClicked = false;
         await sleep(200);
         if (isDoubleClicked) return;
+        globalThis.electron.chatWindow.show();
         globalThis.electron.chatWindow.focus();
       });
       tray.on('double-click', (event) => {
         isDoubleClicked = true;
+        globalThis.electron.mainWindow.show();
         globalThis.electron.mainWindow.focus();
       });
     });
@@ -171,6 +240,8 @@ if (!app.requestSingleInstanceLock()) {
     createChatWindow();
     createTranslateWindow();
     createImagePreviewWindow();
+
+    applyTaskbarState();
   });
 
   // 音声再生できるようにする
@@ -198,7 +269,7 @@ const createChatWindow = () => {
       contextIsolation: false,
     },
     // タスクバーに表示しない
-    skipTaskbar: true,
+    skipTaskbar: globalThis.window_config.taskbar.chatWindow ?? false,
     // 閉じれなくする
     closable: false,
   });
@@ -236,7 +307,7 @@ const createTranslateWindow = () => {
       contextIsolation: false,
     },
     // タスクバーに表示しない
-    skipTaskbar: true,
+    skipTaskbar: globalThis.window_config.taskbar?.translateWindow ?? false,
     // 閉じれなくする
     closable: false,
   });
@@ -301,4 +372,21 @@ const createImagePreviewWindow = () => {
 
   globalThis.electron.imagePreviewWindow = childwindow;
   // childwindow.webContents.openDevTools();
+};
+
+const applyTaskbarState = () => {
+  const map = globalThis.window_config.taskbar;
+
+  const targets: [string, electron.BrowserWindow][] = [
+    ['mainWindow', globalThis.electron.mainWindow],
+    ['chatWindow', globalThis.electron.chatWindow],
+    ['translateWindow', globalThis.electron.translateWindow],
+    //['imagePreviewWindow', globalThis.electron.imagePreviewWindow],
+  ];
+
+  for (const [key, win] of targets) {
+    if (win && !win.isDestroyed()) {
+      win.setSkipTaskbar(!map[key]);
+    }
+  }
 };

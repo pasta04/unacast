@@ -760,28 +760,39 @@ const loadConfigToLocalStrage = async () => {
 
   // --------------------この下の処理でラジオボタンの処理が動かなくなるので、何か足す時はここより上に追記すること------------------------------
 
-  // 使用可能なデバイスの一覧を取得
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const audiooutput = devices.filter((device) => device.kind === 'audiooutput');
-  // log.info(audiooutput);
-  audiooutput.map((val) => {
-    const checkedStr = globalThis.config.audioOutputDevices.includes(val.deviceId) ? 'checked' : '';
-    const domstr = `
-  <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="audioOutputDevices_${val.deviceId}">
-    <input type="checkbox" id="audioOutputDevices_${val.deviceId}" name="audioOutputDevices" class="mdl-checkbox__input" ${checkedStr} />
-    <span class="mdl-checkbox__label">${val.label}</span>
-  </label>
-    `;
-    (document.getElementById('audioOutputDevices') as HTMLDivElement).insertAdjacentHTML('afterbegin', domstr);
-  });
-  const audioinput = devices.filter((device) => device.kind === 'audioinput');
-  audioinput.map((val) => {
-    const domstr = `<option value="${val.deviceId}">${val.label}</option>`;
-    (document.getElementById('azureStt-inputDevice') as HTMLDivElement).insertAdjacentHTML('afterbegin', domstr);
-  });
-  (document.getElementById('azureStt-inputDevice') as any).value = config.azureStt.inputDevice;
+  try {
+    // 使用可能なデバイスの一覧を取得
+    await new Promise((r) => setTimeout(r, 500));
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const audiooutput = devices.filter((device) => device.kind === 'audiooutput');
+    // log.info(audiooutput);
+    audiooutput.map((val) => {
+      const checkedStr = globalThis.config.audioOutputDevices.includes(val.deviceId) ? 'checked' : '';
+      const domstr = `
+    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="audioOutputDevices_${val.deviceId}">
+      <input type="checkbox" id="audioOutputDevices_${val.deviceId}" name="audioOutputDevices" class="mdl-checkbox__input" ${checkedStr} />
+      <span class="mdl-checkbox__label">${val.label}</span>
+    </label>
+      `;
+      (document.getElementById('audioOutputDevices') as HTMLDivElement).insertAdjacentHTML('afterbegin', domstr);
+    });
+    const audioinput = devices.filter((device) => device.kind === 'audioinput');
+    audioinput.map((val) => {
+      const domstr = `<option value="${val.deviceId}">${val.label}</option>`;
+      (document.getElementById('azureStt-inputDevice') as HTMLDivElement).insertAdjacentHTML('afterbegin', domstr);
+    });
+    (document.getElementById('azureStt-inputDevice') as any).value = config.azureStt.inputDevice;
+  } catch (e) {
+    alert('オーディオデバイスの読み込みに失敗しました');
+  }
 
   log.debug('config loaded');
+
+  // サーバ起動ボタンを押せるようにする
+  const startButton = document.getElementById('button-server-start') as HTMLInputElement;
+  startButton.disabled = false;
+  const applyButton = document.getElementById('button-config-apply') as HTMLInputElement;
+  applyButton.disabled = false;
 };
 
 // サーバー起動返信

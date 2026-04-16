@@ -39,6 +39,16 @@ declare global {
     /** 翻訳の処理待ちリスト */
     let translateQueueList: UserComment[];
   }
+
+  namespace window_config {
+    let taskbar: {
+      mainWindow: boolean;
+      chatWindow: boolean;
+      translateWindow: boolean;
+      imagePreviewWindow: boolean;
+    };
+  }
+
   namespace config {
     /** 掲示板URL */
     let url: string;

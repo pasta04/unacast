@@ -143,7 +143,7 @@ class TwicasComment extends EventEmitter<EventMap> {
     formdata.append('password', password);
 
     try {
-      log.info(`${url} body= ${JSON.stringify(formdata)}`);
+      log.info(`${url} movie_id = ${movie_id}`);
       const res = (await axios.post(url, formdata)).data as { url: string };
       log.info(res);
       return res.url;
@@ -195,26 +195,34 @@ class TwicasComment extends EventEmitter<EventMap> {
     const time = new Date().getTime();
     const commentNum = 50;
     const url = `https://twitcasting.tv/${this.userId}/userajax.php?c=listall&m=${this.liveId}&n=${commentNum}&f=0&k=0&format=json&__n=${time}`;
+    log.info(url);
+
     try {
       const res = (await axios.get(url)).data as { comments: (CommentEvent | GiftEvent)[] };
-      const list: CommentItem[] = res.comments.map((item) => {
+      const list: CommentItem[] = res.comments.flatMap((item) => {
         switch (item.type) {
           case 'comment': {
-            return {
-              name: item.author.name,
-              imgUrl: item.author.profileImage,
-              comment: item.message,
-              number: '',
-            } as CommentItem;
+            return [
+              {
+                name: item.author.name ?? '',
+                imgUrl: item.author.profileImage ?? '',
+                comment: item.message ?? '',
+                number: '',
+              },
+            ];
           }
           case 'gift': {
-            return {
-              name: item.sender.name,
-              imgUrl: item.sender.profileImage,
-              comment: `${item.item.name}\n${item.message}`,
-              number: '',
-            } as CommentItem;
+            return [
+              {
+                name: item.sender.name ?? '',
+                imgUrl: item.sender.profileImage ?? '',
+                comment: `${item.item.name}\n${item.message}`,
+                number: '',
+              },
+            ];
           }
+          default:
+            return [];
         }
       });
 
