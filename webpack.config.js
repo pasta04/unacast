@@ -34,7 +34,7 @@ const renderer = {
   mode: 'development',
   target: 'electron-renderer',
   entry: {
-    index: './src/renderer/renderer',
+    index: './src/renderer/renderer.tsx',
     chat: './src/renderer/chat',
     translate: './src/renderer/translate',
     imagePreview: './src/renderer/imagePreview',
