@@ -157,7 +157,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
 
   app.set('view engine', 'ejs');
   // viewディレクトリの指定
-  app.set('views', path.resolve(__dirname, '../views'));
+  app.set('views', path.resolve(__dirname, '../../views'));
 
   // 設定情報をグローバル変数へセットする
   globalThis.config = config;
@@ -176,7 +176,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   });
 
   // 静的コンテンツはpublicディレクトリの中身を使用するという宣言
-  app.use(express.static(path.resolve(__dirname, '../public')));
+  app.use(express.static(path.resolve(__dirname, '../../public')));
 
   // 2ch互換掲示板の取得
   app.use('/getRes', getRes);

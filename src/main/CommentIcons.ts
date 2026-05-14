@@ -7,15 +7,15 @@ import electronlog from 'electron-log';
 const log = electronlog.scope('ReadIcons');
 
 class CommentIcons {
-  bbsIconDir: string = path.resolve(__dirname, `../public/img/random/`);
+  bbsIconDir: string = path.resolve(__dirname, `../../public/img/random/`);
   bbsIconList: string[] = readDir(this.bbsIconDir);
   youtubeIconDir: string = '';
   youtubeIconList: string[] = [];
-  twitchIconDir: string = path.resolve(__dirname, `../public/img/`);
+  twitchIconDir: string = path.resolve(__dirname, `../../public/img/`);
   twitchIconList: string[] = ['twitch.png'];
-  niconicoIconDir: string = path.resolve(__dirname, `../public/img/`);
+  niconicoIconDir: string = path.resolve(__dirname, `../../public/img/`);
   niconicoIconList: string[] = ['niconico.png'];
-  twitcastingIconDir: string = path.resolve(__dirname, `../public/img/`);
+  twitcastingIconDir: string = path.resolve(__dirname, `../../public/img/`);
   twitcastingIconList: string[] = ['twitcasting.png'];
 
   sttIconDir: string = '';
