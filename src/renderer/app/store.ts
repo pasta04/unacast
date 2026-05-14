@@ -28,8 +28,10 @@ export type AlertState = {
 type ConfigSetter<T extends keyof AppConfig> = (value: AppConfig[T]) => void;
 
 export type StoreState = {
-  /** ユーザ設定（フォームの値そのもの） */
+  /** ユーザ設定（フォーム上の編集中の値） */
   config: AppConfig;
+  /** 最後に「適用」または「サーバー起動」で送出した時点の設定スナップショット */
+  appliedConfig: AppConfig;
   /** 接続状況など、サーバ側からの状態 */
   status: Record<ConnectionStatusKey, string>;
   voicevoxSpeakers: VoicevoxSpeakerOption[];
@@ -47,6 +49,8 @@ export type StoreState = {
   setConfig: <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => void;
   patchConfig: (patch: Partial<AppConfig>) => void;
   replaceConfig: (config: AppConfig) => void;
+  /** 現在の config を「適用済み」としてマーク（適用/起動ボタン押下時に呼ぶ） */
+  markApplied: () => void;
 
   setStatus: (key: ConnectionStatusKey, value: string) => void;
 
@@ -79,8 +83,11 @@ const initialStatus: Record<ConnectionStatusKey, string> = {
   voicevox: 'none',
 };
 
+const initialConfig = loadConfigFromStorage();
+
 export const useAppStore = create<StoreState>((set, get) => ({
-  config: loadConfigFromStorage(),
+  config: initialConfig,
+  appliedConfig: initialConfig,
   status: { ...initialStatus },
   voicevoxSpeakers: [],
   audioOutputs: [],
@@ -99,7 +106,8 @@ export const useAppStore = create<StoreState>((set, get) => ({
     set((state) => ({
       config: { ...state.config, ...patch },
     })),
-  replaceConfig: (config) => set({ config }),
+  replaceConfig: (config) => set({ config, appliedConfig: config }),
+  markApplied: () => set((state) => ({ appliedConfig: state.config })),
 
   setStatus: (key, value) =>
     set((state) => ({

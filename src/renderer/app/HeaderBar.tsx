@@ -11,22 +11,28 @@ const intOrZero = (raw: string) => {
 
 export const HeaderBar: React.FC = () => {
   const config = useAppStore((s) => s.config);
+  const appliedConfig = useAppStore((s) => s.appliedConfig);
   const setConfig = useAppStore((s) => s.setConfig);
   const persist = useAppStore((s) => s.persist);
+  const markApplied = useAppStore((s) => s.markApplied);
   const isServerRunning = useAppStore((s) => s.isServerRunning);
   const setServerRunning = useAppStore((s) => s.setServerRunning);
   const setConfirmStopOpen = useAppStore((s) => s.setConfirmStopOpen);
   const isConfigReady = useAppStore((s) => s.isConfigReady);
 
+  const isDirty = React.useMemo(() => JSON.stringify(config) !== JSON.stringify(appliedConfig), [config, appliedConfig]);
+
   const handleApply = () => {
     persist();
     sendApplyConfig(useAppStore.getState().config);
+    markApplied();
   };
 
   const handleStart = () => {
     if (!config.port) return;
     persist();
     sendStartServer(useAppStore.getState().config);
+    markApplied();
     setServerRunning(true);
   };
 
@@ -47,7 +53,7 @@ export const HeaderBar: React.FC = () => {
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
-        <Button variant="contained" disabled={!isConfigReady} onClick={handleApply}>
+        <Button variant="contained" disabled={!isConfigReady || !isDirty} onClick={handleApply}>
           適用
         </Button>
         <Button variant="contained" color="primary" disabled={!isConfigReady || isServerRunning} onClick={handleStart}>
