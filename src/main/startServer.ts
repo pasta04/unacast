@@ -1,7 +1,6 @@
 import http from 'http';
 import path from 'path';
 import express, { Request, Response } from 'express';
-import axios from 'axios';
 import cors from 'cors';
 import log from 'electron-log';
 import { ChatClient } from 'dank-twitch-irc';
@@ -165,13 +164,13 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   log.debug('[startServer]設定値 = ');
   log.debug(globalThis.config);
 
-  app.get('/', (req: Request, res: Response, next) => {
+  app.get('/', (req: Request, res: Response) => {
     res.render('server', config);
     req.connection.end();
   });
 
   // サーバー設定のIF
-  app.get('/config', (req: Request, res: Response, next) => {
+  app.get('/config', (_req: Request, res: Response) => {
     res.send(JSON.stringify(globalThis.config));
   });
 
@@ -471,7 +470,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   }
 
   // WebSocketを立てる
-  app.ws('/ws', (ws, req) => {
+  app.ws('/ws', (ws) => {
     ws.on('message', (message) => {
       log.debug('Received: ' + message.toString());
       if (message.toString() === 'ping') {
@@ -583,7 +582,7 @@ const startTwitchChat = async () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'error!' });
     });
 
-    twitchChat.on('close', (event) => {
+    twitchChat.on('close', () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'connection end' });
     });
   } catch (e) {
@@ -610,7 +609,7 @@ const startYoutubeChat = async () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'ok' });
     });
     // 接続終了イベント
-    globalThis.electron.youtubeChat.on('end', (reason?: string) => {
+    globalThis.electron.youtubeChat.on('end', () => {
       log.info('[Youtube Chat] disconnect');
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'connection end' });
     });
@@ -970,7 +969,7 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
   }
   // log.info('[playYomiko] end');
 };
-ipcMain.on(electronEvent.SPEAKING_END, (event) => (isSpeaking = false));
+ipcMain.on(electronEvent.SPEAKING_END, () => (isSpeaking = false));
 
 let isPlayingSe = false;
 const playSe = async () => {
@@ -986,7 +985,7 @@ const playSe = async () => {
   }
   // log.info('[playSe] end');
 };
-ipcMain.on(electronEvent.PLAY_SOUND_END, (event) => (isPlayingSe = false));
+ipcMain.on(electronEvent.PLAY_SOUND_END, () => (isPlayingSe = false));
 
 export const createDom = (message: UserComment, type: 'chat' | 'server', isAA: boolean) => {
   let domStr = `<li class="list-item">`;

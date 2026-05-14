@@ -73,7 +73,7 @@ export const postRes = async (hostname: string, threadNumber: string, boardId: s
   /** 番号 */
   const bbs = boardId.split('/')[1];
 
-  const result = await axios.post(
+  await axios.post(
     `${hostname}bbs/write.cgi/${boardId}/${threadNumber}/`,
     `dir=${dir}&bbs=${bbs}&key=${threadNumber}&time=${new Date().getTime()}&name=&MAIL=sage&MESSAGE=${encodedKeyword}`,
     {

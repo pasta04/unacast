@@ -19,7 +19,7 @@ contextMenuInText.append(
   new MenuItem({
     label: 'Copy',
     type: 'normal',
-    click: (menu, browser, event) => {
+    click: (_menu, _browser, _event) => {
       const text = window.getSelection()?.toString() ?? '';
       if (!text) return;
 
@@ -101,7 +101,7 @@ ipcRenderer.on(electronEvent.SHOW_COMMENT_TL, (event: any, args: { config: (type
 });
 
 // リセット
-ipcRenderer.on(electronEvent.CLEAR_COMMENT, (event: any) => {
+ipcRenderer.on(electronEvent.CLEAR_COMMENT, () => {
   // log.info('[clear-comment] received');
   const dom = document.getElementById('res-list') as HTMLInputElement;
   dom.innerHTML = '';

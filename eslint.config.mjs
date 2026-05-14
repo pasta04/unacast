@@ -52,11 +52,19 @@ export default [
       'node/no-unsupported-features/es-syntax': 'off',
       'no-process-exit': 'off',
       'node/no-missing-import': 'off',
-      'no-unused-vars': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
       'node/no-unsupported-features/es-builtins': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-require-imports': 'off'
+      // any はレンダラーの DOM/IPC 周りで広範に使われており、現状は許容
+      '@typescript-eslint/no-explicit-any': 'off',
+      // 未使用変数: アンダースコア始まりや使用済み引数の後の引数は許可
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrors: 'none',
+        },
+      ],
     },
   },
 ];

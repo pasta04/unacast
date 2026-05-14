@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Box, Button, Link, TextField, Typography } from '@mui/material';
 import electron from 'electron';
 import { useAppStore } from './store';
-import { sendApplyConfig, sendCommentTest, sendStartServer, sendStopServer } from './ipc';
+import { sendApplyConfig, sendCommentTest, sendStartServer } from './ipc';
 
 const intOrZero = (raw: string) => {
   const v = parseInt(raw, 10);

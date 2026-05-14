@@ -213,7 +213,4 @@ declare global {
   }
 }
 
-/** From MDL */
-declare let componentHandler: any;
-
 export {};

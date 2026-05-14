@@ -297,7 +297,6 @@ class TwicasComment extends EventEmitter<EventMap> {
   }
 
   private handleComment(comment: CommentEvent) {
-    const time = new Date(comment.createdAt).toLocaleString('ja-JP');
     const name = comment.author.name;
     const message = comment.message;
     const num = comment.numComments;
@@ -313,7 +312,6 @@ class TwicasComment extends EventEmitter<EventMap> {
   }
 
   private handleGift(gift: GiftEvent) {
-    const time = new Date(gift.createdAt).toLocaleString('ja-JP');
     const name = gift.sender.name;
     const icon = gift.sender.profileImage;
     const message = gift.message;

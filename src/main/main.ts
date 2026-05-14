@@ -234,14 +234,14 @@ if (!app.requestSingleInstanceLock()) {
       tray.setContextMenu(contextMenu);
       // タスクトレイクリック時の挙動
       let isDoubleClicked = false;
-      tray.on('click', async (event) => {
+      tray.on('click', async () => {
         isDoubleClicked = false;
         await sleep(200);
         if (isDoubleClicked) return;
         globalThis.electron.chatWindow.show();
         globalThis.electron.chatWindow.focus();
       });
-      tray.on('double-click', (event) => {
+      tray.on('double-click', () => {
         isDoubleClicked = true;
         globalThis.electron.mainWindow.show();
         globalThis.electron.mainWindow.focus();
@@ -375,7 +375,7 @@ const createImagePreviewWindow = () => {
   childwindow.loadURL(resolveRendererUrl('imagePreview'));
 
   // ×押したらインスタンス再生成
-  childwindow.on('close', (e) => {
+  childwindow.on('close', () => {
     setTimeout(() => {
       createImagePreviewWindow();
     }, 10);
