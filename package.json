@@ -27,15 +27,10 @@
   "homepage": "https://github.com/yudeunagi/unacast#readme",
   "dependencies": {
     "@electron/remote": "^2.1.2",
-    "@emotion/react": "^11.13.5",
-    "@emotion/styled": "^11.13.5",
-    "@mui/icons-material": "^6.1.10",
-    "@mui/material": "^6.1.10",
     "axios": "^1.8.3",
     "body-parser": "^1.20.3",
     "cheerio": "1.0.0-rc.12",
     "cors": "^2.8.5",
-    "crypto": "^1.0.1",
     "dank-twitch-irc": "^4.3.0",
     "ejs": "^3.1.10",
     "electron-log": "^5.3.2",
@@ -44,21 +39,21 @@
     "encoding-japanese": "^2.2.0",
     "express": "^4.21.2",
     "express-ws": "^5.0.2",
-    "https": "^1.0.0",
     "iconv-lite": "^0.6.3",
     "koffi": "^2.11.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.42.0",
     "paho-mqtt": "^1.1.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "ws": "^8.18.1",
-    "zustand": "^4.5.5"
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "@electron/packager": "^18.3.6",
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
     "@eslint/compat": "^1.2.7",
     "@eslint/eslintrc": "^3.3.0",
     "@eslint/js": "^9.22.0",
+    "@mui/icons-material": "^6.1.10",
+    "@mui/material": "^6.1.10",
     "@types/cheerio": "^0.22.35",
     "@types/cors": "^2.8.17",
     "@types/ejs": "^3.1.5",
@@ -80,9 +75,12 @@
     "eslint-plugin-html": "^8.1.2",
     "eslint-plugin-prettier": "^5.2.3",
     "prettier": "^3.5.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.1",
     "vite": "^5.4.10",
-    "vite-plugin-electron-renderer": "^0.14.7"
+    "vite-plugin-electron-renderer": "^0.14.7",
+    "zustand": "^4.5.5"
   }
 }

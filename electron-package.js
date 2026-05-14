@@ -13,7 +13,7 @@ const ASAR = process.argv[3] ? `--${process.argv[3]}` : '';
 // node_modules 配下にも src/ や dist/ など同名ディレクトリがあるため、
 // プロジェクト直下のものだけを対象にしたいパターンは ^/ で先頭固定する。
 const execParam = `
-npx electron-packager ./ unacast --platform=${PLATFORM} --arch=x64 --overwrite --icon=icon.ico ${ASAR}
+npx electron-packager ./ unacast --platform=${PLATFORM} --arch=x64 --overwrite --prune=true --icon=icon.ico ${ASAR}
     --ignore="^/\\.vscode($|/)"
     --ignore="^/\\.github($|/)"
     --ignore="^/dist/.+\\.map$"
