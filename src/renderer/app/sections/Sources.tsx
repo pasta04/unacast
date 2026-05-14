@@ -4,7 +4,7 @@ import { useAppStore } from '../store';
 import { SectionPanel, LabeledInput, Caption } from './common';
 
 const StatusLine: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
+  <Typography variant="caption" color="text.secondary" sx={{ mr: 2, mt: '-4px', display: 'inline-block', lineHeight: 1, verticalAlign: 'top' }}>
     {label}: {value}
   </Typography>
 );
@@ -18,7 +18,7 @@ export const Sources: React.FC = () => {
   return (
     <SectionPanel title="レス・コメント取得先">
       {/* 掲示板URL */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           掲示板URL
         </Typography>
@@ -40,7 +40,7 @@ export const Sources: React.FC = () => {
       </Box>
 
       {/* Jpnkn Fast */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           Jpnkn Fastインターフェース(β)
         </Typography>
@@ -51,7 +51,7 @@ export const Sources: React.FC = () => {
       </Box>
 
       {/* YouTube */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           Youtube
         </Typography>
@@ -71,7 +71,7 @@ export const Sources: React.FC = () => {
       </Box>
 
       {/* Twitch */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           Twitch ユーザID
         </Typography>
@@ -82,7 +82,7 @@ export const Sources: React.FC = () => {
       </Box>
 
       {/* niconico */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           ニコニココユーザーID
         </Typography>
@@ -99,7 +99,7 @@ export const Sources: React.FC = () => {
       </Box>
 
       {/* twitcasting */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           ツイキャスユーザーID
         </Typography>

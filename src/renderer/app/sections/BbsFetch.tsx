@@ -9,7 +9,7 @@ export const BbsFetch: React.FC = () => {
 
   return (
     <SectionPanel title="掲示板取得設定">
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           開始レス番号
         </Typography>

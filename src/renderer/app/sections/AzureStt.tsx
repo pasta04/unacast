@@ -56,8 +56,8 @@ export const AzureStt: React.FC = () => {
           音声入力デバイス
         </Typography>
         <TextField select size="small" fullWidth value={config.azureStt.inputDevice} onChange={(e) => update({ inputDevice: e.target.value })} disabled={isServerRunning}>
-          {audioInputs.length === 0 && <MenuItem value="default">既定のデバイス</MenuItem>}
-          {audioInputs.map((d) => (
+          {(audioInputs === null || audioInputs.length === 0) && <MenuItem value="default">既定のデバイス</MenuItem>}
+          {audioInputs?.map((d) => (
             <MenuItem key={d.deviceId} value={d.deviceId}>
               {d.label || d.deviceId}
             </MenuItem>

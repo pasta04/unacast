@@ -7,8 +7,8 @@ type SectionProps = {
 };
 
 export const SectionPanel: React.FC<SectionProps> = ({ title, children }) => (
-  <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-    <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 'bold', mb: 1 }}>
+  <Paper variant="outlined" sx={{ px: 1.5, py: 1, mb: 1 }}>
+    <Typography variant="h6" sx={{ mb: 0.5 }}>
       {title}
     </Typography>
     <Box>{children}</Box>
@@ -38,7 +38,7 @@ export const LabeledInput: React.FC<LabeledProps> = ({ prefix, suffix, children 
 );
 
 export const Caption: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>
     {children}
   </Typography>
 );

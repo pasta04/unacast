@@ -35,8 +35,9 @@ export type StoreState = {
   /** 接続状況など、サーバ側からの状態 */
   status: Record<ConnectionStatusKey, string>;
   voicevoxSpeakers: VoicevoxSpeakerOption[];
-  audioOutputs: AudioOutputDevice[];
-  audioInputs: AudioInputDevice[];
+  /** 取得結果。null は未取得 (取得が走っていない/取得中) を表す。空配列は「取得したが 0 件」 */
+  audioOutputs: AudioOutputDevice[] | null;
+  audioInputs: AudioInputDevice[] | null;
   /** サーバ起動中かどうか */
   isServerRunning: boolean;
   /** 適用ボタンが押せるか */
@@ -55,8 +56,8 @@ export type StoreState = {
   setStatus: (key: ConnectionStatusKey, value: string) => void;
 
   setVoicevoxSpeakers: (speakers: VoicevoxSpeakerOption[]) => void;
-  setAudioOutputs: (devices: AudioOutputDevice[]) => void;
-  setAudioInputs: (devices: AudioInputDevice[]) => void;
+  setAudioOutputs: (devices: AudioOutputDevice[] | null) => void;
+  setAudioInputs: (devices: AudioInputDevice[] | null) => void;
 
   setServerRunning: (running: boolean) => void;
   setConfigReady: (ready: boolean) => void;
@@ -90,8 +91,8 @@ export const useAppStore = create<StoreState>((set, get) => ({
   appliedConfig: initialConfig,
   status: { ...initialStatus },
   voicevoxSpeakers: [],
-  audioOutputs: [],
-  audioInputs: [],
+  audioOutputs: null,
+  audioInputs: null,
   isServerRunning: false,
   isConfigReady: false,
   alert: { open: false, message: '' },

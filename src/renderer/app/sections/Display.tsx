@@ -24,7 +24,7 @@ export const Display: React.FC = () => {
 
   return (
     <SectionPanel title="表示設定">
-      <FormControl sx={{ mb: 2 }}>
+      <FormControl sx={{ mb: 1 }}>
         <FormLabel>表示タイプ</FormLabel>
         <RadioGroup row value={String(config.dispType)} onChange={(_, v) => setConfig('dispType', Number(v) as AppConfig['dispType'])}>
           <FormControlLabel value="0" control={<Radio size="small" disabled={isServerRunning} />} label="チャット風" />
@@ -32,7 +32,7 @@ export const Display: React.FC = () => {
         </RadioGroup>
       </FormControl>
 
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           初期表示テキスト
         </Typography>
@@ -71,7 +71,7 @@ export const Display: React.FC = () => {
         />
       </Box>
 
-      <FormControl sx={{ mt: 2 }}>
+      <FormControl sx={{ mt: 1 }}>
         <FormLabel>レス表示順序</FormLabel>
         <RadioGroup row value={config.dispSort ? 'down' : 'up'} onChange={(_, v) => setConfig('dispSort', v === 'down')}>
           <FormControlLabel value="up" control={<Radio size="small" disabled={isServerRunning} />} label="新着が上" />
@@ -79,7 +79,7 @@ export const Display: React.FC = () => {
         </RadioGroup>
       </FormControl>
 
-      <FormControl sx={{ display: 'block', mt: 2 }}>
+      <FormControl sx={{ display: 'block', mt: 1 }}>
         <FormLabel>名前と本文を改行で分ける</FormLabel>
         <RadioGroup row value={config.newLine ? 'enable' : 'disable'} onChange={(_, v) => setConfig('newLine', v === 'enable')}>
           <FormControlLabel value="disable" control={<Radio size="small" />} label="分けない" />
@@ -87,7 +87,7 @@ export const Display: React.FC = () => {
         </RadioGroup>
       </FormControl>
 
-      <FormControl sx={{ display: 'block', mt: 2 }}>
+      <FormControl sx={{ display: 'block', mt: 1 }}>
         <FormLabel>画像URLのサムネイル表示</FormLabel>
         <RadioGroup row value={String(config.thumbnail)} onChange={(_, v) => setConfig('thumbnail', Number(v) as AppConfig['thumbnail'])}>
           <FormControlLabel value="0" control={<Radio size="small" />} label="非表示" />
@@ -100,7 +100,7 @@ export const Display: React.FC = () => {
         />
       </FormControl>
 
-      <Box sx={{ mt: 2, maxWidth: 600 }}>
+      <Box sx={{ mt: 1, maxWidth: 600 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           レス表示秒数(SpeechCast風のみ)
         </Typography>
@@ -116,7 +116,7 @@ export const Display: React.FC = () => {
         />
       </Box>
 
-      <FormControl sx={{ display: 'block', mt: 2 }}>
+      <FormControl sx={{ display: 'block', mt: 1 }}>
         <FormLabel>Twitchエモートの表示設定</FormLabel>
         <RadioGroup row value={String(config.emoteSize)} onChange={(_, v) => setConfig('emoteSize', Number(v) as AppConfig['emoteSize'])}>
           <FormControlLabel value="1" control={<Radio size="small" />} label="サイズ小" />

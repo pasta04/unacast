@@ -47,12 +47,12 @@ export const HeaderBar: React.FC = () => {
   const serverUrl = `http://localhost:${config.port}`;
 
   return (
-    <Box sx={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'background.paper', py: 1, mb: 1, borderBottom: '1px solid #eee' }}>
+    <Box sx={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'background.paper', py: 0.5, mb: 0.5, borderBottom: '1px solid #eee' }}>
       <Typography variant="caption" color="text.secondary">
         サーバー起動、適用ボタンクリックで設定が反映されます。
       </Typography>
 
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 0.5 }}>
         <Button variant="contained" disabled={!isConfigReady || !isDirty} onClick={handleApply}>
           適用
         </Button>
@@ -62,30 +62,36 @@ export const HeaderBar: React.FC = () => {
         <Button variant="contained" color="primary" disabled={!isServerRunning} onClick={handleStop}>
           停止
         </Button>
-        <Button variant="outlined" sx={{ ml: 2 }} onClick={handleTest}>
+        <Button variant="outlined" sx={{ ml: 1 }} onClick={handleTest}>
           テスト
         </Button>
-      </Box>
-
-      {!isServerRunning ? (
-        <Box sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-            ポート番号
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {!isServerRunning ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              待ち受けポート:
+            </Typography>
             <Typography variant="body2" color="text.secondary">
               http://localhost:
             </Typography>
-            <TextField size="small" value={String(config.port)} onChange={(e) => setConfig('port', intOrZero(e.target.value))} inputProps={{ pattern: '[0-9]{0,4}?' }} />
+            <TextField
+              size="small"
+              value={String(config.port)}
+              onChange={(e) => setConfig('port', intOrZero(e.target.value))}
+              inputProps={{ pattern: '[0-9]{0,4}?' }}
+              sx={{ width: 70 }}
+            />
           </Box>
-        </Box>
-      ) : (
-        <Box sx={{ mt: 1 }}>
-          <Link component="button" type="button" onClick={() => electron.shell.openExternal(serverUrl)} sx={{ cursor: 'pointer' }}>
-            {serverUrl}
-          </Link>
-        </Box>
-      )}
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              サーバURL:
+            </Typography>
+            <Link component="button" type="button" onClick={() => electron.shell.openExternal(serverUrl)} sx={{ cursor: 'pointer' }}>
+              {serverUrl}
+            </Link>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 };

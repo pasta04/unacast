@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { Box, Checkbox, FormControlLabel, Slider, TextField, Typography } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, Slider, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
+import { reloadAudioDevices } from '../audioDevices';
 import { SectionPanel, Caption } from './common';
 
 export const Sound: React.FC = () => {
@@ -39,16 +40,26 @@ export const Sound: React.FC = () => {
           <Slider min={0} max={100} value={config.playSeVolume} onChange={(_, v) => setConfig('playSeVolume', Number(v))} />
         </Box>
 
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-            レス着信音の出力先
-          </Typography>
-          {audioOutputs.length === 0 && (
+        <Box sx={{ mt: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+              レス着信音の出力先
+            </Typography>
+            <Button size="small" variant="outlined" onClick={reloadAudioDevices}>
+              再読込
+            </Button>
+          </Box>
+          {audioOutputs === null && (
             <Typography variant="caption" color="text.secondary">
               読み込み中…
             </Typography>
           )}
-          {audioOutputs.map((d) => (
+          {audioOutputs !== null && audioOutputs.length === 0 && (
+            <Typography variant="caption" color="text.secondary">
+              出力デバイスが見つかりませんでした。「再読込」を押すか、デバイスを接続してから再度起動してください。
+            </Typography>
+          )}
+          {audioOutputs?.map((d) => (
             <FormControlLabel
               key={d.deviceId}
               control={<Checkbox checked={config.audioOutputDevices.includes(d.deviceId)} onChange={(e) => toggleDevice(d.deviceId, e.target.checked)} size="small" />}

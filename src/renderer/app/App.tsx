@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Box, CssBaseline } from '@mui/material';
+import { Box, CssBaseline, ThemeProvider } from '@mui/material';
+import { compactTheme } from './theme';
 import { Sidebar, sidebarWidth } from './Sidebar';
 import { HeaderBar } from './HeaderBar';
 import { Sources } from './sections/Sources';
@@ -15,6 +16,7 @@ import { AlertDialog, ConfirmStopDialog } from './Dialogs';
 import type { SectionId } from './sections';
 import { useAppStore } from './store';
 import { sendLoadVoicevox } from './ipc';
+import { loadAudioDevicesWithRetry, refreshAudioDevicesFromEvent } from './audioDevices';
 
 const sectionRenderers: Record<Exclude<SectionId, 'all'>, React.FC> = {
   sources: Sources,
@@ -50,28 +52,22 @@ const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
 
 export const App: React.FC = () => {
   const [selected, setSelected] = React.useState<SectionId>('all');
-  const setAudioOutputs = useAppStore((s) => s.setAudioOutputs);
-  const setAudioInputs = useAppStore((s) => s.setAudioInputs);
   const setConfigReady = useAppStore((s) => s.setConfigReady);
 
   React.useEffect(() => {
     let cancelled = false;
-    const loadDevices = async () => {
-      try {
-        await new Promise((r) => setTimeout(r, 500));
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        if (cancelled) return;
-        setAudioOutputs(devices.filter((d) => d.kind === 'audiooutput').map((d) => ({ deviceId: d.deviceId, label: d.label })));
-        setAudioInputs(devices.filter((d) => d.kind === 'audioinput').map((d) => ({ deviceId: d.deviceId, label: d.label })));
-      } catch (e) {
-        useAppStore.getState().openAlert('オーディオデバイスの読み込みに失敗しました');
-      } finally {
-        if (!cancelled) {
-          setConfigReady(true);
-        }
-      }
+
+    // 初回ロード (リトライ込み)
+    loadAudioDevicesWithRetry(() => cancelled).finally(() => {
+      if (!cancelled) setConfigReady(true);
+    });
+
+    // devicechange イベントで後から認識されたデバイスにも追従する
+    const onDeviceChange = () => {
+      if (cancelled) return;
+      refreshAudioDevicesFromEvent();
     };
-    loadDevices();
+    navigator.mediaDevices.addEventListener('devicechange', onDeviceChange);
 
     // VOICEVOX が選択されている場合は初回ロード
     const config = useAppStore.getState().config;
@@ -80,19 +76,22 @@ export const App: React.FC = () => {
     }
     return () => {
       cancelled = true;
+      navigator.mediaDevices.removeEventListener('devicechange', onDeviceChange);
     };
-  }, [setAudioOutputs, setAudioInputs, setConfigReady]);
+  }, [setConfigReady]);
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <Sidebar selected={selected} onSelect={setSelected} />
-      <Box component="main" sx={{ flexGrow: 1, p: 2, ml: 0, width: `calc(100% - ${sidebarWidth}px)` }}>
-        <HeaderBar />
-        <SectionContent selected={selected} />
-        <ConfirmStopDialog />
-        <AlertDialog />
+    <ThemeProvider theme={compactTheme}>
+      <Box sx={{ display: 'flex' }}>
+        <CssBaseline />
+        <Sidebar selected={selected} onSelect={setSelected} />
+        <Box component="main" sx={{ flexGrow: 1, px: 1.5, py: 1, ml: 0, width: `calc(100% - ${sidebarWidth}px)` }}>
+          <HeaderBar />
+          <SectionContent selected={selected} />
+          <ConfirmStopDialog />
+          <AlertDialog />
+        </Box>
       </Box>
-    </Box>
+    </ThemeProvider>
   );
 };

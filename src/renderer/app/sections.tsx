@@ -19,7 +19,7 @@ export type SectionDef = {
 };
 
 export const sections: SectionDef[] = [
-  { id: 'all', label: '全表示', icon: <DashboardIcon /> },
+  { id: 'all', label: '全設定', icon: <DashboardIcon /> },
   { id: 'sources', label: 'レス・コメント取得先', icon: <RssFeedIcon /> },
   { id: 'fetch', label: '掲示板取得設定', icon: <DownloadIcon /> },
   { id: 'display', label: '表示設定', icon: <VisibilityIcon /> },

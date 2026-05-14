@@ -96,7 +96,7 @@ export const Yomiko: React.FC = () => {
 
   return (
     <SectionPanel title="読み子設定">
-      <FormControl sx={{ display: 'block', mb: 2 }}>
+      <FormControl sx={{ display: 'block', mb: 1 }}>
         <FormLabel>読み子の種類</FormLabel>
         <RadioGroup row value={config.typeYomiko} onChange={(_, v) => setConfig('typeYomiko', v as YomikoType)}>
           {yomikoOptions.map((opt) => (
@@ -105,7 +105,7 @@ export const Yomiko: React.FC = () => {
         </RadioGroup>
       </FormControl>
 
-      <FormControl sx={{ display: 'block', mb: 2 }}>
+      <FormControl sx={{ display: 'block', mb: 1 }}>
         <FormLabel>音声認識テキスト読み子の種類</FormLabel>
         <RadioGroup row value={config.typeYomikoStt} onChange={(_, v) => setConfig('typeYomikoStt', v as AppConfig['typeYomikoStt'])}>
           {yomikoOptions.map((opt) => (
@@ -114,14 +114,14 @@ export const Yomiko: React.FC = () => {
         </RadioGroup>
       </FormControl>
 
-      <Box sx={{ mb: 2, maxWidth: 600 }}>
+      <Box sx={{ mb: 1, maxWidth: 600 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           民安☆Talkのファイルパス
         </Typography>
         <TextField fullWidth size="small" value={config.tamiyasuPath} placeholder="C:\\hogehoge\\fugafuga\\vrx.exe" onChange={(e) => setConfig('tamiyasuPath', e.target.value)} />
       </Box>
 
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 1 }}>
         棒読みちゃん設定
       </Typography>
       <Box sx={{ maxWidth: 600 }}>
@@ -151,7 +151,7 @@ export const Yomiko: React.FC = () => {
         <TextField fullWidth size="small" value={config.bouyomiPrefix} onChange={(e) => setConfig('bouyomiPrefix', e.target.value)} />
       </Box>
 
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 1 }}>
         VOICE VOX設定
       </Typography>
       <Box sx={{ maxWidth: 600 }}>
@@ -186,7 +186,7 @@ export const Yomiko: React.FC = () => {
         </Typography>
       </Box>
 
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 1 }}>
         その他の読み子設定
       </Typography>
       <FormControlLabel
