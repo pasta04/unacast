@@ -61,16 +61,8 @@ export const App: React.FC = () => {
         await new Promise((r) => setTimeout(r, 500));
         const devices = await navigator.mediaDevices.enumerateDevices();
         if (cancelled) return;
-        setAudioOutputs(
-          devices
-            .filter((d) => d.kind === 'audiooutput')
-            .map((d) => ({ deviceId: d.deviceId, label: d.label })),
-        );
-        setAudioInputs(
-          devices
-            .filter((d) => d.kind === 'audioinput')
-            .map((d) => ({ deviceId: d.deviceId, label: d.label })),
-        );
+        setAudioOutputs(devices.filter((d) => d.kind === 'audiooutput').map((d) => ({ deviceId: d.deviceId, label: d.label })));
+        setAudioInputs(devices.filter((d) => d.kind === 'audioinput').map((d) => ({ deviceId: d.deviceId, label: d.label })));
       } catch (e) {
         useAppStore.getState().openAlert('オーディオデバイスの読み込みに失敗しました');
       } finally {

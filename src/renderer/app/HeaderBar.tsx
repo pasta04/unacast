@@ -70,22 +70,12 @@ export const HeaderBar: React.FC = () => {
             <Typography variant="body2" color="text.secondary">
               http://localhost:
             </Typography>
-            <TextField
-              size="small"
-              value={String(config.port)}
-              onChange={(e) => setConfig('port', intOrZero(e.target.value))}
-              inputProps={{ pattern: '[0-9]{0,4}?' }}
-            />
+            <TextField size="small" value={String(config.port)} onChange={(e) => setConfig('port', intOrZero(e.target.value))} inputProps={{ pattern: '[0-9]{0,4}?' }} />
           </Box>
         </Box>
       ) : (
         <Box sx={{ mt: 1 }}>
-          <Link
-            component="button"
-            type="button"
-            onClick={() => electron.shell.openExternal(serverUrl)}
-            sx={{ cursor: 'pointer' }}
-          >
+          <Link component="button" type="button" onClick={() => electron.shell.openExternal(serverUrl)} sx={{ cursor: 'pointer' }}>
             {serverUrl}
           </Link>
         </Box>

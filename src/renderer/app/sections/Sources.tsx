@@ -45,12 +45,7 @@ export const Sources: React.FC = () => {
           Jpnkn Fastインターフェース(β)
         </Typography>
         <LabeledInput prefix="http://bbs.jpnkn.com/" suffix="/beta/fast">
-          <TextField
-            size="small"
-            value={config.jpnknFastBoardId}
-            onChange={(e) => setConfig('jpnknFastBoardId', e.target.value)}
-            disabled={isServerRunning}
-          />
+          <TextField size="small" value={config.jpnknFastBoardId} onChange={(e) => setConfig('jpnknFastBoardId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <StatusLine label="status" value={status.jpnknFast} />
       </Box>
@@ -63,21 +58,11 @@ export const Sources: React.FC = () => {
         <Caption>両方入力した場合はLiveIDが優先されます</Caption>
         <Typography variant="caption">LiveID</Typography>
         <LabeledInput prefix="https://www.youtube.com/watch?v=">
-          <TextField
-            size="small"
-            value={config.youtubeLiveId}
-            onChange={(e) => setConfig('youtubeLiveId', e.target.value)}
-            disabled={isServerRunning}
-          />
+          <TextField size="small" value={config.youtubeLiveId} onChange={(e) => setConfig('youtubeLiveId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <Typography variant="caption">チャンネルID</Typography>
         <LabeledInput prefix="https://www.youtube.com/channel/" suffix="/">
-          <TextField
-            size="small"
-            value={config.youtubeId}
-            onChange={(e) => setConfig('youtubeId', e.target.value)}
-            disabled={isServerRunning}
-          />
+          <TextField size="small" value={config.youtubeId} onChange={(e) => setConfig('youtubeId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <Box sx={{ mt: 0.5 }}>
           <StatusLine label="status" value={status.youtube} />
@@ -91,12 +76,7 @@ export const Sources: React.FC = () => {
           Twitch ユーザID
         </Typography>
         <LabeledInput prefix="https://www.twitch.tv/" suffix="/">
-          <TextField
-            size="small"
-            value={config.twitchId}
-            onChange={(e) => setConfig('twitchId', e.target.value)}
-            disabled={isServerRunning}
-          />
+          <TextField size="small" value={config.twitchId} onChange={(e) => setConfig('twitchId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <StatusLine label="status" value={status.twitch} />
       </Box>
@@ -124,12 +104,7 @@ export const Sources: React.FC = () => {
           ツイキャスユーザーID
         </Typography>
         <LabeledInput prefix="https://twitcasting.tv/" suffix="/">
-          <TextField
-            size="small"
-            value={config.twitcastingId}
-            onChange={(e) => setConfig('twitcastingId', e.target.value)}
-            disabled={isServerRunning}
-          />
+          <TextField size="small" value={config.twitcastingId} onChange={(e) => setConfig('twitcastingId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <StatusLine label="status" value={status.twitcasting} />
       </Box>

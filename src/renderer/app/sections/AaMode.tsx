@@ -25,13 +25,7 @@ export const AaMode: React.FC = () => {
     <SectionPanel title="AAモード">
       <Caption>条件に合致するレスを専用のフォントで表示します。</Caption>
       <FormControlLabel
-        control={
-          <Checkbox
-            size="small"
-            checked={config.aamode.enable}
-            onChange={(e) => setConfig('aamode', { ...config.aamode, enable: e.target.checked })}
-          />
-        }
+        control={<Checkbox size="small" checked={config.aamode.enable} onChange={(e) => setConfig('aamode', { ...config.aamode, enable: e.target.checked })} />}
         label="有効にする"
       />
       <Box sx={{ mt: 1 }}>
@@ -39,22 +33,10 @@ export const AaMode: React.FC = () => {
           判定条件
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-          <TextField
-            size="small"
-            value={String(config.aamode.condition.length)}
-            onChange={(e) => updateLength(e.target.value)}
-            sx={{ width: 200 }}
-          />
+          <TextField size="small" value={String(config.aamode.condition.length)} onChange={(e) => updateLength(e.target.value)} sx={{ width: 200 }} />
           <Typography variant="body2">文字以上、または下記文字列を含む場合</Typography>
         </Box>
-        <TextField
-          multiline
-          minRows={4}
-          fullWidth
-          sx={{ mt: 1, maxWidth: 400 }}
-          value={config.aamode.condition.words.join('\n')}
-          onChange={(e) => updateWords(e.target.value)}
-        />
+        <TextField multiline minRows={4} fullWidth sx={{ mt: 1, maxWidth: 400 }} value={config.aamode.condition.words.join('\n')} onChange={(e) => updateWords(e.target.value)} />
       </Box>
     </SectionPanel>
   );

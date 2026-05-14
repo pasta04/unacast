@@ -10,17 +10,7 @@ import TranslateIcon from '@mui/icons-material/Translate';
 import MicIcon from '@mui/icons-material/Mic';
 import TuneIcon from '@mui/icons-material/Tune';
 
-export type SectionId =
-  | 'all'
-  | 'sources'
-  | 'fetch'
-  | 'display'
-  | 'sound'
-  | 'yomiko'
-  | 'aamode'
-  | 'translate'
-  | 'azureStt'
-  | 'other';
+export type SectionId = 'all' | 'sources' | 'fetch' | 'display' | 'sound' | 'yomiko' | 'aamode' | 'translate' | 'azureStt' | 'other';
 
 export type SectionDef = {
   id: SectionId;

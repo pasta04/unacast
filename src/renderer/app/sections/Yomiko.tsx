@@ -44,7 +44,11 @@ const YomikoDictionaryDialog: React.FC = () => {
     setConfig('yomikoDictionary', next);
   };
   const addEntry = () => setConfig('yomikoDictionary', [...dictionary, { pattern: '', pronunciation: '' }]);
-  const removeEntry = (index: number) => setConfig('yomikoDictionary', dictionary.filter((_, i) => i !== index));
+  const removeEntry = (index: number) =>
+    setConfig(
+      'yomikoDictionary',
+      dictionary.filter((_, i) => i !== index),
+    );
 
   return (
     <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md">
@@ -103,11 +107,7 @@ export const Yomiko: React.FC = () => {
 
       <FormControl sx={{ display: 'block', mb: 2 }}>
         <FormLabel>音声認識テキスト読み子の種類</FormLabel>
-        <RadioGroup
-          row
-          value={config.typeYomikoStt}
-          onChange={(_, v) => setConfig('typeYomikoStt', v as AppConfig['typeYomikoStt'])}
-        >
+        <RadioGroup row value={config.typeYomikoStt} onChange={(_, v) => setConfig('typeYomikoStt', v as AppConfig['typeYomikoStt'])}>
           {yomikoOptions.map((opt) => (
             <FormControlLabel key={opt.value} value={opt.value} control={<Radio size="small" />} label={opt.label} />
           ))}
@@ -118,13 +118,7 @@ export const Yomiko: React.FC = () => {
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           民安☆Talkのファイルパス
         </Typography>
-        <TextField
-          fullWidth
-          size="small"
-          value={config.tamiyasuPath}
-          placeholder="C:\\hogehoge\\fugafuga\\vrx.exe"
-          onChange={(e) => setConfig('tamiyasuPath', e.target.value)}
-        />
+        <TextField fullWidth size="small" value={config.tamiyasuPath} placeholder="C:\\hogehoge\\fugafuga\\vrx.exe" onChange={(e) => setConfig('tamiyasuPath', e.target.value)} />
       </Box>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }}>
@@ -165,12 +159,7 @@ export const Yomiko: React.FC = () => {
           インストールパス
         </Typography>
         <Caption>VOICE VOXがインストールされているパスを指定します。空の場合は既定のインストール先を調べます。</Caption>
-        <TextField
-          fullWidth
-          size="small"
-          value={config.voicevox.path}
-          onChange={(e) => setConfig('voicevox', { ...config.voicevox, path: e.target.value })}
-        />
+        <TextField fullWidth size="small" value={config.voicevox.path} onChange={(e) => setConfig('voicevox', { ...config.voicevox, path: e.target.value })} />
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1 }}>
           話者
         </Typography>
@@ -201,9 +190,7 @@ export const Yomiko: React.FC = () => {
         その他の読み子設定
       </Typography>
       <FormControlLabel
-        control={
-          <Checkbox checked={config.yomikoReplaceNewline} onChange={(e) => setConfig('yomikoReplaceNewline', e.target.checked)} size="small" />
-        }
+        control={<Checkbox checked={config.yomikoReplaceNewline} onChange={(e) => setConfig('yomikoReplaceNewline', e.target.checked)} size="small" />}
         label="読み子に渡す時に改行削除"
       />
       <Box sx={{ mt: 1 }}>

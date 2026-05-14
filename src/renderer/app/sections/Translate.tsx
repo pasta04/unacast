@@ -12,13 +12,7 @@ export const Translate: React.FC = () => {
     <SectionPanel title="レス翻訳(実験的)">
       <Caption>Google翻訳による翻訳を実行します。ブラウザには表示されません。</Caption>
       <FormControlLabel
-        control={
-          <Checkbox
-            size="small"
-            checked={config.translate.enable}
-            onChange={(e) => setConfig('translate', { ...config.translate, enable: e.target.checked })}
-          />
-        }
+        control={<Checkbox size="small" checked={config.translate.enable} onChange={(e) => setConfig('translate', { ...config.translate, enable: e.target.checked })} />}
         label="有効にする"
       />
       <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1 }}>
@@ -28,9 +22,7 @@ export const Translate: React.FC = () => {
         select
         size="small"
         value={config.translate.targetLang}
-        onChange={(e) =>
-          setConfig('translate', { ...config.translate, targetLang: e.target.value as AppConfig['translate']['targetLang'] })
-        }
+        onChange={(e) => setConfig('translate', { ...config.translate, targetLang: e.target.value as AppConfig['translate']['targetLang'] })}
         sx={{ minWidth: 160 }}
       >
         <MenuItem value="ja">日本語</MenuItem>

@@ -41,18 +41,12 @@ export const Other: React.FC = () => {
 
       <Box sx={{ mt: 1 }}>
         <Caption>スレ順に探索して、最初に見つかった1000以外のスレに移動します。移動先の初回取得結果はブラウザ側には表示しません。</Caption>
-        <FormControlLabel
-          control={<Checkbox size="small" checked={config.moveThread} onChange={(e) => setConfig('moveThread', e.target.checked)} />}
-          label="1000で自動スレ移動"
-        />
+        <FormControlLabel control={<Checkbox size="small" checked={config.moveThread} onChange={(e) => setConfig('moveThread', e.target.checked)} />} label="1000で自動スレ移動" />
       </Box>
 
       <FormControl sx={{ display: 'block', mt: 2 }}>
         <FormLabel>レスの処理単位</FormLabel>
-        <RadioGroup
-          value={String(config.commentProcessType)}
-          onChange={(_, v) => setConfig('commentProcessType', Number(v) as AppConfig['commentProcessType'])}
-        >
+        <RadioGroup value={String(config.commentProcessType)} onChange={(_, v) => setConfig('commentProcessType', Number(v) as AppConfig['commentProcessType'])}>
           <FormControlLabel value="0" control={<Radio size="small" />} label="新着を優先(着信音等が鳴ってる場合は中断されます)" />
           <FormControlLabel value="1" control={<Radio size="small" />} label="1つずつ" />
         </RadioGroup>

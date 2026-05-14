@@ -1,17 +1,7 @@
 import { create } from 'zustand';
 import { AppConfig, defaultConfig, loadConfigFromStorage, saveConfigToStorage } from './config';
 
-export type ConnectionStatusKey =
-  | 'bbs'
-  | 'bbsTitle'
-  | 'jpnknFast'
-  | 'youtube'
-  | 'youtubeLiveId'
-  | 'twitch'
-  | 'niconico'
-  | 'twitcasting'
-  | 'stt'
-  | 'voicevox';
+export type ConnectionStatusKey = 'bbs' | 'bbsTitle' | 'jpnknFast' | 'youtube' | 'youtubeLiveId' | 'twitch' | 'niconico' | 'twitcasting' | 'stt' | 'voicevox';
 
 export type VoicevoxSpeakerOption = {
   /** "speaker\\style" 形式の value */
