@@ -16,8 +16,8 @@ const execParam = `
 npx electron-packager ./ unacast --platform=${PLATFORM} --arch=x64 --overwrite --icon=icon.ico ${ASAR}
     --ignore="^/\\.vscode($|/)"
     --ignore="^/\\.github($|/)"
-    --ignore="^/dist($|/)"
-    --ignore="^/out/.+\\.map$"
+    --ignore="^/dist/.+\\.map$"
+    --ignore="^/out($|/)"
     --ignore="^/documents($|/)"
     --ignore="^/build-mac($|/)"
     --ignore="^/build-win($|/)"

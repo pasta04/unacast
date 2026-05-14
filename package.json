@@ -2,7 +2,7 @@
   "name": "unacast",
   "version": "0.9.0",
   "description": "掲示板のレスをYoutubeコメント風に表示したいという思想の元に開発されるツール",
-  "main": "out/main/index.js",
+  "main": "dist/main/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "electron-vite dev",

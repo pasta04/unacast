@@ -7,7 +7,7 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
     build: {
-      outDir: 'out/main',
+      outDir: 'dist/main',
       commonjsOptions: {
         // src 配下の事前バンドル済み CJS ファイル(googletrans.js, niconama/node.js 等)も
         // rollup の commonjs プラグインを通して扱う
@@ -35,7 +35,7 @@ export default defineConfig({
       },
     },
     build: {
-      outDir: 'out/renderer',
+      outDir: 'dist/renderer',
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/html/index.html'),
