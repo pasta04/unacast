@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>unacast</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-  <link rel="stylesheet" href="../../public/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
     #root { min-height: 100%; }
@@ -15,8 +15,8 @@
 
 <body>
   <div id="root"></div>
+  <script type="module" src="../renderer/renderer.tsx"></script>
   <script>
-    require('../../dist/scripts');
     const { shell } = require('electron');
     const urlopen = (url) => {
       let tmp = url;
