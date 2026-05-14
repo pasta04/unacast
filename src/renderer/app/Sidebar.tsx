@@ -9,6 +9,7 @@ type Props = {
   onSelect: (id: SectionId) => void;
 };
 
+/** サイドバー */
 export const Sidebar: React.FC<Props> = ({ selected, onSelect }) => (
   <Drawer
     variant="permanent"

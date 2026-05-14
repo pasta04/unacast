@@ -1,5 +1,3 @@
-import 'material-design-lite/material.min.css';
-import 'material-design-lite';
 import electron, { shell } from 'electron';
 import { Menu, MenuItem, getCurrentWindow } from '@electron/remote';
 import electronlog from 'electron-log/renderer';
@@ -43,11 +41,11 @@ ipcRenderer.on(electronEvent.PREVIEW_IMAGE, (event: any, url: string) => {
   }
 
   tabBartDom.insertAdjacentHTML('beforeend', `<a id="tab_${id}" href="#${id}" class="" data-type="tab">${tabname}</a>`);
-  tabContentDom.insertAdjacentHTML('beforeend', `<div class="mdl-tabs__panel is-active" id="${id}"><div class="content"><img src="${url}" data-type="content" /></div></div>`);
+  tabContentDom.insertAdjacentHTML('beforeend', `<div class="tab-panel is-active" id="${id}"><div class="content"><img src="${url}" data-type="content" /></div></div>`);
 
   existsTabdom = tabBartDom.querySelector(`#tab_${id}`);
   if (existsTabdom) {
-    existsTabdom.classList.add('mdl-tabs__tab');
+    existsTabdom.classList.add('tab');
     existsTabdom.classList.add('is-active');
     existsTabdom.addEventListener('click', activeTab(url, id));
   }
