@@ -7,7 +7,7 @@ import electronlog from 'electron-log';
 const log = electronlog.scope('niconama');
 import { sleep } from '../util';
 import WebSocket from 'ws';
-const NicoliveApi = require('./node.js');
+import * as NicoliveApi from './node.js';
 
 type CommentItem = {
   number: string;

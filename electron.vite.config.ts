@@ -9,9 +9,9 @@ export default defineConfig({
     build: {
       outDir: 'out/main',
       commonjsOptions: {
-        // src 配下の事前バンドル済み CJS ファイル(googletrans.js)も rollup の
-        // commonjs プラグインを通して扱う
-        include: [/node_modules/, /\.cjs$/, /\/main\/[^/]+\.js$/],
+        // src 配下の事前バンドル済み CJS ファイル(googletrans.js, niconama/node.js 等)も
+        // rollup の commonjs プラグインを通して扱う
+        include: [/node_modules/, /\.cjs$/, /src[\\/]main[\\/].*\.js$/],
         transformMixedEsModules: true,
       },
       rollupOptions: {
