@@ -64,5 +64,11 @@ export const SourceFilterToggle: React.FC<{
       [axis]: { ...axisMap, [source]: value },
     });
   };
-  return <FormControlLabel control={<Checkbox checked={checked} onChange={(e) => onChange(e.target.checked)} size="small" />} label={label} />;
+  return (
+    <FormControlLabel
+      sx={{ display: 'flex', mt: '-2px', mb: '-2px', ml: 0 }}
+      control={<Checkbox checked={checked} onChange={(e) => onChange(e.target.checked)} size="small" sx={{ py: 0 }} />}
+      label={label}
+    />
+  );
 };

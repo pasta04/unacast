@@ -65,10 +65,10 @@ export const AzureStt: React.FC = () => {
         </TextField>
       </Box>
 
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+      <SourceFilterToggle source="stt" axis="broadcast" />
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: '-4px', lineHeight: 1 }}>
         status: {status}
       </Typography>
-      <SourceFilterToggle source="stt" axis="broadcast" />
     </SectionPanel>
   );
 };

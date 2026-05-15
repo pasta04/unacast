@@ -36,8 +36,8 @@ export const Sources: React.FC = () => {
           inputProps={{ pattern: 'http.?://.+/$' }}
           placeholder="http(s)://.../"
         />
-        <StatusLine label="status" value={status.bbs} />
         <SourceFilterToggle source="bbs" axis="broadcast" />
+        <StatusLine label="status" value={status.bbs} />
       </Box>
 
       {/* Jpnkn Fast */}
@@ -48,8 +48,8 @@ export const Sources: React.FC = () => {
         <LabeledInput prefix="http://bbs.jpnkn.com/" suffix="/beta/fast">
           <TextField size="small" value={config.jpnknFastBoardId} onChange={(e) => setConfig('jpnknFastBoardId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
-        <StatusLine label="status" value={status.jpnknFast} />
         <SourceFilterToggle source="jpnkn" axis="broadcast" />
+        <StatusLine label="status" value={status.jpnknFast} />
       </Box>
 
       {/* YouTube */}
@@ -66,11 +66,11 @@ export const Sources: React.FC = () => {
         <LabeledInput prefix="https://www.youtube.com/channel/" suffix="/">
           <TextField size="small" value={config.youtubeId} onChange={(e) => setConfig('youtubeId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
+        <SourceFilterToggle source="youtube" axis="broadcast" />
         <Box sx={{ mt: 0.5 }}>
           <StatusLine label="status" value={status.youtube} />
           <StatusLine label="liveId" value={status.youtubeLiveId} />
         </Box>
-        <SourceFilterToggle source="youtube" axis="broadcast" />
       </Box>
 
       {/* Twitch */}
@@ -81,8 +81,8 @@ export const Sources: React.FC = () => {
         <LabeledInput prefix="https://www.twitch.tv/" suffix="/">
           <TextField size="small" value={config.twitchId} onChange={(e) => setConfig('twitchId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
-        <StatusLine label="status" value={status.twitch} />
         <SourceFilterToggle source="twitch" axis="broadcast" />
+        <StatusLine label="status" value={status.twitch} />
       </Box>
 
       {/* niconico */}
@@ -99,8 +99,8 @@ export const Sources: React.FC = () => {
             inputProps={{ pattern: '^\\d+$' }}
           />
         </LabeledInput>
-        <StatusLine label="status" value={status.niconico} />
         <SourceFilterToggle source="niconico" axis="broadcast" />
+        <StatusLine label="status" value={status.niconico} />
       </Box>
 
       {/* twitcasting */}
@@ -111,8 +111,8 @@ export const Sources: React.FC = () => {
         <LabeledInput prefix="https://twitcasting.tv/" suffix="/">
           <TextField size="small" value={config.twitcastingId} onChange={(e) => setConfig('twitcastingId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
-        <StatusLine label="status" value={status.twitcasting} />
         <SourceFilterToggle source="twitcasting" axis="broadcast" />
+        <StatusLine label="status" value={status.twitcasting} />
       </Box>
     </SectionPanel>
   );
