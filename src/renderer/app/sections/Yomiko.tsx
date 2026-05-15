@@ -156,7 +156,7 @@ export const Yomiko: React.FC = () => {
       </Typography>
       <Box sx={{ maxWidth: 600 }}>
         <Typography variant="caption" sx={{ display: 'block', color: 'warning.main', mb: 0.5 }}>
-          ※直接利用可能なバージョンは0.15以下のみ。それ以上は民安☆Talkを経由してください。
+          ※直接利用可能なバージョンは0.15以下のみ。0.16以上は民安☆Talkを経由してください。
         </Typography>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
           インストールパス

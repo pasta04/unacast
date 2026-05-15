@@ -66,7 +66,9 @@ export const SourceFilterToggle: React.FC<{
   };
   return (
     <FormControlLabel
-      sx={{ display: 'flex', mt: '-2px', mb: '-2px', ml: 0 }}
+      // Checkbox 内部 padding (theme で 3px) ぶん負方向に寄せて、アイコン左端を
+      // URL / status の左端 (=0) に揃える
+      sx={{ display: 'flex', mt: '-6px', mb: '2px', ml: '-3px' }}
       control={<Checkbox checked={checked} onChange={(e) => onChange(e.target.checked)} size="small" sx={{ py: 0 }} />}
       label={label}
     />
