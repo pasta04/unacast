@@ -41,11 +41,11 @@ ipcRenderer.on(electronEvent.PREVIEW_IMAGE, (event: any, url: string) => {
   }
 
   tabBartDom.insertAdjacentHTML('beforeend', `<a id="tab_${id}" href="#${id}" class="" data-type="tab">${tabname}</a>`);
-  tabContentDom.insertAdjacentHTML('beforeend', `<div class="mdl-tabs__panel is-active" id="${id}"><div class="content"><img src="${url}" data-type="content" /></div></div>`);
+  tabContentDom.insertAdjacentHTML('beforeend', `<div class="tab-panel is-active" id="${id}"><div class="content"><img src="${url}" data-type="content" /></div></div>`);
 
   existsTabdom = tabBartDom.querySelector(`#tab_${id}`);
   if (existsTabdom) {
-    existsTabdom.classList.add('mdl-tabs__tab');
+    existsTabdom.classList.add('tab');
     existsTabdom.classList.add('is-active');
     existsTabdom.addEventListener('click', activeTab(url, id));
   }
@@ -80,7 +80,7 @@ const handleTabRightClick = (e: MouseEvent, id: string) => {
     new MenuItem({
       label: 'Close',
       type: 'normal',
-      click: (menu, browser, event) => {
+      click: (_menu, _browser, _event) => {
         // 要素取得
         const tabBarDom = document.getElementById('tab-bar') as HTMLDivElement;
         const tabContentDom = document.getElementById('tab-content') as HTMLDivElement;
@@ -89,7 +89,7 @@ const handleTabRightClick = (e: MouseEvent, id: string) => {
         const existsContentdom = tabContentDom.querySelector(`#${id}`) as HTMLDivElement;
         // クローズ対象の位置取得
         const tabIdList: string[] = [];
-        tabBarDom.querySelectorAll('a').forEach((value, key) => {
+        tabBarDom.querySelectorAll('a').forEach((value) => {
           tabIdList.push(value.getAttribute('id') as string);
         });
         const tabIndex = tabIdList.indexOf(`tab_${id}`);
@@ -114,7 +114,7 @@ const handleTabRightClick = (e: MouseEvent, id: string) => {
     new MenuItem({
       label: 'Open By Browser',
       type: 'normal',
-      click: (menu, browser, event) => {
+      click: (_menu, _browser, _event) => {
         const imageDom = document.querySelector(`#${id} > div > img`);
         if (imageDom) {
           const src = imageDom.getAttribute('src') as string;

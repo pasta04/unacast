@@ -1,7 +1,6 @@
 import http from 'http';
 import path from 'path';
 import express, { Request, Response } from 'express';
-import axios from 'axios';
 import cors from 'cors';
 import log from 'electron-log';
 import { ChatClient } from 'dank-twitch-irc';
@@ -9,6 +8,8 @@ import { LiveChat } from './youtube-chat';
 import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
 import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
+import { filterByAxis } from './sourceFilter';
+import { registerExternalApiRoutes } from './externalApi/routes';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
 import { CommentItem, ImageItem } from './youtube-chat/parser';
@@ -23,7 +24,8 @@ import AzureSpeechToText from './azureStt';
 import tr from './googletrans';
 import CommentIcons from './CommentIcons';
 
-let app: expressWs.Instance['app'];
+/** express の app インスタンス。サーバ起動中のみ値を持ち、STOP_SERVER で null に戻る */
+let app: expressWs.Instance['app'] | null = null;
 
 // サーバーをグローバル変数にセットできるようにする（サーバー停止処理のため）
 let server: http.Server;
@@ -78,10 +80,11 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
   log.info('[apply-config] start');
   log.info(config);
 
-  // Configの変更内容に応じて何かする
+  // サーバー起動前に「適用」を押された場合 globalThis.config は未初期化なので、
+  // 差分判定は optional chaining で安全に取り、未初期化なら「全部新規」とみなす。
   const oldConfig = globalThis.config;
-  const isChangedUrl = globalThis.config.url !== config.url;
-  const isChangeSePath = globalThis.config.sePath !== config.sePath;
+  const isChangedUrl = oldConfig?.url !== config.url;
+  const isChangeSePath = oldConfig?.sePath !== config.sePath;
   globalThis.config = config;
 
   // 着信音のパス
@@ -100,10 +103,13 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
     niconico: config.iconDirNiconico,
     twitcasting: config.iconDirTwitcasting,
     stt: config.iconDirStt,
+    external: config.external?.iconDir ?? '',
   });
 
-  // スレのURLが変わった
-  if (isChangedUrl && config.url) {
+  // スレのURLが変わった。サーバー起動中のみ chat ウィンドウへの反映を行う。
+  // (起動前に「適用」を押した場合は config の保存だけで十分で、ここで前回スレの
+  //  最新レスを chat に流すと「サーバー起動してないのにレスが出る」状態になる)
+  if (isChangedUrl && config.url && app) {
     // 新スレを取得
     const ret = await getBbsResponse(globalThis.config.url, NaN);
     log.debug(ret);
@@ -123,7 +129,7 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
   // VOICE VOX 関連
   if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
     // VOICEVOX 利用の場合のみ
-    if (oldConfig.voicevox?.path !== config.voicevox?.path) {
+    if (oldConfig?.voicevox?.path !== config.voicevox?.path) {
       // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
       loadVoiceVox(config.voicevox, true);
     } else {
@@ -157,7 +163,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
 
   app.set('view engine', 'ejs');
   // viewディレクトリの指定
-  app.set('views', path.resolve(__dirname, '../views'));
+  app.set('views', path.resolve(__dirname, '../../views'));
 
   // 設定情報をグローバル変数へセットする
   globalThis.config = config;
@@ -165,18 +171,18 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   log.debug('[startServer]設定値 = ');
   log.debug(globalThis.config);
 
-  app.get('/', (req: Request, res: Response, next) => {
+  app.get('/', (req: Request, res: Response) => {
     res.render('server', config);
     req.connection.end();
   });
 
   // サーバー設定のIF
-  app.get('/config', (req: Request, res: Response, next) => {
+  app.get('/config', (_req: Request, res: Response) => {
     res.send(JSON.stringify(globalThis.config));
   });
 
   // 静的コンテンツはpublicディレクトリの中身を使用するという宣言
-  app.use(express.static(path.resolve(__dirname, '../public')));
+  app.use(express.static(path.resolve(__dirname, '../../public')));
 
   // 2ch互換掲示板の取得
   app.use('/getRes', getRes);
@@ -189,6 +195,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     niconico: globalThis.config.iconDirNiconico,
     twitcasting: globalThis.config.iconDirTwitcasting,
     stt: globalThis.config.iconDirStt,
+    external: globalThis.config.external?.iconDir ?? '',
   });
 
   // 各種アイコンをホストするためのパスを設定
@@ -198,6 +205,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   if (globalThis.electron.iconList.niconicoIconDir) app.use('/niconico', express.static(globalThis.electron.iconList.niconicoIconDir));
   if (globalThis.electron.iconList.twitcastingIconDir) app.use('/twitcasting', express.static(globalThis.electron.iconList.twitcastingIconDir));
   if (globalThis.electron.iconList.sttIconDir) app.use('/stt', express.static(globalThis.electron.iconList.sttIconDir));
+  if (globalThis.electron.iconList.externalIconDir) app.use('/external', express.static(globalThis.electron.iconList.externalIconDir));
 
   // SEを取得する
   if (globalThis.config.sePath) {
@@ -470,8 +478,18 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     translateTaskScheduler(serverId);
   }
 
-  // WebSocketを立てる
-  app.ws('/ws', (ws, req) => {
+  /**
+   * 配信画面 (OBS ブラウザソース等) との WebSocket。
+   *
+   * - サーバ側 → ブラウザ: sendDom() 内で aWss.clients.forEach(c => c.send(...)) で
+   *   コメント DOM を全 client にブロードキャストする (出力方向のメイン経路)。
+   * - ブラウザ側 → サーバ: 接続維持のため定期 ping を送ってくる (public/js/readThread.js)。
+   *   pong を返すだけで、データは受け取らない。
+   *
+   * したがって、外部ツールからの受信は別パス /api/ws で行う (registerExternalApiRoutes)。
+   * 役割を混ぜないため /ws はこの ping/pong + ブロードキャストの用途に留めること。
+   */
+  app.ws('/ws', (ws) => {
     ws.on('message', (message) => {
       log.debug('Received: ' + message.toString());
       if (message.toString() === 'ping') {
@@ -483,6 +501,10 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
       log.debug('I lost a client');
     });
   });
+
+  // 外部ツールからの受信用エンドポイント (POST /api/comments と WS /api/ws)。
+  // 上の /ws (配信画面向け出力) とは方向が逆なので別パスで分離している。
+  registerExternalApiRoutes(app);
 
   // 指定したポートで待ち受け開始
   server = app.listen(config.port, () => {
@@ -515,6 +537,8 @@ const commentTest = async () => {
         imgUrl: './img/unacast.png',
         type: 'comment',
         from: 'bbs',
+        // テストコメントは配信画面の sourceFilter 設定に関わらず常に出す
+        bypassFilter: true,
       },
     ]);
   } catch (e) {
@@ -583,7 +607,7 @@ const startTwitchChat = async () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'error!' });
     });
 
-    twitchChat.on('close', (event) => {
+    twitchChat.on('close', () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'connection end' });
     });
   } catch (e) {
@@ -610,7 +634,7 @@ const startYoutubeChat = async () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'ok' });
     });
     // 接続終了イベント
-    globalThis.electron.youtubeChat.on('end', (reason?: string) => {
+    globalThis.electron.youtubeChat.on('end', () => {
       log.info('[Youtube Chat] disconnect');
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'connection end' });
     });
@@ -970,7 +994,7 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
   }
   // log.info('[playYomiko] end');
 };
-ipcMain.on(electronEvent.SPEAKING_END, (event) => (isSpeaking = false));
+ipcMain.on(electronEvent.SPEAKING_END, () => (isSpeaking = false));
 
 let isPlayingSe = false;
 const playSe = async () => {
@@ -986,9 +1010,9 @@ const playSe = async () => {
   }
   // log.info('[playSe] end');
 };
-ipcMain.on(electronEvent.PLAY_SOUND_END, (event) => (isPlayingSe = false));
+ipcMain.on(electronEvent.PLAY_SOUND_END, () => (isPlayingSe = false));
 
-export const createDom = (message: UserComment, type: 'chat' | 'server', isAA: boolean) => {
+export const createDom = (message: UserComment, type: 'chat' | 'server', isAA?: boolean) => {
   let domStr = `<li class="list-item">`;
 
   /** レス番とかの行が何かしら表示対象になっているか */
@@ -1111,13 +1135,15 @@ export const sendDom = async (messageList: UserComment[]) => {
     // AA判定
     const newList = judgeAaMessage(messageList);
 
-    // メッセージをブラウザに送信
-    const domStr = newList.map((message) => createDom(message, 'server', message.isAA)).join('\n');
-    const socketObject: CommentSocketMessage = {
-      type: 'add',
-      message: domStr,
-    };
-    if (aWss) {
+    // 配信画面 (WebSocket でブラウザソースへ送る分) は sourceFilter.broadcast でフィルタする。
+    // chat ウィンドウ / SE / 読み上げは newList のまま (フィルタしない)。
+    const broadcastList = filterByAxis('broadcast', newList);
+    if (broadcastList.length > 0 && aWss) {
+      const domStr = broadcastList.map((message) => createDom(message, 'server', message.isAA)).join('\n');
+      const socketObject: CommentSocketMessage = {
+        type: 'add',
+        message: domStr,
+      };
       aWss.clients.forEach((client) => {
         client.send(JSON.stringify(socketObject));
       });

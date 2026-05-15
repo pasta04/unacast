@@ -74,7 +74,7 @@ class BouyomiChan {
     const ENCODING = 0;
     len = buff.writeUInt8(ENCODING, len);
     len = buff.writeUInt32LE(messageByteLength, len);
-    len = buff.write(concatMessage, len);
+    buff.write(concatMessage, len);
 
     const client = net.createConnection(this.port, this.host);
     client.write(buff);

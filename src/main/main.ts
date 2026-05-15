@@ -6,7 +6,22 @@ import log from 'electron-log';
 import { sleep } from './util';
 import windowStateKeeper from 'electron-window-state';
 import ElectronStore from 'electron-store';
+// サーバー起動モジュール (IPC ハンドラ等の副作用登録目的)
+import './startServer';
 remote.initialize();
+
+/**
+ * 各 HTML ページのロード先 URL を解決する。
+ *  - electron-vite dev 中: process.env.ELECTRON_RENDERER_URL に dev サーバの URL が入る
+ *  - production: dist/main/index.js から見た dist/renderer/src/html/<name>.html を file:// で読む
+ */
+const resolveRendererUrl = (htmlName: 'index' | 'chat' | 'translate' | 'imagePreview') => {
+  const devUrl = process.env.ELECTRON_RENDERER_URL;
+  if (devUrl) {
+    return `${devUrl}/src/html/${htmlName}.html`;
+  }
+  return 'file://' + path.resolve(__dirname, `../renderer/src/html/${htmlName}.html`);
+};
 log.initialize();
 
 // HTMLで出ないウインドウの表示設定
@@ -44,11 +59,7 @@ if (!app.requestSingleInstanceLock()) {
 
   // app.allowRendererProcessReuse = true;
 
-  const iconPath = path.resolve(__dirname, '../icon.png');
-
-  // サーバー起動モジュール
-  const ss = require('./startServer');
-  console.trace(ss);
+  const iconPath = path.resolve(__dirname, '../../icon.png');
 
   // メインウィンドウはGCされないようにグローバル宣言
   globalThis.electron = {
@@ -114,7 +125,7 @@ if (!app.requestSingleInstanceLock()) {
     mainWin.setMenu(null);
 
     // // レンダラーで使用するhtmlファイルを指定する
-    mainWin.loadURL('file://' + path.resolve(__dirname, '../src/html/index.html'));
+    mainWin.loadURL(resolveRendererUrl('index'));
 
     // ウィンドウが閉じられたらアプリも終了
     mainWin.on('close', (event) => {
@@ -223,14 +234,14 @@ if (!app.requestSingleInstanceLock()) {
       tray.setContextMenu(contextMenu);
       // タスクトレイクリック時の挙動
       let isDoubleClicked = false;
-      tray.on('click', async (event) => {
+      tray.on('click', async () => {
         isDoubleClicked = false;
         await sleep(200);
         if (isDoubleClicked) return;
         globalThis.electron.chatWindow.show();
         globalThis.electron.chatWindow.focus();
       });
-      tray.on('double-click', (event) => {
+      tray.on('double-click', () => {
         isDoubleClicked = true;
         globalThis.electron.mainWindow.show();
         globalThis.electron.mainWindow.focus();
@@ -254,7 +265,7 @@ const createChatWindow = () => {
     defaultHeight: 720,
     file: 'chatWindow.json',
   });
-  const iconPath = path.resolve(__dirname, '../icon.png');
+  const iconPath = path.resolve(__dirname, '../../icon.png');
 
   const chatWindow = new electron.BrowserWindow({
     x: windowState.x,
@@ -280,7 +291,7 @@ const createChatWindow = () => {
   chatWindow.setMenu(null);
 
   // レンダラーで使用するhtmlファイルを指定する
-  chatWindow.loadURL('file://' + path.resolve(__dirname, '../src/html/chat.html'));
+  chatWindow.loadURL(resolveRendererUrl('chat'));
 
   globalThis.electron.chatWindow = chatWindow;
   // chatWindow.webContents.openDevTools();
@@ -292,7 +303,7 @@ const createTranslateWindow = () => {
     defaultHeight: 720,
     file: 'translateWindow.json',
   });
-  const iconPath = path.resolve(__dirname, '../icon.png');
+  const iconPath = path.resolve(__dirname, '../../icon.png');
 
   const translateWindow = new electron.BrowserWindow({
     x: windowState.x,
@@ -318,7 +329,7 @@ const createTranslateWindow = () => {
   translateWindow.setMenu(null);
 
   // レンダラーで使用するhtmlファイルを指定する
-  translateWindow.loadURL('file://' + path.resolve(__dirname, '../src/html/translate.html'));
+  translateWindow.loadURL(resolveRendererUrl('translate'));
 
   // 初期表示は最小化
   translateWindow.minimize();
@@ -332,7 +343,7 @@ const createImagePreviewWindow = () => {
     defaultHeight: 400,
     file: 'imagePreview.json',
   });
-  const iconPath = path.resolve(__dirname, '../icon.png');
+  const iconPath = path.resolve(__dirname, '../../icon.png');
 
   const childwindow = new electron.BrowserWindow({
     x: windowState.x,
@@ -361,10 +372,10 @@ const createImagePreviewWindow = () => {
   childwindow.hide();
 
   // レンダラーで使用するhtmlファイルを指定する
-  childwindow.loadURL('file://' + path.resolve(__dirname, '../src/html/imagePreview.html'));
+  childwindow.loadURL(resolveRendererUrl('imagePreview'));
 
   // ×押したらインスタンス再生成
-  childwindow.on('close', (e) => {
+  childwindow.on('close', () => {
     setTimeout(() => {
       createImagePreviewWindow();
     }, 10);

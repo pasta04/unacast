@@ -30,7 +30,7 @@ router.use(bodyParser.json());
 /**
  * ブラウザからの初期処理リクエスト
  */
-router.get('/', async (req, res, next) => {
+router.get('/', async (req, res) => {
   log.info('access /');
   // リクエストからURLとレス番号を取得する
   const threadUrl: string = globalThis.config.url;

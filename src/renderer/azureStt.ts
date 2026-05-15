@@ -35,7 +35,7 @@ const start = (key: string, region: string, language: string, inputDevice?: stri
     }
   };
 
-  recognizer.sessionStopped = (s, e) => {
+  recognizer.sessionStopped = (_s, _e) => {
     logger.warn('text recognition session is stopped.');
     recognizer.stopContinuousRecognitionAsync();
     if (speechRecognizer === recognizer) {
@@ -59,6 +59,6 @@ ipcRenderer.on(electronEvent.AZURE_STT_START, (event: any, arg: { key: string; r
   start(arg.key, arg.region, arg.language, arg.inputDevice);
 });
 
-ipcRenderer.on(electronEvent.AZURE_STT_STOP, (event: any) => {
+ipcRenderer.on(electronEvent.AZURE_STT_STOP, () => {
   stop();
 });

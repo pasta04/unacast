@@ -42,7 +42,7 @@ interface IVoiceVoxCore {
 class UnavailableVoiceVoxCore implements IVoiceVoxCore {
   public available: boolean = false;
   public speakers: VoiceVoxSpeaker[] = [];
-  async speak(opts: Options, message: string) {
+  async speak(_opts: Options, _message: string) {
     return null;
   }
 }
@@ -64,7 +64,8 @@ class VoiceVoxCore_0_15 implements IVoiceVoxCore {
       enable_interrogative_upspeak: 'bool',
     });
 
-    const VoicevoxTtsOptions = koffi.struct('VoicevoxTtsOptions', {
+    // koffi 側にスキーマだけ登録しておく（現状コードからは未使用）
+    const _VoicevoxTtsOptions = koffi.struct('VoicevoxTtsOptions', {
       kana: 'bool',
       enable_interrogative_upspeak: 'bool',
     });

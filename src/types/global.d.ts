@@ -210,10 +210,35 @@ declare global {
       targetLang: 'ja' | 'en';
     };
     let audioOutputDevices: string[];
+
+    /** REST / WebSocket 経由の外部入力設定 */
+    let external: {
+      /** 受信を有効にする */
+      enabled: boolean;
+      /** 外部由来コメント (from が他の既知ソースに該当しない場合) のアイコンディレクトリ */
+      iconDir: string;
+    };
+
+    /**
+     * レス取得元別の出力先フィルタ。
+     * 軸ごとに「true: 出力する / false: しない / undefined: 既定 (= true 扱い)」のマップを持つ。
+     * 未知のキーは runtime で `!== false` 判定するため、軸/取得元を増やしても旧データの
+     * マイグレーションは不要。
+     */
+    let sourceFilter: {
+      /** 配信画面 (HTTP サーバが配信する OBS ブラウザソース) に表示するか */
+      broadcast: {
+        bbs?: boolean;
+        jpnkn?: boolean;
+        youtube?: boolean;
+        twitch?: boolean;
+        niconico?: boolean;
+        twitcasting?: boolean;
+        stt?: boolean;
+        external?: boolean;
+      };
+    };
   }
 }
-
-/** From MDL */
-declare let componentHandler: any;
 
 export {};

@@ -87,7 +87,7 @@ export const postRes = async (hostname: string, threadNumber: string, boardId: s
   // log.info(encodeURIComponent.toString());
   log.info(`${hostname}test/bbs.cgi`);
   log.info(`FROM=&MESSAGE=${encodedKeyword}&mail=sage&key=${threadNumber}&bbs=${boardId}`);
-  const result = await axios.post(`${hostname}test/bbs.cgi`, `FROM=&MESSAGE=${encodedKeyword}&mail=sage&key=${threadNumber}&bbs=${boardId}`, {
+  await axios.post(`${hostname}test/bbs.cgi`, `FROM=&MESSAGE=${encodedKeyword}&mail=sage&key=${threadNumber}&bbs=${boardId}`, {
     headers: {
       Accept: '*/*',
       'Content-Type': 'application/x-www-form-urlencoded',

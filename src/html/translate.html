@@ -4,15 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>unacast - translate</title>
-    <!-- CSSの読み込み Material Design Lite -->
-    <link rel="stylesheet" href="../../node_modules/material-design-lite/material.min.css" />
-    <script src="../../node_modules/material-design-lite/material.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-    <!-- CSSの読み込み 自作CSS -->
-    <link rel="stylesheet" href="../../public/css/style-server.css" />
-    <link rel="stylesheet" href="../../../style-server.css" />
+    <link rel="stylesheet" href="/css/style-server.css" />
+    <script type="module" src="../renderer/translate.ts"></script>
     <script>
-      require('../../dist/scripts/translate');
       const urlopen = (url) => {
         const { shell } = require('electron');
         let tmp = url;

@@ -5,29 +5,63 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>preview</title>
-  <!-- CSSの読み込み Material Design Lite -->
-  <link rel="stylesheet" href="../../node_modules/material-design-lite/material.min.css" />
-  <script src="../../node_modules/material-design-lite/material.min.js"></script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-
-  <script>
-    require('../../dist/scripts/imagePreview');
-  </script>
+  <script type="module" src="../renderer/imagePreview.ts"></script>
   <style>
     body {
       overflow-y: hidden;
       overflow-x: hidden;
+      margin: 0;
+      font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    }
+
+    #tab-bar {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid #e0e0e0;
+      background-color: #fafafa;
+      overflow-x: auto;
+      white-space: nowrap;
+      min-height: 36px;
+    }
+
+    #tab-bar > a.tab {
+      padding: 8px 16px;
+      text-decoration: none;
+      color: #424242;
+      cursor: pointer;
+      border-right: 1px solid #e0e0e0;
+      display: inline-flex;
+      align-items: center;
+      font-size: 13px;
+      user-select: none;
+    }
+
+    #tab-bar > a.tab.is-active {
+      color: #1976d2;
+      border-bottom: 2px solid #1976d2;
+      background-color: #fff;
     }
 
     #tab-content {
+      height: calc(100vh - 36px);
+      width: 100%;
+    }
+
+    .tab-panel {
+      display: none;
       height: 100%;
       width: 100%;
+    }
+
+    .tab-panel.is-active {
+      display: block;
     }
 
     .content {
       display: flex;
       justify-content: space-between;
-      height: calc(100vh - 60px);
+      height: 100%;
       width: 100%;
     }
 
@@ -41,16 +75,12 @@
 
 <body>
   <div id="parent">
-    <main style="width:100%;" class="mdl-layout__content">
-      <div class="mdl-tabs mdl-js-tabs">
-        <div id="tab-bar" class="mdl-tabs__tab-bar">
-          <!--  -->
-        </div>
-
-        <div id="tab-content">
-          　
-          <!--  -->
-        </div>
+    <main style="width:100%;">
+      <div id="tab-bar">
+        <!-- スクリプトでタブ追加 -->
+      </div>
+      <div id="tab-content">
+        <!-- スクリプトでパネル追加 -->
       </div>
     </main>
   </div>
