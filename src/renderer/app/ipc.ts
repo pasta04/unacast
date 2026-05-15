@@ -152,8 +152,10 @@ export const registerIpcSubscribers = () => {
     }
   });
 
+  // main プロセス側で config が書き換えられた時の通知 (現状は自動スレ移動による url 変更のみ)。
+  // フォーム編集中の値を消さないよう、未編集のフィールドだけマージする。
   ipcRenderer.on(electronEvent.SAVE_CONFIG, (_event: any, arg: AppConfig) => {
-    useAppStore.getState().replaceConfig(arg);
+    useAppStore.getState().mergeFromServer(arg);
     useAppStore.getState().persist();
   });
 

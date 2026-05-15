@@ -52,6 +52,13 @@ export type StoreState = {
   replaceConfig: (config: AppConfig) => void;
   /** 現在の config を「適用済み」としてマーク（適用/起動ボタン押下時に呼ぶ） */
   markApplied: () => void;
+  /**
+   * main プロセスから SAVE_CONFIG で送られてきた config をマージする。
+   * ユーザがフォーム上で編集中の項目を上書きしないように、
+   * 「未編集 (config[k] === appliedConfig[k]) のフィールドだけ」新しい値を採用する。
+   * appliedConfig 側は全フィールドを最新値で上書きする (差分検知の基準を更新)。
+   */
+  mergeFromServer: (incoming: AppConfig) => void;
 
   setStatus: (key: ConnectionStatusKey, value: string) => void;
 
@@ -109,6 +116,22 @@ export const useAppStore = create<StoreState>((set, get) => ({
     })),
   replaceConfig: (config) => set({ config, appliedConfig: config }),
   markApplied: () => set((state) => ({ appliedConfig: state.config })),
+  mergeFromServer: (incoming) =>
+    set((state) => {
+      const nextConfig: AppConfig = { ...state.config };
+      const nextApplied: AppConfig = { ...state.appliedConfig };
+      (Object.keys(incoming) as (keyof AppConfig)[]).forEach((key) => {
+        const incomingValue = incoming[key];
+        // appliedConfig 側は常に最新化 (これにより「適用済み」基準が main 側に追従)
+        (nextApplied[key] as AppConfig[typeof key]) = incomingValue;
+        // ユーザが編集していないフィールドだけ、ローカルの config も新値で更新する
+        // Object.is にしているのは dispNumber=NaN を「同じ」として扱うため
+        if (Object.is(state.config[key], state.appliedConfig[key])) {
+          (nextConfig[key] as AppConfig[typeof key]) = incomingValue;
+        }
+      });
+      return { config: nextConfig, appliedConfig: nextApplied };
+    }),
 
   setStatus: (key, value) =>
     set((state) => ({
