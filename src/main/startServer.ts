@@ -42,8 +42,14 @@ let threadIntervalEvent = false;
 /** キュー処理実行するか */
 let isExecuteQue = false;
 
-/** 接続中の全WebSocket */
+/** 接続中の全WebSocket (express-ws の共有プール。/ws と /api/ws の両方が含まれる) */
 let aWss: ReturnType<expressWs.Instance['getWss']>;
+
+/**
+ * 配信画面 (OBS ブラウザソース等) 向けの /ws に接続している WebSocket だけを保持する集合。
+ * sendDom 等のブロードキャストはここに対してだけ行い、外部入力用 /api/ws の接続には流さない。
+ */
+const displayClients: Set<import('ws').WebSocket> = new Set();
 
 let serverId = 0;
 
@@ -481,15 +487,17 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   /**
    * 配信画面 (OBS ブラウザソース等) との WebSocket。
    *
-   * - サーバ側 → ブラウザ: sendDom() 内で aWss.clients.forEach(c => c.send(...)) で
+   * - サーバ側 → ブラウザ: sendDom() 内で displayClients.forEach(c => c.send(...)) で
    *   コメント DOM を全 client にブロードキャストする (出力方向のメイン経路)。
    * - ブラウザ側 → サーバ: 接続維持のため定期 ping を送ってくる (public/js/readThread.js)。
    *   pong を返すだけで、データは受け取らない。
    *
-   * したがって、外部ツールからの受信は別パス /api/ws で行う (registerExternalApiRoutes)。
-   * 役割を混ぜないため /ws はこの ping/pong + ブロードキャストの用途に留めること。
+   * 受信用 /api/ws の接続まで巻き込まないよう、broadcast 対象はこのハンドラで管理する
+   * displayClients 集合に限定する。aWss.clients は両 path を含むため使わない。
+   * 外部ツールからの受信は別パス /api/ws で行う (registerExternalApiRoutes)。
    */
   app.ws('/ws', (ws) => {
+    displayClients.add(ws);
     ws.on('message', (message) => {
       log.debug('Received: ' + message.toString());
       if (message.toString() === 'ping') {
@@ -498,6 +506,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
 
     ws.on('close', () => {
+      displayClients.delete(ws);
       log.debug('I lost a client');
     });
   });
@@ -704,6 +713,7 @@ ipcMain.on(electronEvent.STOP_SERVER, (event) => {
   log.debug('[startServer] server stop');
   server.close();
   aWss.close();
+  displayClients.clear();
   app = null as any;
   event.returnValue = 'stop';
 
@@ -1138,13 +1148,13 @@ export const sendDom = async (messageList: UserComment[]) => {
     // 配信画面 (WebSocket でブラウザソースへ送る分) は sourceFilter.broadcast でフィルタする。
     // chat ウィンドウ / SE / 読み上げは newList のまま (フィルタしない)。
     const broadcastList = filterByAxis('broadcast', newList);
-    if (broadcastList.length > 0 && aWss) {
+    if (broadcastList.length > 0 && displayClients.size > 0) {
       const domStr = broadcastList.map((message) => createDom(message, 'server', message.isAA)).join('\n');
       const socketObject: CommentSocketMessage = {
         type: 'add',
         message: domStr,
       };
-      aWss.clients.forEach((client) => {
+      displayClients.forEach((client) => {
         client.send(JSON.stringify(socketObject));
       });
     }
@@ -1233,7 +1243,7 @@ const resetInitMessage = () => {
       type: 'reset',
       message: globalThis.config.initMessage,
     };
-    aWss.clients.forEach((client) => {
+    displayClients.forEach((client) => {
       client.send(JSON.stringify(resetObj));
     });
   }
