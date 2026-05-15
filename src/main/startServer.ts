@@ -102,8 +102,10 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
     stt: config.iconDirStt,
   });
 
-  // スレのURLが変わった
-  if (isChangedUrl && config.url) {
+  // スレのURLが変わった。サーバー起動中のみ chat ウィンドウへの反映を行う。
+  // (起動前に「適用」を押した場合は config の保存だけで十分で、ここで前回スレの
+  //  最新レスを chat に流すと「サーバー起動してないのにレスが出る」状態になる)
+  if (isChangedUrl && config.url && app) {
     // 新スレを取得
     const ret = await getBbsResponse(globalThis.config.url, NaN);
     log.debug(ret);
