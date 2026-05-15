@@ -211,6 +211,14 @@ declare global {
     };
     let audioOutputDevices: string[];
 
+    /** REST / WebSocket 経由の外部入力設定 */
+    let external: {
+      /** 受信を有効にする */
+      enabled: boolean;
+      /** 外部由来コメント (from が他の既知ソースに該当しない場合) のアイコンディレクトリ */
+      iconDir: string;
+    };
+
     /**
      * レス取得元別の出力先フィルタ。
      * 軸ごとに「true: 出力する / false: しない / undefined: 既定 (= true 扱い)」のマップを持つ。
@@ -227,6 +235,7 @@ declare global {
         niconico?: boolean;
         twitcasting?: boolean;
         stt?: boolean;
+        external?: boolean;
       };
     };
   }

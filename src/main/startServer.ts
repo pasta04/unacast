@@ -9,6 +9,7 @@ import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
 import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
 import { filterByAxis } from './sourceFilter';
+import { registerExternalApiRoutes } from './externalApi/routes';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
 import { CommentItem, ImageItem } from './youtube-chat/parser';
@@ -23,7 +24,8 @@ import AzureSpeechToText from './azureStt';
 import tr from './googletrans';
 import CommentIcons from './CommentIcons';
 
-let app: expressWs.Instance['app'];
+/** express の app インスタンス。サーバ起動中のみ値を持ち、STOP_SERVER で null に戻る */
+let app: expressWs.Instance['app'] | null = null;
 
 // サーバーをグローバル変数にセットできるようにする（サーバー停止処理のため）
 let server: http.Server;
@@ -101,6 +103,7 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
     niconico: config.iconDirNiconico,
     twitcasting: config.iconDirTwitcasting,
     stt: config.iconDirStt,
+    external: config.external?.iconDir ?? '',
   });
 
   // スレのURLが変わった。サーバー起動中のみ chat ウィンドウへの反映を行う。
@@ -192,6 +195,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     niconico: globalThis.config.iconDirNiconico,
     twitcasting: globalThis.config.iconDirTwitcasting,
     stt: globalThis.config.iconDirStt,
+    external: globalThis.config.external?.iconDir ?? '',
   });
 
   // 各種アイコンをホストするためのパスを設定
@@ -201,6 +205,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   if (globalThis.electron.iconList.niconicoIconDir) app.use('/niconico', express.static(globalThis.electron.iconList.niconicoIconDir));
   if (globalThis.electron.iconList.twitcastingIconDir) app.use('/twitcasting', express.static(globalThis.electron.iconList.twitcastingIconDir));
   if (globalThis.electron.iconList.sttIconDir) app.use('/stt', express.static(globalThis.electron.iconList.sttIconDir));
+  if (globalThis.electron.iconList.externalIconDir) app.use('/external', express.static(globalThis.electron.iconList.externalIconDir));
 
   // SEを取得する
   if (globalThis.config.sePath) {
@@ -473,7 +478,17 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     translateTaskScheduler(serverId);
   }
 
-  // WebSocketを立てる
+  /**
+   * 配信画面 (OBS ブラウザソース等) との WebSocket。
+   *
+   * - サーバ側 → ブラウザ: sendDom() 内で aWss.clients.forEach(c => c.send(...)) で
+   *   コメント DOM を全 client にブロードキャストする (出力方向のメイン経路)。
+   * - ブラウザ側 → サーバ: 接続維持のため定期 ping を送ってくる (public/js/readThread.js)。
+   *   pong を返すだけで、データは受け取らない。
+   *
+   * したがって、外部ツールからの受信は別パス /api/ws で行う (registerExternalApiRoutes)。
+   * 役割を混ぜないため /ws はこの ping/pong + ブロードキャストの用途に留めること。
+   */
   app.ws('/ws', (ws) => {
     ws.on('message', (message) => {
       log.debug('Received: ' + message.toString());
@@ -486,6 +501,10 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
       log.debug('I lost a client');
     });
   });
+
+  // 外部ツールからの受信用エンドポイント (POST /api/comments と WS /api/ws)。
+  // 上の /ws (配信画面向け出力) とは方向が逆なので別パスで分離している。
+  registerExternalApiRoutes(app);
 
   // 指定したポートで待ち受け開始
   server = app.listen(config.port, () => {
@@ -993,7 +1012,7 @@ const playSe = async () => {
 };
 ipcMain.on(electronEvent.PLAY_SOUND_END, () => (isPlayingSe = false));
 
-export const createDom = (message: UserComment, type: 'chat' | 'server', isAA: boolean) => {
+export const createDom = (message: UserComment, type: 'chat' | 'server', isAA?: boolean) => {
   let domStr = `<li class="list-item">`;
 
   /** レス番とかの行が何かしら表示対象になっているか */

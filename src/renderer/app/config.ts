@@ -79,6 +79,10 @@ export const defaultConfig: AppConfig = {
     inputDevice: 'default',
   },
   audioOutputDevices: ['default'],
+  external: {
+    enabled: false,
+    iconDir: '',
+  },
   sourceFilter: {
     broadcast: {
       bbs: true,
@@ -88,6 +92,7 @@ export const defaultConfig: AppConfig = {
       niconico: true,
       twitcasting: true,
       stt: true,
+      external: true,
     },
   },
 };

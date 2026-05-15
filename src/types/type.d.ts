@@ -20,7 +20,7 @@ type UserComment = {
     image: string;
   };
   type: 'comment' | 'gift';
-  from: 'system' | 'bbs' | 'youtube' | 'twitch' | 'niconico' | 'twitcasting' | 'jpnkn' | 'stt';
+  from: 'system' | 'bbs' | 'youtube' | 'twitch' | 'niconico' | 'twitcasting' | 'jpnkn' | 'stt' | 'external';
   /** AAモード判定後に付与される。createDom が読む */
   isAA?: boolean;
   /**
@@ -31,7 +31,7 @@ type UserComment = {
 };
 
 /** sourceFilter の対象となるレス取得元。'system' は常時表示のため含めない */
-type CommentSource = 'bbs' | 'jpnkn' | 'youtube' | 'twitch' | 'niconico' | 'twitcasting' | 'stt';
+type CommentSource = 'bbs' | 'jpnkn' | 'youtube' | 'twitch' | 'niconico' | 'twitcasting' | 'stt' | 'external';
 
 /** sourceFilter の軸。今は配信画面への表示のみ。将来 SE / 読み上げを足す予定 */
 type SourceFilterAxis = 'broadcast';

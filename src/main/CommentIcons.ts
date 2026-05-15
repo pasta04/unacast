@@ -21,7 +21,10 @@ class CommentIcons {
   sttIconDir: string = '';
   sttIconList: string[] = [];
 
-  constructor(arg: { bbs: string; youtube: string; twitch: string; niconico: string; twitcasting: string; stt: string }) {
+  externalIconDir: string = '';
+  externalIconList: string[] = [];
+
+  constructor(arg: { bbs: string; youtube: string; twitch: string; niconico: string; twitcasting: string; stt: string; external: string }) {
     if (fs.existsSync(arg.bbs)) {
       const list = readDir(arg.bbs);
       if (list.length > 0) {
@@ -65,6 +68,13 @@ class CommentIcons {
         this.sttIconDir = arg.stt;
       }
     }
+    if (fs.existsSync(arg.external)) {
+      const list = readDir(arg.external);
+      if (list.length > 0) {
+        this.externalIconList = list;
+        this.externalIconDir = arg.external;
+      }
+    }
 
     log.debug(this.bbsIconList);
     log.debug(this.youtubeIconList);
@@ -72,6 +82,7 @@ class CommentIcons {
     log.debug(this.niconicoIconList);
     log.debug(this.twitcastingIconList);
     log.debug(this.sttIconList);
+    log.debug(this.externalIconList);
   }
 
   // /**
@@ -163,6 +174,46 @@ class CommentIcons {
       log.error(e);
     }
     return icon;
+  };
+  getExternal = () => {
+    // 専用アイコンがなければ BBS のアイコンを流用する
+    if (this.externalIconList.length === 0) return this.getBbs();
+    let icon = '';
+    try {
+      const num = Math.floor(this.externalIconList.length * Math.random());
+      const iconPath = this.externalIconList[num];
+      icon = `/external/${iconPath}`;
+    } catch (e) {
+      log.error(e);
+    }
+    return icon;
+  };
+
+  /**
+   * UserComment.from の値から表示用アイコンパスを取得する。
+   * imgUrl が未指定で来た外部入力 (REST/WS) のフォールバックに使う。
+   */
+  getByFrom = (from: UserComment['from']): string => {
+    switch (from) {
+      case 'bbs':
+      case 'jpnkn':
+        return this.getBbs();
+      case 'youtube':
+        return this.youtubeIconDir ? this.getYoutube() : this.getYoutubeLogo();
+      case 'twitch':
+        return this.getTwitch();
+      case 'niconico':
+        return this.getNiconico();
+      case 'twitcasting':
+        return this.getTwitcasting();
+      case 'stt':
+        return this.getStt();
+      case 'external':
+        return this.getExternal();
+      case 'system':
+      default:
+        return '/img/unacast.png';
+    }
   };
 }
 
