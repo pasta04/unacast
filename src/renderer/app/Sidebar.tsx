@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography } from '@mui/material';
+import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { sections, SectionId } from './sections';
 
 const DRAWER_WIDTH = 220;
@@ -19,11 +19,6 @@ export const Sidebar: React.FC<Props> = ({ selected, onSelect }) => (
       [`& .MuiDrawer-paper`]: { width: DRAWER_WIDTH, boxSizing: 'border-box' },
     }}
   >
-    <Toolbar variant="dense" sx={{ minHeight: 40 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-        unacast
-      </Typography>
-    </Toolbar>
     <Box sx={{ overflow: 'auto' }}>
       <List dense>
         {sections.map((s) => (

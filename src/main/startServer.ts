@@ -77,10 +77,11 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
   log.info('[apply-config] start');
   log.info(config);
 
-  // Configの変更内容に応じて何かする
+  // サーバー起動前に「適用」を押された場合 globalThis.config は未初期化なので、
+  // 差分判定は optional chaining で安全に取り、未初期化なら「全部新規」とみなす。
   const oldConfig = globalThis.config;
-  const isChangedUrl = globalThis.config.url !== config.url;
-  const isChangeSePath = globalThis.config.sePath !== config.sePath;
+  const isChangedUrl = oldConfig?.url !== config.url;
+  const isChangeSePath = oldConfig?.sePath !== config.sePath;
   globalThis.config = config;
 
   // 着信音のパス
@@ -122,7 +123,7 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
   // VOICE VOX 関連
   if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
     // VOICEVOX 利用の場合のみ
-    if (oldConfig.voicevox?.path !== config.voicevox?.path) {
+    if (oldConfig?.voicevox?.path !== config.voicevox?.path) {
       // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
       loadVoiceVox(config.voicevox, true);
     } else {
