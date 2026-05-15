@@ -79,6 +79,17 @@ export const defaultConfig: AppConfig = {
     inputDevice: 'default',
   },
   audioOutputDevices: ['default'],
+  sourceFilter: {
+    broadcast: {
+      bbs: true,
+      jpnkn: true,
+      youtube: true,
+      twitch: true,
+      niconico: true,
+      twitcasting: true,
+      stt: true,
+    },
+  },
 };
 
 const STORAGE_KEY = 'config';

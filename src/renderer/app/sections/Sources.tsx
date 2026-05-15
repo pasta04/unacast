@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Box, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
-import { SectionPanel, LabeledInput, Caption } from './common';
+import { SectionPanel, LabeledInput, Caption, SourceFilterToggle } from './common';
 
 const StatusLine: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <Typography variant="caption" color="text.secondary" sx={{ mr: 2, mt: '-4px', display: 'inline-block', lineHeight: 1, verticalAlign: 'top' }}>
@@ -37,6 +37,7 @@ export const Sources: React.FC = () => {
           placeholder="http(s)://.../"
         />
         <StatusLine label="status" value={status.bbs} />
+        <SourceFilterToggle source="bbs" axis="broadcast" />
       </Box>
 
       {/* Jpnkn Fast */}
@@ -48,6 +49,7 @@ export const Sources: React.FC = () => {
           <TextField size="small" value={config.jpnknFastBoardId} onChange={(e) => setConfig('jpnknFastBoardId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <StatusLine label="status" value={status.jpnknFast} />
+        <SourceFilterToggle source="jpnkn" axis="broadcast" />
       </Box>
 
       {/* YouTube */}
@@ -68,6 +70,7 @@ export const Sources: React.FC = () => {
           <StatusLine label="status" value={status.youtube} />
           <StatusLine label="liveId" value={status.youtubeLiveId} />
         </Box>
+        <SourceFilterToggle source="youtube" axis="broadcast" />
       </Box>
 
       {/* Twitch */}
@@ -79,6 +82,7 @@ export const Sources: React.FC = () => {
           <TextField size="small" value={config.twitchId} onChange={(e) => setConfig('twitchId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <StatusLine label="status" value={status.twitch} />
+        <SourceFilterToggle source="twitch" axis="broadcast" />
       </Box>
 
       {/* niconico */}
@@ -96,6 +100,7 @@ export const Sources: React.FC = () => {
           />
         </LabeledInput>
         <StatusLine label="status" value={status.niconico} />
+        <SourceFilterToggle source="niconico" axis="broadcast" />
       </Box>
 
       {/* twitcasting */}
@@ -107,6 +112,7 @@ export const Sources: React.FC = () => {
           <TextField size="small" value={config.twitcastingId} onChange={(e) => setConfig('twitcastingId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <StatusLine label="status" value={status.twitcasting} />
+        <SourceFilterToggle source="twitcasting" axis="broadcast" />
       </Box>
     </SectionPanel>
   );

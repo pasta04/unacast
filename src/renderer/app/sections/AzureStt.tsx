@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Box, Checkbox, FormControlLabel, MenuItem, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
-import { SectionPanel, Caption } from './common';
+import { SectionPanel, Caption, SourceFilterToggle } from './common';
 
 export const AzureStt: React.FC = () => {
   const config = useAppStore((s) => s.config);
@@ -68,6 +68,7 @@ export const AzureStt: React.FC = () => {
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
         status: {status}
       </Typography>
+      <SourceFilterToggle source="stt" axis="broadcast" />
     </SectionPanel>
   );
 };

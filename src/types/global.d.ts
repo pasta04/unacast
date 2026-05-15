@@ -210,6 +210,25 @@ declare global {
       targetLang: 'ja' | 'en';
     };
     let audioOutputDevices: string[];
+
+    /**
+     * レス取得元別の出力先フィルタ。
+     * 軸ごとに「true: 出力する / false: しない / undefined: 既定 (= true 扱い)」のマップを持つ。
+     * 未知のキーは runtime で `!== false` 判定するため、軸/取得元を増やしても旧データの
+     * マイグレーションは不要。
+     */
+    let sourceFilter: {
+      /** 配信画面 (HTTP サーバが配信する OBS ブラウザソース) に表示するか */
+      broadcast: {
+        bbs?: boolean;
+        jpnkn?: boolean;
+        youtube?: boolean;
+        twitch?: boolean;
+        niconico?: boolean;
+        twitcasting?: boolean;
+        stt?: boolean;
+      };
+    };
   }
 }
 

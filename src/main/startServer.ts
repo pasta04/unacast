@@ -8,6 +8,7 @@ import { LiveChat } from './youtube-chat';
 import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
 import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
+import { filterByAxis } from './sourceFilter';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
 import { CommentItem, ImageItem } from './youtube-chat/parser';
@@ -517,6 +518,8 @@ const commentTest = async () => {
         imgUrl: './img/unacast.png',
         type: 'comment',
         from: 'bbs',
+        // テストコメントは配信画面の sourceFilter 設定に関わらず常に出す
+        bypassFilter: true,
       },
     ]);
   } catch (e) {
@@ -1113,13 +1116,15 @@ export const sendDom = async (messageList: UserComment[]) => {
     // AA判定
     const newList = judgeAaMessage(messageList);
 
-    // メッセージをブラウザに送信
-    const domStr = newList.map((message) => createDom(message, 'server', message.isAA)).join('\n');
-    const socketObject: CommentSocketMessage = {
-      type: 'add',
-      message: domStr,
-    };
-    if (aWss) {
+    // 配信画面 (WebSocket でブラウザソースへ送る分) は sourceFilter.broadcast でフィルタする。
+    // chat ウィンドウ / SE / 読み上げは newList のまま (フィルタしない)。
+    const broadcastList = filterByAxis('broadcast', newList);
+    if (broadcastList.length > 0 && aWss) {
+      const domStr = broadcastList.map((message) => createDom(message, 'server', message.isAA)).join('\n');
+      const socketObject: CommentSocketMessage = {
+        type: 'add',
+        message: domStr,
+      };
       aWss.clients.forEach((client) => {
         client.send(JSON.stringify(socketObject));
       });

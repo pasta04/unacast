@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Checkbox, FormControlLabel, Paper, Typography } from '@mui/material';
+import { useAppStore } from '../store';
 
 type SectionProps = {
   title: string;
@@ -42,3 +43,26 @@ export const Caption: React.FC<{ children: React.ReactNode }> = ({ children }) =
     {children}
   </Typography>
 );
+
+/**
+ * レス取得元別の出力先 (sourceFilter) チェックボックス。
+ * 取得元 (`source`) と軸 (`axis`) を渡すと、その値を on/off できる。
+ * 未定義は true 扱い (= チェック状態)。
+ */
+export const SourceFilterToggle: React.FC<{
+  source: CommentSource;
+  axis: SourceFilterAxis;
+  label?: string;
+}> = ({ source, axis, label = '配信画面に表示' }) => {
+  const config = useAppStore((s) => s.config);
+  const setConfig = useAppStore((s) => s.setConfig);
+  const axisMap = config.sourceFilter?.[axis] ?? {};
+  const checked = (axisMap as Record<string, boolean | undefined>)[source] !== false;
+  const onChange = (value: boolean) => {
+    setConfig('sourceFilter', {
+      ...config.sourceFilter,
+      [axis]: { ...axisMap, [source]: value },
+    });
+  };
+  return <FormControlLabel control={<Checkbox checked={checked} onChange={(e) => onChange(e.target.checked)} size="small" />} label={label} />;
+};
