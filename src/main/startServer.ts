@@ -914,9 +914,32 @@ const taskScheduler = async (exeId: number) => {
   }
 
   if (isExecuteQue && exeId === serverId) {
-    await sleep(100);
+    await sleep(nextSchedulerDelayMs());
     taskScheduler(exeId);
   }
+};
+
+/**
+ * taskScheduler の次回起動までの待ち時間 (ms) を決定する。
+ *
+ * 通常は 100ms で、配信サイトの自然なペース (秒間 1-2 件程度) を想定した間隔。
+ * ただし以下の「待たせる理由が一つも無い」状況に限り、キュー消化を優先するため短縮する:
+ *   - dispType が 0 (チャット風)   ... SpeechCast 風の minDisplayTime 拘束が無い
+ *   - SE 全 OFF (playSe / playSeStt)
+ *   - 読み上げ全 OFF (typeYomiko / typeYomikoStt がいずれも 'none')
+ *   - キュー長 > BURST_THRESHOLD ... 単発・小さいバーストは通常通り表示
+ */
+const TASK_NORMAL_DELAY_MS = 100;
+const TASK_FAST_DELAY_MS = 10;
+const BURST_THRESHOLD = 10;
+const nextSchedulerDelayMs = (): number => {
+  const queueLen = globalThis.electron?.commentQueueList?.length ?? 0;
+  if (queueLen <= BURST_THRESHOLD) return TASK_NORMAL_DELAY_MS;
+  const cfg = globalThis.config;
+  if (!cfg) return TASK_NORMAL_DELAY_MS;
+  const noAudio = !cfg.playSe && !cfg.playSeStt && cfg.typeYomiko === 'none' && cfg.typeYomikoStt === 'none';
+  const isChatStyle = cfg.dispType === 0;
+  return isChatStyle && noAudio ? TASK_FAST_DELAY_MS : TASK_NORMAL_DELAY_MS;
 };
 
 /**
