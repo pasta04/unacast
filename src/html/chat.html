@@ -7,6 +7,14 @@
   <title>unacast - chat</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <link rel="stylesheet" href="/css/style-server.css" />
+  <!--
+    ユーザカスタム CSS。packaged app の resources/style-server.css を読みに行く。
+    chat.html は dist/renderer/src/html/ に出力されるため、ここから resources/ までは 5 階層上。
+    asar 版ではこの相対パスが asar の外へ出て物理 resources/ を指す。
+    ファイルが存在しなくても 404 で黙って無視されるので副作用なし。
+    詳細: documents/見た目のカスタム.md
+  -->
+  <link rel="stylesheet" href="../../../../../style-server.css" />
   <script type="module" src="../renderer/chat.ts"></script>
   <script>
     /** URLをクリックした時の動作 */
