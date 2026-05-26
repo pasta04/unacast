@@ -32,8 +32,6 @@ declare global {
     let azureStt: AzureSpeechToText;
     /** 掲示板の読み込み済みのレス番号 */
     let threadNumber: number;
-    /** 掲示板との連続通信エラー回数 */
-    let threadConnectionError: number;
     /** コメントの処理待ちリスト */
     let commentQueueList: UserComment[];
     /** 翻訳の処理待ちリスト */
@@ -177,7 +175,11 @@ declare global {
     };
     /** 読み子へ渡す時に改行を置換 */
     let yomikoReplaceNewline: boolean;
-    /** スレが通信エラーになった時の通知閾値 */
+    /**
+     * コメント取得 (掲示板/jpnkn/ニコ生/ツイキャス/YouTube/Twitch) が連続で通信エラー状態の時、
+     * その状態が継続した秒数がこの値以上になったら通知する。0 以下なら機能 OFF。
+     * 取得元ごとに独立に判定し、通知後も状態が継続していれば再度同じ秒数経過時に再通知する。
+     */
     let notifyThreadConnectionErrorLimit: number;
     /** スレのレス数が超えた時の通知 */
     let notifyThreadResLimit: number;

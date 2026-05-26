@@ -25,6 +25,12 @@ class JpnknFast extends EventEmitter<EventMap> {
   commentSocket: pahoMqtt.Client = null as any;
   /** WebSocketに対する定期ping */
   commentPingIntervalObj: NodeJS.Timeout = null as any;
+  /** 再接続待ちのタイマー */
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  /** 再接続待機時間 (ms) */
+  private readonly reconnectIntervalMs = 5000;
+  /** stop() 済みなら true。再接続を抑制する */
+  private isStopped = false;
 
   constructor(boardId: string) {
     super();
@@ -34,10 +40,22 @@ class JpnknFast extends EventEmitter<EventMap> {
 
   public async start() {
     if (this.boardId) {
+      this.isStopped = false;
       this.emit('start');
       this.fetchComment();
     }
   }
+
+  /** 再接続を一定時間後に予約する */
+  private scheduleReconnect = () => {
+    if (this.isStopped) return;
+    if (this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (this.isStopped) return;
+      this.fetchComment();
+    }, this.reconnectIntervalMs);
+  };
 
   private fetchComment = async () => {
     log.info(`[fetchComment] boardId = ${this.boardId}`);
@@ -79,10 +97,20 @@ class JpnknFast extends EventEmitter<EventMap> {
       this.emit('open');
     };
     const onConnectionLost = (e: pahoMqtt.MQTTError) => {
-      log.error('[fetchComment] なんかエラーだ');
+      log.error('[fetchComment] connection lost');
       log.error(JSON.stringify(e, null, '  '));
       this.emit('error', new Error(`jpnknのWebSocketでError: [${e.errorCode}] ${e.errorMessage}`));
-      this.fetchComment();
+      // 即時再接続だと相手側が復旧していない時にループするので、一定時間空けてから再試行
+      this.scheduleReconnect();
+    };
+    // 初回接続失敗 (TLS ハンドシェイク失敗・名前解決失敗等)。
+    // onFailure を設定しないと paho-mqtt 側で握り潰され、onConnectionLost も呼ばれずに
+    // 黙って死ぬ経路がある (= jpnkn 復旧後も unacast 側が復帰しない事象の原因)。
+    const onFailure: pahoMqtt.OnFailureCallback = (e) => {
+      log.error('[fetchComment] connect failure');
+      log.error(JSON.stringify(e, null, '  '));
+      this.emit('error', new Error(`jpnknの接続に失敗: [${e.errorCode}] ${e.errorMessage}`));
+      this.scheduleReconnect();
     };
     const onMessageArrived = (e: pahoMqtt.Message) => {
       const response: {
@@ -107,9 +135,18 @@ class JpnknFast extends EventEmitter<EventMap> {
       };
       this.emit('comment', item);
     };
-    client.connect({ userName: 'genkai', password: '7144', onSuccess: onConnect, useSSL: true });
     client.onConnectionLost = onConnectionLost;
     client.onMessageArrived = onMessageArrived;
+    try {
+      client.connect({ userName: 'genkai', password: '7144', onSuccess: onConnect, onFailure, useSSL: true });
+    } catch (err) {
+      // connect() 自体が同期 throw するケースに備える (ネットワーク初期化失敗等)
+      log.error('[fetchComment] connect() threw');
+      log.error(err);
+      this.emit('error', err instanceof Error ? err : new Error(String(err)));
+      this.scheduleReconnect();
+      return;
+    }
 
     // // 定期的にping打つ
     // this.commentPingIntervalObj = setInterval(() => {
@@ -125,6 +162,11 @@ class JpnknFast extends EventEmitter<EventMap> {
 
   /** コメント取得の停止 */
   public stop = () => {
+    this.isStopped = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.commentPingIntervalObj) {
       clearInterval(this.commentPingIntervalObj);
       this.commentPingIntervalObj = null as any;

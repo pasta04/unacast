@@ -75,7 +75,6 @@ if (!app.requestSingleInstanceLock()) {
     twitcastingChat: null as any,
     jpnknFast: null as any,
     azureStt: null as any,
-    threadConnectionError: 0,
     threadNumber: 0,
     commentQueueList: [],
     translateQueueList: [],

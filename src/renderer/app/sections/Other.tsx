@@ -31,13 +31,14 @@ export const Other: React.FC = () => {
 
       <Box sx={{ maxWidth: 600, mt: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          掲示板が連続で通信エラーになった時に通知する閾値(0で使用しない)
+          コメント取得が通信エラー状態のまま継続した時に通知する秒数(0で使用しない)
         </Typography>
+        <Caption>掲示板/jpnkn/ニコ生/ツイキャス/YouTube/Twitch それぞれ独立に判定します。指定秒数エラーが続けば通知し、その後も継続中なら同じ秒数ごとに再通知します。</Caption>
         <TextField
           size="small"
           value={String(config.notifyThreadConnectionErrorLimit)}
           onChange={(e) => setConfig('notifyThreadConnectionErrorLimit', intOrZero(e.target.value))}
-          inputProps={{ pattern: '[0-9]{0,2}?' }}
+          inputProps={{ pattern: '[0-9]{0,5}?' }}
         />
       </Box>
 
