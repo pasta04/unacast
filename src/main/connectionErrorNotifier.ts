@@ -68,7 +68,9 @@ const buildNotification = (source: NotifiableSource, limitSec: number): UserComm
       : `${sourceLabels[source]}の通信エラーが${limitSec}秒以上続いています。サービスの状態や設定を確認してください。`;
   return {
     name: 'unacastより',
-    imgUrl: './img/unacast.png',
+    // sendDomForChatWindow のパス書き換えで、先頭 / は http://localhost:PORT/... に
+    // 変換され express の public 配信で解決される (./ で始めるとパス書き換え側が壊れる)
+    imgUrl: '/img/unacast.png',
     text,
     type: 'comment',
     from: 'system',
