@@ -62,16 +62,12 @@ const sourceLabels: Record<NotifiableSource, string> = {
 };
 
 const buildNotification = (source: NotifiableSource, limitSec: number): UserComment => {
-  const text =
-    source === 'bbs'
-      ? `掲示板の通信エラーが${limitSec}秒以上続いています。設定を見直すか、掲示板URLを変更してください。`
-      : `${sourceLabels[source]}の通信エラーが${limitSec}秒以上続いています。サービスの状態や設定を確認してください。`;
   return {
     name: 'unacastより',
     // sendDomForChatWindow のパス書き換えで、先頭 / は http://localhost:PORT/... に
     // 変換され express の public 配信で解決される (./ で始めるとパス書き換え側が壊れる)
     imgUrl: '/img/unacast.png',
-    text,
+    text: `${sourceLabels[source]}の通信エラーが${limitSec}秒以上続いています。`,
     type: 'comment',
     from: 'system',
   };
