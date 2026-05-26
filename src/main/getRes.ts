@@ -70,6 +70,15 @@ export const getRes = async (threadUrl: string, resNum: number): Promise<UserCom
     recordConnectionSuccess('bbs');
     log.info(`fetch ${threadUrl} resNum = ${resNum}, result = ${response.length} lastResNum=${response.length > 0 ? response[response.length - 1].number : '-'}`);
 
+    // status の丸アイコンを緑に戻すため、新着が無くても success ごとに UPDATE_STATUS を発火する。
+    // 新着があればその最終レス番、無ければ既知の threadNumber、それも無ければ単に 'ok' を表示。
+    const latestKnownResNum = response.length > 0 ? response[response.length - 1].number : globalThis.electron.threadNumber;
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'bbs',
+      category: 'status',
+      message: latestKnownResNum ? `ok res=${latestKnownResNum}` : 'ok',
+    });
+
     return response.map((res) => {
       return {
         ...res,

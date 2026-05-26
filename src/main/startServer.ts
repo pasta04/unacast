@@ -845,10 +845,8 @@ const getResInterval = async (exeId: number) => {
         }
       }
     }
-
-    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'status', message: `ok res=${globalThis.electron.threadNumber}` });
   }
-  // getRes は通信エラー時に内部で UPDATE_STATUS を 'error!' で送るので、ここでの分岐は不要
+  // status の UPDATE_STATUS は getRes 内部で success/error 双方の経路で発火するのでここでは不要
 
   await checkAutoMoveThread();
 
