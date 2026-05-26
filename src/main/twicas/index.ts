@@ -126,19 +126,17 @@ class TwicasComment extends EventEmitter<EventMap> {
 
   private fetchLatestMovie = async (userid: string) => {
     const url = `https://twitcasting.tv/streamserver.php?target=${userid}&mode=client`;
-    try {
-      log.info(url);
-      const res = (await axios.get(url)).data as { movie: { id: number; live: boolean } };
-      log.info(JSON.stringify(res.movie));
-      if (res.movie) {
-        return res.movie;
-      } else {
-        // 配信履歴が無いパターン
-        return { id: '', live: false };
-      }
-    } catch (e) {
-      return { id: '', live: false };
+    log.info(url);
+    // NW 切断や DNS 失敗等の通信エラーはここで catch せず caller (pollingStartBroadcast) に
+    // 伝播させる。catch で握り潰すと「Twicas live is not broadcasting」と区別できず、
+    // status の丸アイコンが赤くならない (= NW 障害が見えない)。
+    const res = (await axios.get(url)).data as { movie: { id: number; live: boolean } };
+    log.info(JSON.stringify(res.movie));
+    if (res.movie) {
+      return res.movie;
     }
+    // 配信履歴が無いパターン (API 自体は成功してレスポンスが空)
+    return { id: '', live: false };
   };
 
   private fetchEventpubsuburl = async (movie_id: string, password: string = '') => {
