@@ -23,6 +23,7 @@ import JpnknFast from './jpnkn';
 import AzureSpeechToText from './azureStt';
 import tr from './googletrans';
 import CommentIcons from './CommentIcons';
+import { recordConnectionError, recordConnectionSuccess, resetAllConnectionErrors, setNotifyCallback } from './connectionErrorNotifier';
 
 /** express の app インスタンス。サーバ起動中のみ値を持ち、STOP_SERVER で null に戻る */
 let app: expressWs.Instance['app'] | null = null;
@@ -158,7 +159,9 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   globalThis.electron.translateWindow.webContents.send(electronEvent.CLEAR_COMMENT);
   globalThis.electron.threadNumber = 0;
   globalThis.electron.commentQueueList = [];
-  globalThis.electron.threadConnectionError = 0;
+  resetAllConnectionErrors();
+  // 連続通信エラー検知の通知出力先 (チャットウィンドウ) を登録。配信画面/SE/読み上げには出さない
+  setNotifyCallback((notif) => sendDomForChatWindow([notif]));
   serverId = new Date().getTime();
 
   const expressApp = express();
@@ -254,6 +257,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
 
     nico.on('comment', (event) => {
+      recordConnectionSuccess('niconico');
       globalThis.electron.commentQueueList.push({
         imgUrl: globalThis.electron.iconList.getNiconico(),
         number: event.number,
@@ -278,6 +282,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
     nico.on('error', () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'niconico', category: 'status', message: `error` });
+      recordConnectionError('niconico');
     });
     nico.start();
   }
@@ -295,6 +300,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
 
     twicas.on('open', (event) => {
+      recordConnectionSuccess('twitcasting');
       const message = event.number ? `ok No=${event.number}` : 'ok';
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
         commentType: 'twitcasting',
@@ -324,6 +330,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
       sendDomForChatWindow(list);
     });
     twicas.on('comment', (event) => {
+      recordConnectionSuccess('twitcasting');
       globalThis.electron.commentQueueList.push({
         imgUrl: event.imgUrl,
         number: event.number,
@@ -360,6 +367,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
     twicas.on('error', () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitcasting', category: 'status', message: `error` });
+      recordConnectionError('twitcasting');
     });
     twicas.start();
   }
@@ -373,6 +381,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
 
     jpn.on('open', () => {
+      recordConnectionSuccess('jpnkn');
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
         commentType: 'jpnkn',
         category: 'status',
@@ -381,6 +390,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
 
     jpn.on('comment', (event) => {
+      recordConnectionSuccess('jpnkn');
       globalThis.electron.commentQueueList.push({ ...event, imgUrl: globalThis.electron.iconList.getBbs() });
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
         commentType: 'jpnkn',
@@ -398,6 +408,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
     });
     jpn.on('error', () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'jpnkn', category: 'status', message: `error` });
+      recordConnectionError('jpnkn');
     });
     jpn.start();
   }
@@ -543,7 +554,7 @@ const commentTest = async () => {
         id: '100',
         name: 'ななしさん',
         text: text,
-        imgUrl: './img/unacast.png',
+        imgUrl: '/img/unacast.png',
         type: 'comment',
         from: 'bbs',
         // テストコメントは配信画面の sourceFilter 設定に関わらず常に出す
@@ -582,12 +593,14 @@ const startTwitchChat = async () => {
 
     // 接続完了
     twitchChat.on('ready', () => {
+      recordConnectionSuccess('twitch');
       log.debug('[Twitch] Successfully connected to chat');
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'ok' });
     });
 
     // チャット受信
     twitchChat.on('PRIVMSG', (msg) => {
+      recordConnectionSuccess('twitch');
       log.info('[Twitch] comment received');
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'ok' });
 
@@ -614,14 +627,17 @@ const startTwitchChat = async () => {
     twitchChat.on('error', (event) => {
       log.error(`[Twitch] ${JSON.stringify(event)}`);
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'error!' });
+      recordConnectionError('twitch');
     });
 
     twitchChat.on('close', () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'connection end' });
+      recordConnectionError('twitch');
     });
   } catch (e) {
     log.error(e);
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'twitch', category: 'status', message: 'error!' });
+    recordConnectionError('twitch');
   }
 };
 
@@ -638,6 +654,7 @@ const startYoutubeChat = async () => {
 
     // 接続開始イベント
     globalThis.electron.youtubeChat.on('start', (liveId: string) => {
+      recordConnectionSuccess('youtube');
       log.info(`[Youtube Chat] connected liveId = ${liveId}`);
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'liveid', message: liveId });
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'ok' });
@@ -680,6 +697,7 @@ const startYoutubeChat = async () => {
     };
     // 初期チャット受信
     globalThis.electron.youtubeChat.on('firstComment', (comment: CommentItem) => {
+      recordConnectionSuccess('youtube');
       log.info('[Youtube] comment received');
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'ok' });
       // チャットウィンドウだけに出力
@@ -688,6 +706,7 @@ const startYoutubeChat = async () => {
 
     // チャット受信
     globalThis.electron.youtubeChat.on('comment', (comment: CommentItem) => {
+      recordConnectionSuccess('youtube');
       log.info('[Youtube] comment received');
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'ok' });
       createYoutubeComment(comment).then((data) => globalThis.electron.commentQueueList.push(data));
@@ -697,6 +716,7 @@ const startYoutubeChat = async () => {
     globalThis.electron.youtubeChat.on('error', (err: Error) => {
       log.error(`[Youtube Chat] ${err.message}`);
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: `error! ${err.message}` });
+      recordConnectionError('youtube');
     });
 
     globalThis.electron.youtubeChat.start();
@@ -770,6 +790,10 @@ ipcMain.on(electronEvent.STOP_SERVER, (event) => {
     globalThis.electron.azureStt.removeAllListeners();
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'stt', category: 'status', message: `connection end` });
   }
+
+  // 連続通信エラー検知の停止 (停止後に飛んでくる close 等で誤通知しないよう callback も外す)
+  setNotifyCallback(null);
+  resetAllConnectionErrors();
 });
 
 const getResInterval = async (exeId: number) => {
@@ -821,13 +845,8 @@ const getResInterval = async (exeId: number) => {
         }
       }
     }
-
-    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'status', message: `ok res=${globalThis.electron.threadNumber}` });
-  } else if (result.length > 0) {
-    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'status', message: 'error!' });
-    // 番号が無くて結果が入ってるのは通信エラーメッセージ
-    sendDomForChatWindow(result);
   }
+  // status の UPDATE_STATUS は getRes 内部で success/error 双方の経路で発火するのでここでは不要
 
   await checkAutoMoveThread();
 
@@ -845,7 +864,7 @@ const notifyThreadResLimit = async () => {
     sendDomForChatWindow([
       {
         name: 'unacastより',
-        imgUrl: './img/unacast.png',
+        imgUrl: '/img/unacast.png',
         text: `レスが${globalThis.config.notifyThreadResLimit}を超えました。次スレを立ててください。`,
         type: 'comment',
         from: 'system',
@@ -871,7 +890,7 @@ const checkAutoMoveThread = async () => {
   // 次スレが見つかったので移動する
   globalThis.electron.commentQueueList.push({
     name: 'unacastより',
-    imgUrl: './img/unacast.png',
+    imgUrl: '/img/unacast.png',
     text: `レス1000を超えました。次スレ候補 「${target.name}」 に移動します`,
     type: 'comment',
     from: 'system',

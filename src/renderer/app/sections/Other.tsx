@@ -31,17 +31,20 @@ export const Other: React.FC = () => {
 
       <Box sx={{ maxWidth: 600, mt: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          掲示板が連続で通信エラーになった時に通知する閾値(0で使用しない)
+          エラーが継続した際に通知するまでの秒数(0で使用しない)
         </Typography>
         <TextField
           size="small"
           value={String(config.notifyThreadConnectionErrorLimit)}
           onChange={(e) => setConfig('notifyThreadConnectionErrorLimit', intOrZero(e.target.value))}
-          inputProps={{ pattern: '[0-9]{0,2}?' }}
+          inputProps={{ pattern: '[0-9]{0,5}?' }}
         />
       </Box>
 
       <Box sx={{ mt: 1 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+          自動スレ移動
+        </Typography>
         <Caption>スレ順に探索して、最初に見つかった1000以外のスレに移動します。移動先の初回取得結果はブラウザ側には表示しません。</Caption>
         <FormControlLabel control={<Checkbox size="small" checked={config.moveThread} onChange={(e) => setConfig('moveThread', e.target.checked)} />} label="1000で自動スレ移動" />
       </Box>

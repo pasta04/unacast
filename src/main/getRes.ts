@@ -8,7 +8,9 @@ import electronlog from 'electron-log';
 const log = electronlog.scope('bbs');
 
 import { createDom } from './startServer';
+import { electronEvent } from './const';
 import { judgeAaMessage } from './util';
+import { recordConnectionError, recordConnectionSuccess } from './connectionErrorNotifier';
 import ReadSitaraba, { readBoard as readBoardShitaraba, postRes as postResShitaraba } from './readBBS/ReadSitaraba'; // したらば読み込み用モジュール
 import Read5ch, { readBoard as readBoard5ch, postRes as postRes5ch } from './readBBS/Read5ch'; // 5ch互換板読み込み用モジュール
 const sitaraba = new ReadSitaraba();
@@ -65,8 +67,17 @@ export const getRes = async (threadUrl: string, resNum: number): Promise<UserCom
 
     // 選択したモジュールでレス取得処理を行う
     const response = await bbsModule.read(threadUrl, resNum);
-    globalThis.electron.threadConnectionError = 0;
+    recordConnectionSuccess('bbs');
     log.info(`fetch ${threadUrl} resNum = ${resNum}, result = ${response.length} lastResNum=${response.length > 0 ? response[response.length - 1].number : '-'}`);
+
+    // status の丸アイコンを緑に戻すため、新着が無くても success ごとに UPDATE_STATUS を発火する。
+    // 新着があればその最終レス番、無ければ既知の threadNumber、それも無ければ単に 'ok' を表示。
+    const latestKnownResNum = response.length > 0 ? response[response.length - 1].number : globalThis.electron.threadNumber;
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'bbs',
+      category: 'status',
+      message: latestKnownResNum ? `ok res=${latestKnownResNum}` : 'ok',
+    });
 
     return response.map((res) => {
       return {
@@ -76,24 +87,10 @@ export const getRes = async (threadUrl: string, resNum: number): Promise<UserCom
     });
   } catch (e) {
     log.error(e);
-    // エラー回数が規定回数以上かチェックして、超えてたら通知する
-    if (globalThis.config.notifyThreadConnectionErrorLimit > 0) {
-      globalThis.electron.threadConnectionError += 1;
-      if (globalThis.electron.threadConnectionError >= globalThis.config.notifyThreadConnectionErrorLimit) {
-        log.info('エラー回数超過');
-
-        globalThis.electron.threadConnectionError = 0;
-        return [
-          {
-            name: 'unacastより',
-            imgUrl: './img/unacast.png',
-            text: '掲示板が規定回数通信エラーになりました。設定を見直すか、掲示板URLを変更してください。',
-            type: 'comment',
-            from: 'system',
-          },
-        ];
-      }
-    }
+    recordConnectionError('bbs');
+    // status ラインの丸アイコンを赤くするため、エラーごとに UPDATE_STATUS を発火する
+    // (WebSocket 系の on('error') ハンドラと挙動を揃える)
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'status', message: 'error!' });
     return [];
   }
 };

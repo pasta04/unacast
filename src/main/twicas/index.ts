@@ -101,6 +101,12 @@ class TwicasComment extends EventEmitter<EventMap> {
   /** コメントサーバ再接続のタイマー */
   reconnectTimer?: NodeJS.Timeout;
 
+  /**
+   * stop() 済みかどうか。直接 `this.status === 'wait'` で判定すると
+   * await を跨いだ TypeScript の型 narrowing が効いてしまうので、関数経由で取り出す。
+   */
+  private isStopped = (): boolean => this.status === 'wait';
+
   constructor(options: { userId: string }) {
     super();
     if ('userId' in options) {
@@ -120,19 +126,17 @@ class TwicasComment extends EventEmitter<EventMap> {
 
   private fetchLatestMovie = async (userid: string) => {
     const url = `https://twitcasting.tv/streamserver.php?target=${userid}&mode=client`;
-    try {
-      log.info(url);
-      const res = (await axios.get(url)).data as { movie: { id: number; live: boolean } };
-      log.info(JSON.stringify(res.movie));
-      if (res.movie) {
-        return res.movie;
-      } else {
-        // 配信履歴が無いパターン
-        return { id: '', live: false };
-      }
-    } catch (e) {
-      return { id: '', live: false };
+    log.info(url);
+    // NW 切断や DNS 失敗等の通信エラーはここで catch せず caller (pollingStartBroadcast) に
+    // 伝播させる。catch で握り潰すと「Twicas live is not broadcasting」と区別できず、
+    // status の丸アイコンが赤くならない (= NW 障害が見えない)。
+    const res = (await axios.get(url)).data as { movie: { id: number; live: boolean } };
+    log.info(JSON.stringify(res.movie));
+    if (res.movie) {
+      return res.movie;
     }
+    // 配信履歴が無いパターン (API 自体は成功してレスポンスが空)
+    return { id: '', live: false };
   };
 
   private fetchEventpubsuburl = async (movie_id: string, password: string = '') => {
@@ -159,10 +163,13 @@ class TwicasComment extends EventEmitter<EventMap> {
     try {
       // 動画IDの取得
       const movie = await this.fetchLatestMovie(this.userId);
+      // 通信中に stop された可能性があるので再チェック (status='wait' を 'start' で上書きしてしまうのを防ぐ)
+      if (this.isStopped() || this.status !== 'polling') return;
 
       if (!movie.id || !movie.live) {
         log.info(`Twicas live is not broadcasting. userId = ${this.userId}`);
         await sleep(this.waitBroadcastPollingInterval);
+        if (this.isStopped() || this.status !== 'polling') return;
         this.pollingStartBroadcast();
       } else {
         this.emit('start');
@@ -171,16 +178,18 @@ class TwicasComment extends EventEmitter<EventMap> {
         this.fetchComment();
       }
     } catch (e: any) {
+      if (this.isStopped() || this.status !== 'polling') return;
       this.emit('error', new Error(`connection error`));
       log.error(JSON.stringify(e, null, '  '));
       await sleep(this.waitBroadcastPollingInterval * 2);
+      if (this.isStopped() || this.status !== 'polling') return;
       this.pollingStartBroadcast();
     }
   };
 
   private reconnect() {
     clearTimeout(this.reconnectTimer);
-    if (this.status === 'wait') return;
+    if (this.isStopped()) return;
 
     this.status = 'polling';
     this.reconnectTimer = setTimeout(() => {
@@ -239,15 +248,19 @@ class TwicasComment extends EventEmitter<EventMap> {
    */
   private fetchComment = async () => {
     if (!this.liveId) return;
+    if (this.isStopped()) return;
     log.info(`[fetchComment] liveId = ${this.liveId}`);
 
     /** コメントサーバのURL */
     const url = await this.fetchEventpubsuburl(this.liveId);
+    // 通信中に stop された可能性があるので、WebSocket 接続前に再チェック
+    if (this.isStopped()) return;
     if (!url) throw new Error('failed to fetch comment server URL');
 
     // 初期コメント取得
     if (!this.isFirstCommentReceived) {
       const list = await this.fetchInitComment();
+      if (this.isStopped()) return;
       this.emit('firstComment', list);
       this.isFirstCommentReceived = true;
     }
