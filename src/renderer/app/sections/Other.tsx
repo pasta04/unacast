@@ -31,9 +31,8 @@ export const Other: React.FC = () => {
 
       <Box sx={{ maxWidth: 600, mt: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          コメント取得が通信エラー状態のまま継続した時に通知する秒数(0で使用しない)
+          エラーが継続した際に通知するまでの秒数(0で使用しない)
         </Typography>
-        <Caption>掲示板/jpnkn/ニコ生/ツイキャス/YouTube/Twitch それぞれ独立に判定します。指定秒数エラーが続けば通知し、その後も継続中なら同じ秒数ごとに再通知します。</Caption>
         <TextField
           size="small"
           value={String(config.notifyThreadConnectionErrorLimit)}
@@ -43,6 +42,9 @@ export const Other: React.FC = () => {
       </Box>
 
       <Box sx={{ mt: 1 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+          自動スレ移動
+        </Typography>
         <Caption>スレ順に探索して、最初に見つかった1000以外のスレに移動します。移動先の初回取得結果はブラウザ側には表示しません。</Caption>
         <FormControlLabel control={<Checkbox size="small" checked={config.moveThread} onChange={(e) => setConfig('moveThread', e.target.checked)} />} label="1000で自動スレ移動" />
       </Box>
