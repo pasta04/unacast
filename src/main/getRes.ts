@@ -8,6 +8,7 @@ import electronlog from 'electron-log';
 const log = electronlog.scope('bbs');
 
 import { createDom } from './startServer';
+import { electronEvent } from './const';
 import { judgeAaMessage } from './util';
 import { recordConnectionError, recordConnectionSuccess } from './connectionErrorNotifier';
 import ReadSitaraba, { readBoard as readBoardShitaraba, postRes as postResShitaraba } from './readBBS/ReadSitaraba'; // したらば読み込み用モジュール
@@ -78,6 +79,9 @@ export const getRes = async (threadUrl: string, resNum: number): Promise<UserCom
   } catch (e) {
     log.error(e);
     recordConnectionError('bbs');
+    // status ラインの丸アイコンを赤くするため、エラーごとに UPDATE_STATUS を発火する
+    // (WebSocket 系の on('error') ハンドラと挙動を揃える)
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'status', message: 'error!' });
     return [];
   }
 };

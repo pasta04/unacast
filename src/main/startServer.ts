@@ -847,11 +847,8 @@ const getResInterval = async (exeId: number) => {
     }
 
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'status', message: `ok res=${globalThis.electron.threadNumber}` });
-  } else if (result.length > 0) {
-    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'status', message: 'error!' });
-    // 番号が無くて結果が入ってるのは通信エラーメッセージ
-    sendDomForChatWindow(result);
   }
+  // getRes は通信エラー時に内部で UPDATE_STATUS を 'error!' で送るので、ここでの分岐は不要
 
   await checkAutoMoveThread();
 
