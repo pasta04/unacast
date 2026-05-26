@@ -554,7 +554,7 @@ const commentTest = async () => {
         id: '100',
         name: 'ななしさん',
         text: text,
-        imgUrl: './img/unacast.png',
+        imgUrl: '/img/unacast.png',
         type: 'comment',
         from: 'bbs',
         // テストコメントは配信画面の sourceFilter 設定に関わらず常に出す
@@ -869,7 +869,7 @@ const notifyThreadResLimit = async () => {
     sendDomForChatWindow([
       {
         name: 'unacastより',
-        imgUrl: './img/unacast.png',
+        imgUrl: '/img/unacast.png',
         text: `レスが${globalThis.config.notifyThreadResLimit}を超えました。次スレを立ててください。`,
         type: 'comment',
         from: 'system',
@@ -895,7 +895,7 @@ const checkAutoMoveThread = async () => {
   // 次スレが見つかったので移動する
   globalThis.electron.commentQueueList.push({
     name: 'unacastより',
-    imgUrl: './img/unacast.png',
+    imgUrl: '/img/unacast.png',
     text: `レス1000を超えました。次スレ候補 「${target.name}」 に移動します`,
     type: 'comment',
     from: 'system',
