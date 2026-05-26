@@ -39,6 +39,8 @@ class NiconamaComment extends EventEmitter<EventMap> {
   /** ニコ生チャットWebSocketに対する定期ping */
   commentPingIntervalObj: NodeJS.Timeout = null as any;
   nicoliveClient: typeof NicoliveApi.NicoliveClient = null as any;
+  /** stop() 済みなら true。polling/fetchComment の中断判定に使う */
+  private isStop = false;
 
   constructor(options: { userId: string }) {
     super();
@@ -51,6 +53,7 @@ class NiconamaComment extends EventEmitter<EventMap> {
 
   public async start() {
     if (this.userId) {
+      this.isStop = false;
       this.emit('wait');
       this.pollingStartBroadcast();
     }
@@ -58,10 +61,13 @@ class NiconamaComment extends EventEmitter<EventMap> {
 
   /** ニコ生の配信開始待ち */
   private pollingStartBroadcast = async () => {
+    if (this.isStop) return;
     try {
       /** 配信情報 */
       const broadcastHisotoryUrl = `https://live.nicovideo.jp/front/api/v2/user-broadcast-history?providerId=${this.userId}&providerType=user&isIncludeNonPublic=false&offset=0&limit=100&withTotalCount=true`;
       const broadcastHisotory = (await axios.get(broadcastHisotoryUrl)).data;
+      // 通信中に stop された可能性があるので再チェック
+      if (this.isStop) return;
       if (broadcastHisotory.meta.status !== 200) {
         // たぶんサーバ側がエラーになってる
         log.error(JSON.stringify(broadcastHisotory));
@@ -79,15 +85,18 @@ class NiconamaComment extends EventEmitter<EventMap> {
       if (!liveId) {
         log.info(`niconico live is not broadcasting. userId = ${this.userId}`);
         await sleep(this.waitBroadcastPollingInterval);
+        if (this.isStop) return;
         this.pollingStartBroadcast();
       } else {
         this.emit('start');
         this.fetchComment(liveId);
       }
     } catch (e: any) {
+      if (this.isStop) return;
       this.emit('error', new Error(`connection error`));
       log.error(JSON.stringify(e, null, '  '));
       await sleep(this.waitBroadcastPollingInterval * 2);
+      if (this.isStop) return;
       this.pollingStartBroadcast();
     }
   };
@@ -97,11 +106,13 @@ class NiconamaComment extends EventEmitter<EventMap> {
    * @param liveId liveID
    */
   private fetchComment = async (liveId: string) => {
+    if (this.isStop) return;
     log.info(`[fetchComment] liveId = ${liveId}`);
 
     this.nicoliveClient = new NicoliveApi.NicoliveClient({ liveId: liveId });
 
     this.nicoliveClient.on('chat', (chat: any) => {
+      if (this.isStop) return;
       const comment = chat.content;
       if (!comment) return;
 
@@ -123,8 +134,12 @@ class NiconamaComment extends EventEmitter<EventMap> {
 
   /** コメント取得の停止 */
   public stop = () => {
-    this.nicoliveClient.disconnect();
-    delete this.nicoliveClient;
+    this.isStop = true;
+    // start() 直後で polling 中の場合 nicoliveClient は null なので null チェックする
+    if (this.nicoliveClient) {
+      this.nicoliveClient.disconnect();
+      delete this.nicoliveClient;
+    }
     this.isFirstCommentReceived = false;
     this.latestNo = NaN;
     if (this.commentPingIntervalObj) {

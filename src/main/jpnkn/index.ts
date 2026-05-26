@@ -93,6 +93,16 @@ class JpnknFast extends EventEmitter<EventMap> {
     const client = new pahoMqtt.Client('a.mq.jpnkn.com', 9091, 'peca' + new Date().getTime());
 
     const onConnect = (_o: pahoMqtt.WithInvocationContext): ReturnType<pahoMqtt.OnSuccessCallback> => {
+      // connect() が in-flight 中に stop() された場合、後から発火する onConnect で
+      // subscribe して取得し続けないよう、ここで切断する
+      if (this.isStopped) {
+        try {
+          client.disconnect();
+        } catch (err) {
+          log.error('[fetchComment] disconnect after stop failed', err);
+        }
+        return;
+      }
       client.subscribe(`bbs/${this.boardId}`);
       this.emit('open');
     };
