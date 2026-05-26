@@ -1,10 +1,16 @@
 import * as React from 'react';
 import { Box, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
-import { SectionPanel, LabeledInput, Caption, SourceFilterToggle } from './common';
+import { SectionPanel, LabeledInput, Caption, SourceFilterToggle, StatusDot, getStatusColor } from './common';
 
-const StatusLine: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+/**
+ * 取得元の status を 1 行で表示する。
+ * `configured` を渡すと先頭に丸アイコンが付き、未指定 (= gray) / エラー (= red) / 正常 (= green) を視覚化する。
+ * liveId のような状態ではない値を表示する用途には省略する。
+ */
+const StatusLine: React.FC<{ label: string; value: string; configured?: boolean }> = ({ label, value, configured }) => (
   <Typography variant="caption" color="text.secondary" sx={{ mr: 2, mt: '-4px', display: 'inline-block', lineHeight: 1, verticalAlign: 'top' }}>
+    {configured !== undefined && <StatusDot color={getStatusColor(value, configured)} />}
     {label}: {value}
   </Typography>
 );
@@ -37,7 +43,7 @@ export const Sources: React.FC = () => {
           placeholder="http(s)://.../"
         />
         <SourceFilterToggle source="bbs" axis="broadcast" />
-        <StatusLine label="status" value={status.bbs} />
+        <StatusLine label="status" value={status.bbs} configured={!!config.url} />
       </Box>
 
       {/* Jpnkn Fast */}
@@ -49,7 +55,7 @@ export const Sources: React.FC = () => {
           <TextField size="small" value={config.jpnknFastBoardId} onChange={(e) => setConfig('jpnknFastBoardId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <SourceFilterToggle source="jpnkn" axis="broadcast" />
-        <StatusLine label="status" value={status.jpnknFast} />
+        <StatusLine label="status" value={status.jpnknFast} configured={!!config.jpnknFastBoardId} />
       </Box>
 
       {/* YouTube */}
@@ -68,7 +74,7 @@ export const Sources: React.FC = () => {
         </LabeledInput>
         <SourceFilterToggle source="youtube" axis="broadcast" />
         <Box sx={{ mt: 0.5 }}>
-          <StatusLine label="status" value={status.youtube} />
+          <StatusLine label="status" value={status.youtube} configured={!!(config.youtubeLiveId || config.youtubeId)} />
           <StatusLine label="liveId" value={status.youtubeLiveId} />
         </Box>
       </Box>
@@ -82,7 +88,7 @@ export const Sources: React.FC = () => {
           <TextField size="small" value={config.twitchId} onChange={(e) => setConfig('twitchId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <SourceFilterToggle source="twitch" axis="broadcast" />
-        <StatusLine label="status" value={status.twitch} />
+        <StatusLine label="status" value={status.twitch} configured={!!config.twitchId} />
       </Box>
 
       {/* niconico */}
@@ -100,7 +106,7 @@ export const Sources: React.FC = () => {
           />
         </LabeledInput>
         <SourceFilterToggle source="niconico" axis="broadcast" />
-        <StatusLine label="status" value={status.niconico} />
+        <StatusLine label="status" value={status.niconico} configured={!!config.niconicoId} />
       </Box>
 
       {/* twitcasting */}
@@ -112,7 +118,7 @@ export const Sources: React.FC = () => {
           <TextField size="small" value={config.twitcastingId} onChange={(e) => setConfig('twitcastingId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
         <SourceFilterToggle source="twitcasting" axis="broadcast" />
-        <StatusLine label="status" value={status.twitcasting} />
+        <StatusLine label="status" value={status.twitcasting} configured={!!config.twitcastingId} />
       </Box>
     </SectionPanel>
   );

@@ -22,7 +22,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
-import { SectionPanel, Caption } from './common';
+import { SectionPanel, Caption, StatusDot, getStatusColor } from './common';
 
 type YomikoType = AppConfig['typeYomiko'];
 
@@ -185,6 +185,7 @@ export const Yomiko: React.FC = () => {
           ))}
         </TextField>
         <Typography variant="caption" color="text.secondary">
+          <StatusDot color={getStatusColor(voicevoxStatus, config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox')} />
           status: {voicevoxStatus}
         </Typography>
       </Box>

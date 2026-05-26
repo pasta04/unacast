@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Box, Checkbox, FormControlLabel, MenuItem, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
-import { SectionPanel, Caption, SourceFilterToggle } from './common';
+import { SectionPanel, Caption, SourceFilterToggle, StatusDot, getStatusColor } from './common';
 
 export const AzureStt: React.FC = () => {
   const config = useAppStore((s) => s.config);
@@ -67,6 +67,7 @@ export const AzureStt: React.FC = () => {
 
       <SourceFilterToggle source="stt" axis="broadcast" />
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: '-4px', lineHeight: 1 }}>
+        <StatusDot color={getStatusColor(status, config.azureStt.enable)} />
         status: {status}
       </Typography>
     </SectionPanel>
