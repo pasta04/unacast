@@ -7,7 +7,7 @@ import electronlog from 'electron-log';
 const log = electronlog.scope('niconama');
 import { sleep } from '../util';
 import WebSocket from 'ws';
-import * as NicoliveApi from './node.js';
+import { NicoliveClient } from '@kikurage/nicolive-api';
 
 type CommentItem = {
   number: string;
@@ -17,6 +17,8 @@ type CommentItem = {
 
 type EventMap = {
   comment: [item: CommentItem];
+  /** 接続直後に取得した過去コメント一覧 (1 度だけ発火) */
+  firstComment: [items: CommentItem[]];
   start: [];
   end: [reason?: string];
   open: [obj: { liveId: string; number: number }];
@@ -38,7 +40,7 @@ class NiconamaComment extends EventEmitter<EventMap> {
   threadSocket: WebSocket = null as any;
   /** ニコ生チャットWebSocketに対する定期ping */
   commentPingIntervalObj: NodeJS.Timeout = null as any;
-  nicoliveClient: typeof NicoliveApi.NicoliveClient = null as any;
+  nicoliveClient?: NicoliveClient;
   /** stop() 済みなら true。polling/fetchComment の中断判定に使う */
   private isStop = false;
 
@@ -109,27 +111,38 @@ class NiconamaComment extends EventEmitter<EventMap> {
     if (this.isStop) return;
     log.info(`[fetchComment] liveId = ${liveId}`);
 
-    this.nicoliveClient = new NicoliveApi.NicoliveClient({ liveId: liveId });
+    this.nicoliveClient = new NicoliveClient({ liveId: liveId });
 
-    this.nicoliveClient.on('chat', (chat: any) => {
+    this.nicoliveClient.on('chat', (chat) => {
       if (this.isStop) return;
-      const comment = chat.content;
-      if (!comment) return;
-
-      log.info(`[fetchComment]WS - content: ${comment}`);
-
-      // /で始まるのはなんかコマンドなので除外する
-      if (comment.match(/^\/[a-z]+ /)) return;
-
-      const item: CommentItem = {
-        number: chat.no.toString(),
-        name: '',
-        comment: comment,
-      };
+      const item = this.chatToCommentItem(chat);
+      if (!item) return;
+      log.info(`[fetchComment]WS - content: ${item.comment}`);
       this.emit('comment', item);
     });
 
+    // 接続直後に届く過去コメント (pastMessagesLimit に制限済み) を一度だけ受け取る
+    this.nicoliveClient.on('pastChats', (chats) => {
+      if (this.isStop) return;
+      const items = chats.map((c) => this.chatToCommentItem(c)).filter((x): x is CommentItem => x !== null);
+      if (items.length === 0) return;
+      log.info(`[fetchComment] pastChats received: ${items.length}`);
+      this.emit('firstComment', items);
+    });
+
     this.nicoliveClient.connect();
+  };
+
+  /** Chat → CommentItem 変換。空コメントやコマンド (/xxx ...) は null を返す */
+  private chatToCommentItem = (chat: { content: string; no: number }): CommentItem | null => {
+    const comment = chat.content;
+    if (!comment) return null;
+    if (comment.match(/^\/[a-z]+ /)) return null;
+    return {
+      number: chat.no.toString(),
+      name: '',
+      comment,
+    };
   };
 
   /** コメント取得の停止 */
@@ -153,6 +166,8 @@ class NiconamaComment extends EventEmitter<EventMap> {
 
   // イベント
   public on(event: 'comment', listener: (comment: CommentItem) => void): this;
+  // 接続直後に取得した過去コメント (1 度だけ発火)
+  public on(event: 'firstComment', listener: (comments: CommentItem[]) => void): this;
   // コミュニティIDは正常だが配信が開始していない時
   public on(event: 'wait', listener: () => void): this;
   // liveIDが取得できた時

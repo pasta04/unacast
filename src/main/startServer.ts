@@ -256,6 +256,24 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
       });
     });
 
+    // 接続直後の過去コメントは chat ウィンドウだけに出力 (配信画面/SE/読み上げには出さない)
+    nico.on('firstComment', (comments) => {
+      let list: UserComment[] = comments.map((item) => {
+        return {
+          name: item.name,
+          number: item.number,
+          imgUrl: globalThis.electron.iconList.getNiconico(),
+          text: item.comment,
+          type: 'comment',
+          from: 'niconico',
+        } as UserComment;
+      });
+      if (!globalThis.config.dispSort) {
+        list = list.reverse();
+      }
+      sendDomForChatWindow(list);
+    });
+
     nico.on('comment', (event) => {
       recordConnectionSuccess('niconico');
       globalThis.electron.commentQueueList.push({

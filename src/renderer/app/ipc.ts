@@ -42,7 +42,10 @@ const playSe = async (arg: { wavfilepath: string; volume: number; deviceId: stri
 const speakWav = async (arg: { wavblob: Uint8Array; volume: number; deviceId?: string }) => {
   const audioElem = new Audio();
   speakWavElement = audioElem;
-  const blob = new Blob([arg.wavblob], { type: 'audio/wav' });
+  // TS の DOM lib 更新で BlobPart の ArrayBufferView が ArrayBuffer 限定にジェネリック化され、
+  // Uint8Array<ArrayBufferLike> (= SharedArrayBuffer を含み得る) が直接渡せなくなった。
+  // ランタイムでは問題ないので BlobPart にキャストする
+  const blob = new Blob([arg.wavblob as BlobPart], { type: 'audio/wav' });
   const url = URL.createObjectURL(blob);
   try {
     if (arg.deviceId) {

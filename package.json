@@ -27,6 +27,7 @@
   "homepage": "https://github.com/yudeunagi/unacast#readme",
   "dependencies": {
     "@electron/remote": "^2.1.2",
+    "@kikurage/nicolive-api": "github:pasta04/Nicolive-API#0.0.5",
     "axios": "^1.8.3",
     "body-parser": "^1.20.3",
     "cheerio": "1.0.0-rc.12",
