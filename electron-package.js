@@ -40,6 +40,67 @@ const ignore = [
 
 const expectedOutDir = path.resolve(`unacast-${PLATFORM}-x64`);
 
+// 残す Chromium ロケール。.pak は Chromium 自身の UI 文字列 (右クリックメニュー
+// やエラーページ等) の翻訳であり、ページ本文 (= コメント) の表示には影響しない。
+// ja / en があれば日本語環境 + 英語 fallback で実用上問題ないので、その他の
+// 56 言語分 (~30MB) を packaging 時に削除する。
+const KEEP_LOCALE_PREFIXES = ['ja', 'en'];
+
+// koffi は build/koffi/<platform>_<arch>/ にプラットフォーム毎の prebuilt が
+// 全部入っている (18 個 × ~1.5MB = ~27MB)。実行ターゲット以外は不要なので、
+// 対象 platform_arch 以外の prebuild ディレクトリを削除する。
+const trimChromiumLocales = (buildPath, electronVersion, platform, arch, callback) => {
+  // buildPath = <stagingPath>/resources/app  →  locales は <stagingPath>/locales
+  const localesDir = path.join(buildPath, '..', '..', 'locales');
+  try {
+    if (!fs.existsSync(localesDir)) {
+      return callback();
+    }
+    let removed = 0;
+    let kept = 0;
+    for (const name of fs.readdirSync(localesDir)) {
+      const lang = name.replace(/\.pak$/, '');
+      const keep = KEEP_LOCALE_PREFIXES.some((p) => lang === p || lang.startsWith(`${p}-`));
+      if (!keep) {
+        fs.unlinkSync(path.join(localesDir, name));
+        removed += 1;
+      } else {
+        kept += 1;
+      }
+    }
+    console.log(`[electron-package] trimmed Chromium locales: kept=${kept} removed=${removed}`);
+    callback();
+  } catch (err) {
+    callback(err);
+  }
+};
+
+const trimKoffiPrebuilds = (buildPath, electronVersion, platform, arch, callback) => {
+  const koffiDir = path.join(buildPath, 'node_modules', 'koffi', 'build', 'koffi');
+  try {
+    if (!fs.existsSync(koffiDir)) {
+      return callback();
+    }
+    const keepDir = `${platform}_${arch}`;
+    let removed = 0;
+    let kept = 0;
+    for (const name of fs.readdirSync(koffiDir)) {
+      const full = path.join(koffiDir, name);
+      if (!fs.statSync(full).isDirectory()) continue;
+      if (name === keepDir) {
+        kept += 1;
+      } else {
+        fs.rmSync(full, { recursive: true, force: true });
+        removed += 1;
+      }
+    }
+    console.log(`[electron-package] trimmed koffi prebuilds: kept=${kept} (${keepDir}) removed=${removed}`);
+    callback();
+  } catch (err) {
+    callback(err);
+  }
+};
+
 (async () => {
   try {
     const appPaths = await packager({
@@ -52,6 +113,7 @@ const expectedOutDir = path.resolve(`unacast-${PLATFORM}-x64`);
       icon: 'icon.ico',
       asar: ASAR,
       ignore,
+      afterCopy: [trimKoffiPrebuilds, trimChromiumLocales],
     });
     if (!appPaths || appPaths.length === 0) {
       console.error('[electron-package] packager returned empty appPaths');
