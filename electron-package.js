@@ -4,9 +4,19 @@
 // イベントループが空とみなされて Node が静かに exit 0 してしまう事象が発生。
 // 直接 API を await することで、Promise を確実にこのプロセスのルートに繋ぎ、
 // 失敗時の throw / 完了時の結果 / イベントループ終了の理由を観測可能にする。
+
+// debug() ログを require より前に有効化する必要があるため、ここで env を設定。
+process.env.DEBUG = process.env.DEBUG || 'electron-packager*,extract-zip*,yauzl*';
+
 const path = require('path');
 const fs = require('fs');
 const { packager } = require('@electron/packager');
+
+// CI で「Packaging app for platform ...」の直後にイベントループが空とみなされて
+// Node プロセスが exit 0 で終了する現象 (await packager() が pending なのに
+// libuv の active handle が一瞬切れる) を回避するため、明示的に keep-alive を入れる。
+// packager() 完了後に clearInterval して loop を解放する。
+const keepAlive = setInterval(() => {}, 1000);
 
 if (process.argv.length < 3) {
   console.log('specify platform!  win32, darwin');
@@ -85,5 +95,7 @@ process.on('unhandledRejection', (reason) => {
   } catch (e) {
     console.error('[electron-package] packager threw:', e);
     process.exit(1);
+  } finally {
+    clearInterval(keepAlive);
   }
 })();
