@@ -1,22 +1,12 @@
-// 子プロセス起動 + npx 経由で `@electron/packager` の bin を呼ぶ従来方式は、
-// bin 側が `cli.run()` を await していない (fire-and-forget) ため、
-// CI 環境 (Node 24 + Windows Server 2025) で extract-zip 直後に
-// イベントループが空とみなされて Node が静かに exit 0 してしまう事象が発生。
-// 直接 API を await することで、Promise を確実にこのプロセスのルートに繋ぎ、
-// 失敗時の throw / 完了時の結果 / イベントループ終了の理由を観測可能にする。
-
-// debug() ログを require より前に有効化する必要があるため、ここで env を設定。
-process.env.DEBUG = process.env.DEBUG || 'electron-packager*,extract-zip*,yauzl*';
-
+// @electron/packager の `packager()` 関数をこのプロセスから直接 await する。
+// 旧実装は execSync で npx 経由の子プロセスを叩いていたが、
+// @electron/packager の bin が `cli.run()` を await していない (fire-and-forget)
+// ため、子プロセスが silent exit したときに親が exit 0 と誤認する弱点があった。
+// 直接 await すれば Promise が本プロセスのルートに繋がり、
+// 失敗時の throw / 完了時の結果がそのまま観測できる。
 const path = require('path');
 const fs = require('fs');
 const { packager } = require('@electron/packager');
-
-// CI で「Packaging app for platform ...」の直後にイベントループが空とみなされて
-// Node プロセスが exit 0 で終了する現象 (await packager() が pending なのに
-// libuv の active handle が一瞬切れる) を回避するため、明示的に keep-alive を入れる。
-// packager() 完了後に clearInterval して loop を解放する。
-const keepAlive = setInterval(() => {}, 1000);
 
 if (process.argv.length < 3) {
   console.log('specify platform!  win32, darwin');
@@ -50,25 +40,6 @@ const ignore = [
 
 const expectedOutDir = path.resolve(`unacast-${PLATFORM}-x64`);
 
-console.log('[electron-package] node:', process.version);
-console.log('[electron-package] cwd:', process.cwd());
-console.log('[electron-package] expected output dir:', expectedOutDir);
-
-process.on('beforeExit', (code) => {
-  console.log(`[electron-package] beforeExit code=${code}`);
-});
-process.on('exit', (code) => {
-  console.log(`[electron-package] exit code=${code}`);
-});
-process.on('uncaughtException', (err) => {
-  console.error('[electron-package] uncaughtException:', err);
-  process.exit(1);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('[electron-package] unhandledRejection:', reason);
-  process.exit(1);
-});
-
 (async () => {
   try {
     const appPaths = await packager({
@@ -82,7 +53,6 @@ process.on('unhandledRejection', (reason) => {
       asar: ASAR,
       ignore,
     });
-    console.log('[electron-package] packager returned, appPaths =', appPaths);
     if (!appPaths || appPaths.length === 0) {
       console.error('[electron-package] packager returned empty appPaths');
       process.exit(1);
@@ -91,11 +61,9 @@ process.on('unhandledRejection', (reason) => {
       console.error(`[electron-package] ${expectedOutDir} does not exist after packager success`);
       process.exit(1);
     }
-    console.log('[electron-package] done.');
+    console.log('[electron-package] wrote app to:', appPaths[0]);
   } catch (e) {
     console.error('[electron-package] packager threw:', e);
     process.exit(1);
-  } finally {
-    clearInterval(keepAlive);
   }
 })();

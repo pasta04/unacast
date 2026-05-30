@@ -32,7 +32,10 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24.x
+          # Node 24.16.0 + Windows Server 2025 + yauzl (extract-zip) の組合せで
+          # zipfile.openReadStream のコールバックが永久に発火せず buildwin が
+          # ハングする regression を踏むため、最終確認できている 24.15.0 に固定。
+          node-version: 24.15.0
       - name: Install
         run: |
           npm ci
@@ -43,7 +46,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [24.x]
+        node-version: [24.15.0]
         os: [windows-latest]
       fail-fast: false
     steps:
@@ -78,7 +81,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [24.x]
+        node-version: [24.15.0]
         os: [windows-latest]
       fail-fast: false
     steps:
