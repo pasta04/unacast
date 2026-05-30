@@ -1,6 +1,12 @@
-const { execSync } = require('child_process');
-const fs = require('fs');
+// 子プロセス起動 + npx 経由で `@electron/packager` の bin を呼ぶ従来方式は、
+// bin 側が `cli.run()` を await していない (fire-and-forget) ため、
+// CI 環境 (Node 24 + Windows Server 2025) で extract-zip 直後に
+// イベントループが空とみなされて Node が静かに exit 0 してしまう事象が発生。
+// 直接 API を await することで、Promise を確実にこのプロセスのルートに繋ぎ、
+// 失敗時の throw / 完了時の結果 / イベントループ終了の理由を観測可能にする。
 const path = require('path');
+const fs = require('fs');
+const { packager } = require('@electron/packager');
 
 if (process.argv.length < 3) {
   console.log('specify platform!  win32, darwin');
@@ -8,64 +14,76 @@ if (process.argv.length < 3) {
 }
 
 const PLATFORM = process.argv[2];
-const ASAR = process.argv[3] ? `--${process.argv[3]}` : '';
+const ASAR = process.argv[3] === 'asar';
 
-// electron-packager の --ignore は new RegExp(pattern) で評価され、
-// プロジェクトルートからの絶対パス(先頭 / 付き)に対して test() される。
-// node_modules 配下にも src/ や dist/ など同名ディレクトリがあるため、
-// プロジェクト直下のものだけを対象にしたいパターンは ^/ で先頭固定する。
-const execParam = `
-npx electron-packager ./ unacast --platform=${PLATFORM} --arch=x64 --overwrite --prune=true --icon=icon.ico ${ASAR}
-    --ignore="^/\\.vscode($|/)"
-    --ignore="^/\\.github($|/)"
-    --ignore="^/dist/.+\\.map$"
-    --ignore="^/out($|/)"
-    --ignore="^/documents($|/)"
-    --ignore="^/build-mac($|/)"
-    --ignore="^/build-win($|/)"
-    --ignore="^/unacast-win32-x64($|/)"
-    --ignore="^/unacast-darwin-x64($|/)"
-    --ignore="^/src($|/)"
-    --ignore="^/\\.eslintrc\\.json$"
-    --ignore="^/eslint\\.config\\.mjs$"
-    --ignore="^/\\.gitignore$"
-    --ignore="^/\\.prettierrc\\.json$"
-    --ignore="^/electron-package\\.js$"
-    --ignore="^/electron\\.vite\\.config\\.ts$"
-    --ignore="^/README\\.md$"
-    --ignore="^/tsconfig\\.json$"
-    --ignore="^/package-lock\\.json$"
-`;
+const ignore = [
+  '^/\\.vscode($|/)',
+  '^/\\.github($|/)',
+  '^/dist/.+\\.map$',
+  '^/out($|/)',
+  '^/documents($|/)',
+  '^/build-mac($|/)',
+  '^/build-win($|/)',
+  '^/unacast-win32-x64($|/)',
+  '^/unacast-darwin-x64($|/)',
+  '^/src($|/)',
+  '^/\\.eslintrc\\.json$',
+  '^/eslint\\.config\\.mjs$',
+  '^/\\.gitignore$',
+  '^/\\.prettierrc\\.json$',
+  '^/electron-package\\.js$',
+  '^/electron\\.vite\\.config\\.ts$',
+  '^/README\\.md$',
+  '^/tsconfig\\.json$',
+  '^/package-lock\\.json$',
+];
 
-const expectedOutDir = `unacast-${PLATFORM}-x64`;
-const cmd = execParam.replace(/\n/g, ' ').trim();
+const expectedOutDir = path.resolve(`unacast-${PLATFORM}-x64`);
 
 console.log('[electron-package] node:', process.version);
 console.log('[electron-package] cwd:', process.cwd());
-console.log('[electron-package] expected output dir:', path.resolve(expectedOutDir));
-console.log('[electron-package] command:', cmd);
+console.log('[electron-package] expected output dir:', expectedOutDir);
 
-try {
-  // DEBUG=electron-packager で @electron/packager 内部の debug() ログを有効化し、
-  // どこまで処理が進んで何が起きたかを直接観測する。
-  execSync(cmd, {
-    stdio: 'inherit',
-    env: { ...process.env, DEBUG: 'electron-packager*' },
-  });
-  console.log('[electron-package] execSync returned without throwing');
-} catch (e) {
-  console.error('[electron-package] electron-packager failed:', e.message);
-  console.error('[electron-package] status:', e.status, 'signal:', e.signal);
-  process.exit(typeof e.status === 'number' ? e.status : 1);
-}
-
-const exists = fs.existsSync(expectedOutDir);
-console.log(`[electron-package] ${expectedOutDir} exists:`, exists);
-if (!exists) {
-  console.log('[electron-package] cwd contents:');
-  for (const entry of fs.readdirSync(process.cwd())) {
-    console.log('  -', entry);
-  }
-  console.error('[electron-package] electron-packager exited 0 but did not create the output directory');
+process.on('beforeExit', (code) => {
+  console.log(`[electron-package] beforeExit code=${code}`);
+});
+process.on('exit', (code) => {
+  console.log(`[electron-package] exit code=${code}`);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[electron-package] uncaughtException:', err);
   process.exit(1);
-}
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[electron-package] unhandledRejection:', reason);
+  process.exit(1);
+});
+
+(async () => {
+  try {
+    const appPaths = await packager({
+      dir: './',
+      name: 'unacast',
+      platform: PLATFORM,
+      arch: 'x64',
+      overwrite: true,
+      prune: true,
+      icon: 'icon.ico',
+      asar: ASAR,
+      ignore,
+    });
+    console.log('[electron-package] packager returned, appPaths =', appPaths);
+    if (!appPaths || appPaths.length === 0) {
+      console.error('[electron-package] packager returned empty appPaths');
+      process.exit(1);
+    }
+    if (!fs.existsSync(expectedOutDir)) {
+      console.error(`[electron-package] ${expectedOutDir} does not exist after packager success`);
+      process.exit(1);
+    }
+    console.log('[electron-package] done.');
+  } catch (e) {
+    console.error('[electron-package] packager threw:', e);
+    process.exit(1);
+  }
+})();
