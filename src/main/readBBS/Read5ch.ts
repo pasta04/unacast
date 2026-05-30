@@ -225,8 +225,10 @@ class Read5ch {
       }
 
       // 取得バイト数表示
+      // axios の RawAxiosResponseHeaders は union 型で number/string[] 等も含み得るが、
+      // HTTP の content-length は実体として文字列なので String() でナローイング
       if (headers['content-length'] != null && responseJson.length > 0) {
-        this.lastByte = this.lastByte + parseInt(headers['content-length']) - 1;
+        this.lastByte = this.lastByte + parseInt(String(headers['content-length'])) - 1;
         log.debug('lastByte=' + this.lastByte);
       }
     } catch (error: any) {
