@@ -35,4 +35,12 @@ npx electron-packager ./ unacast --platform=${PLATFORM} --arch=x64 --overwrite -
     --ignore="^/package-lock\\.json$"
 `;
 
-execSync(execParam.replace(/\n/g, ' '));
+// CI で electron-packager が黙って失敗する事象を可視化するため、
+// stdio: 'inherit' で子プロセスの出力を直接親 (CI ログ) に流し、
+// 例外発生時はメッセージと exit code を明示してから非ゼロで終了する。
+try {
+  execSync(execParam.replace(/\n/g, ' '), { stdio: 'inherit' });
+} catch (e) {
+  console.error('[electron-package] electron-packager failed:', e.message);
+  process.exit(typeof e.status === 'number' ? e.status : 1);
+}

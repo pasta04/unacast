@@ -11,6 +11,15 @@ on:
     branches:
       - master
 
+# pwsh のデフォルトは `. '{0}'` 形式で dot-source するだけで、
+# 内部で呼んだ npm/node が非ゼロ終了しても pwsh 自体は exit 0 を返す。
+# そのまま使うと「build は失敗しているが step は成功扱い」になり、
+# Upload Artifact が「No files were found」警告だけ出して通り抜けてしまうので、
+# 全 run step を pwsh で実行し、末尾で $LASTEXITCODE を必ず伝播させる。
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
   lint:
     runs-on: windows-latest
@@ -51,14 +60,19 @@ jobs:
         run: |
           npm ci
       - name: Build
-        run: npm run build
-      - name: Build
-        run: npm run buildwin
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build (buildwin)
+        run: |
+          npm run buildwin
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: unacast-win32-x64_${{ matrix.node-version }}_latest
           path: unacast-win32-x64
+          if-no-files-found: error
   build_unpack:
     needs: lint
     runs-on: ${{ matrix.os }}
@@ -81,11 +95,16 @@ jobs:
         run: |
           npm ci
       - name: Build
-        run: npm run build
-      - name: Build
-        run: npm run buildwinunpack
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build (buildwinunpack)
+        run: |
+          npm run buildwinunpack
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: unacast-win32-x64_unpack_${{ matrix.node-version }}_latest
           path: unacast-win32-x64
+          if-no-files-found: error
