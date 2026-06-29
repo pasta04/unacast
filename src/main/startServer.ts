@@ -9,6 +9,7 @@ import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
 import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
 import { filterByAxis } from './sourceFilter';
+import { judgeNgWord } from './ngWord';
 import { registerExternalApiRoutes } from './externalApi/routes';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
@@ -1100,6 +1101,14 @@ export const createDom = (message: UserComment, type: 'chat' | 'server', isAA?: 
 
   domStr += `<div class="content">`;
 
+  // NG マーク (チャットウィンドウ・通常NGのみ表示。
+  // 配信側と透明NGには元々 isNg が立ったメッセージが届かないルートなので、
+  // ここに来る chat の isNg は通常NGに限られる)
+  if (type === 'chat' && message.isNg) {
+    domStr += `<span class="ng-mark" title="NGワード">🚫</span>`;
+    isResNameShowed = true;
+  }
+
   // レス番表示
   if (globalThis.config.showNumber && message.number) {
     domStr += `
@@ -1202,12 +1211,12 @@ export const createDom = (message: UserComment, type: 'chat' | 'server', isAA?: 
  */
 export const sendDom = async (messageList: UserComment[]) => {
   try {
-    // AA判定
-    const newList = judgeAaMessage(messageList);
+    // AA判定 → NG判定 (この2つは純関数。isAA / isNg / ngDisplayType を message に付与する)
+    const newList = judgeNgWord(judgeAaMessage(messageList));
 
-    // 配信画面 (WebSocket でブラウザソースへ送る分) は sourceFilter.broadcast でフィルタする。
-    // chat ウィンドウ / SE / 読み上げは newList のまま (フィルタしない)。
-    const broadcastList = filterByAxis('broadcast', newList);
+    // 配信画面 (WebSocket でブラウザソースへ送る分) は sourceFilter.broadcast でフィルタし、
+    // さらに NG コメントは常に非表示。
+    const broadcastList = filterByAxis('broadcast', newList).filter((m) => !m.isNg);
     if (broadcastList.length > 0 && displayClients.size > 0) {
       const domStr = broadcastList.map((message) => createDom(message, 'server', message.isAA)).join('\n');
       const socketObject: CommentSocketMessage = {
@@ -1219,12 +1228,16 @@ export const sendDom = async (messageList: UserComment[]) => {
       });
     }
 
-    // レンダラーのコメント一覧にも表示
+    // レンダラーのコメント一覧にも表示 (透明NGの除外は sendDomForChatWindow 内で行う)
     sendDomForChatWindow(newList);
 
+    // 読み上げ・SE は NG でない最後のコメントを対象にする (全件 NG なら無音)
+    const nonNgList = newList.filter((m) => !m.isNg);
+    const speakTarget = nonNgList[nonNgList.length - 1];
+
     // レス着信音
-    if (globalThis.electron.seList.length > 0) {
-      if (newList.every((message) => message.from === 'stt')) {
+    if (speakTarget && globalThis.electron.seList.length > 0) {
+      if (nonNgList.every((message) => message.from === 'stt')) {
         // メッセージが全て音声認識の場合は専用の設定を見る
         if (config.playSeStt) {
           await playSe();
@@ -1238,27 +1251,29 @@ export const sendDom = async (messageList: UserComment[]) => {
 
     // 読み子
     // メッセージが音声認識かどうかで使う読み子を分ける
-    const typeYomiko = newList[newList.length - 1].from === 'stt' ? globalThis.config.typeYomikoStt : globalThis.config.typeYomiko;
-    if (typeYomiko !== 'none') {
-      // 対象のレスがAAで、AAモードが有効なら、読み上げ分はアスキーアートにする
-      if (newList[newList.length - 1].isAA && config.aamode.enable) {
-        await playYomiko(typeYomiko, config.aamode.speakWord);
-      } else {
-        // タグを除去する
-        let text = newList[newList.length - 1].text;
-        text = text.replace(/<br\s*\/?>\s*/g, '\n ');
-        text = text.replace(/<img.*?\/>/g, '');
-        text = text.replace(/<a .*?>/g, '').replace(/<\/a>/g, '');
-        // 読み上げ辞書の置き換え
-        config.yomikoDictionary.forEach((entry) => {
-          text = text.replace(new RegExp(entry.pattern, 'gim'), entry.pronunciation);
-        });
-        text = unescapeHtml(text);
+    if (speakTarget) {
+      const typeYomiko = speakTarget.from === 'stt' ? globalThis.config.typeYomikoStt : globalThis.config.typeYomiko;
+      if (typeYomiko !== 'none') {
+        // 対象のレスがAAで、AAモードが有効なら、読み上げ分はアスキーアートにする
+        if (speakTarget.isAA && config.aamode.enable) {
+          await playYomiko(typeYomiko, config.aamode.speakWord);
+        } else {
+          // タグを除去する
+          let text = speakTarget.text;
+          text = text.replace(/<br\s*\/?>\s*/g, '\n ');
+          text = text.replace(/<img.*?\/>/g, '');
+          text = text.replace(/<a .*?>/g, '').replace(/<\/a>/g, '');
+          // 読み上げ辞書の置き換え
+          config.yomikoDictionary.forEach((entry) => {
+            text = text.replace(new RegExp(entry.pattern, 'gim'), entry.pronunciation);
+          });
+          text = unescapeHtml(text);
 
-        if (globalThis.config.yomikoReplaceNewline) {
-          text = text.replace(/\r\n/g, ' ').replace(/\n/g, ' ');
+          if (globalThis.config.yomikoReplaceNewline) {
+            text = text.replace(/\r\n/g, ' ').replace(/\n/g, ' ');
+          }
+          await playYomiko(typeYomiko, text);
         }
-        await playYomiko(typeYomiko, text);
       }
     }
 
@@ -1274,9 +1289,17 @@ export const sendDom = async (messageList: UserComment[]) => {
   }
 };
 
-/** チャットウィンドウへのコメント表示 */
+/**
+ * チャットウィンドウへのコメント表示。
+ *
+ * 呼び出し元 (sendDom) で既に isAA / isNg / ngDisplayType が付いている前提なので
+ * judgeAaMessage を再実行しない (再実行すると判定済みフラグが上書きされてしまう)。
+ * 透明NG (ngDisplayType==='transparent') のコメントは痕跡を残さないためここで除外する。
+ * 通常NG は createDom 側で NG マーク付き表示する。
+ */
 const sendDomForChatWindow = (messageList: UserComment[]) => {
-  const domStr2 = judgeAaMessage(messageList)
+  const visible = messageList.filter((m) => !(m.isNg && m.ngDisplayType === 'transparent'));
+  const domStr2 = visible
     .map((message) => {
       let imgUrl = message.imgUrl;
       // expressでホストしてそうなファイルパスならlocalhostを付与する

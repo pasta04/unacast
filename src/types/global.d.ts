@@ -240,6 +240,34 @@ declare global {
         external?: boolean;
       };
     };
+
+    /**
+     * NG ワード設定。該当コメントは読み上げ・SE・配信画面で常に非表示。
+     * チャット窓では displayType に応じて 'normal' は本文 + マーク、
+     * 'transparent' は完全非表示。
+     */
+    let ngWords: {
+      /** NG 判定の対象文字列。matchType=include なら部分一致、regexp なら正規表現ソース */
+      word: string;
+      /** マッチ方式。'include'=部分一致 (既定) / 'regexp'=正規表現 */
+      matchType: 'include' | 'regexp';
+      /** true=複数行をまとめて判定 / false=改行で分割し1行ずつ判定 (既定) */
+      multiline: boolean;
+      /** 判定対象。'text'=本文 (既定) / 'name'=名前 */
+      target: 'text' | 'name';
+      /**
+       * 適用するコメント取得元。
+       * 'all' = 全ソースに適用 (現状はこれのみ UI から選択可)。
+       * 将来は CommentSource を直接指定して取得元別に切り替えられるよう型は広くしてある。
+       */
+      source: 'all' | CommentSource;
+      /**
+       * チャット窓での NG コメントの表示方式。
+       * - 'normal' (既定): 本文を表示しつつ NG マークを付ける
+       * - 'transparent': 完全に表示しない (痕跡なし)
+       */
+      displayType: 'normal' | 'transparent';
+    }[];
   }
 }
 

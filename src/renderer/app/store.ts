@@ -46,6 +46,7 @@ export type StoreState = {
   alert: AlertState;
   confirmStopOpen: boolean;
   dictionaryDialogOpen: boolean;
+  ngWordDialogOpen: boolean;
 
   setConfig: <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => void;
   patchConfig: (patch: Partial<AppConfig>) => void;
@@ -73,6 +74,7 @@ export type StoreState = {
   closeAlert: () => void;
   setConfirmStopOpen: (open: boolean) => void;
   setDictionaryDialogOpen: (open: boolean) => void;
+  setNgWordDialogOpen: (open: boolean) => void;
 
   /** 現在の config をローカルストレージへ保存 */
   persist: () => void;
@@ -105,6 +107,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
   alert: { open: false, message: '' },
   confirmStopOpen: false,
   dictionaryDialogOpen: false,
+  ngWordDialogOpen: false,
 
   setConfig: (key, value) =>
     set((state) => ({
@@ -149,6 +152,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
   closeAlert: () => set({ alert: { open: false, message: '' } }),
   setConfirmStopOpen: (open) => set({ confirmStopOpen: open }),
   setDictionaryDialogOpen: (open) => set({ dictionaryDialogOpen: open }),
+  setNgWordDialogOpen: (open) => set({ ngWordDialogOpen: open }),
 
   persist: () => saveConfigToStorage(get().config),
 }));

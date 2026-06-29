@@ -11,6 +11,7 @@ import { Yomiko } from './sections/Yomiko';
 import { AaMode } from './sections/AaMode';
 import { Translate } from './sections/Translate';
 import { AzureStt } from './sections/AzureStt';
+import { NgWord } from './sections/NgWord';
 import { Other } from './sections/Other';
 import { AlertDialog, ConfirmStopDialog } from './Dialogs';
 import type { SectionId } from './sections';
@@ -27,6 +28,7 @@ const sectionRenderers: Record<Exclude<SectionId, 'all'>, React.FC> = {
   aamode: AaMode,
   translate: Translate,
   azureStt: AzureStt,
+  ngword: NgWord,
   other: Other,
 };
 
@@ -42,6 +44,7 @@ const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
         <AaMode />
         <Translate />
         <AzureStt />
+        <NgWord />
         <Other />
       </>
     );

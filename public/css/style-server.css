@@ -54,6 +54,13 @@ body {
   content: ' ';
 }
 
+/* NG ワードでマッチしたコメントに付くマーク (自分のチャットウィンドウのみ、通常NG時に表示) */
+.ng-mark {
+  color: #ff5555;
+  font-weight: bold;
+  margin-right: 0.3em;
+}
+
 /*名前表示部分の設定*/
 .name {
   color: #55ff55;
