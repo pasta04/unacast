@@ -8,8 +8,14 @@
  * 設計:
  *  - judgeAaMessage と同形の「フラグ付与純関数」パターン。
  *  - matchType=include は部分一致、regexp は new RegExp。
- *  - multiline=false の場合は対象テキストを改行 (\r\n, \n, <br/> も含む) で
- *    分割し、いずれかの行に一致したら NG。
+ *  - 判定前にマッチ対象テキストを正規化する: bbs / jpnkn の本文は改行が実際の
+ *    改行文字ではなく <br> タグでのみ入ってくるため、<br> を \n に変換して
+ *    「見た目の行」と正規表現上の行を一致させる。
+ *  - multiline=false の場合は正規化後のテキストを改行で分割し、
+ *    いずれかの行に一致したら NG。
+ *  - multiline=true の場合は正規化後のテキスト全体を 1 つの塊として判定。
+ *    正規表現は 'm' フラグ付きなので ^ $ が各行の先頭・末尾に効き、
+ *    \n や [\s\S] で行またぎのパターンが書ける。
  *  - source は将来のソース別フィルタ用 ('all' = 全ソース)。
  *  - 複数 NG ワードにマッチした場合、displayType は transparent 優先。
  *  - 不正な正規表現は console.warn してその場では「マッチしない」扱い
@@ -22,8 +28,18 @@
 /** NG ワード設定 1 件の型 (config.ngWords の要素) */
 type NgWordEntry = (typeof globalThis.config.ngWords)[number];
 
-/** 行分割に使う区切りパターン。本文には掲示板由来の `<br/>` が改行として入る */
-const LINE_SPLITTER = /\r\n|\r|\n|<br\s*\/?>/i;
+/** 掲示板 (bbs / jpnkn) の本文で改行として使われる <br> タグ (<br>, <br/>, <br /> を許容) */
+const BR_TAG = /<br\s*\/?>/gi;
+
+/** 行分割に使う区切りパターン (normalizeForMatch 後のテキストに適用する) */
+const LINE_SPLITTER = /\r\n|\r|\n/;
+
+/**
+ * マッチ対象テキストを正規化する。<br> タグを実際の改行文字 \n に変換し、
+ * 1行判定の分割・複数行判定の ^ $ (mフラグ)・\n がどのソース由来のテキストでも
+ * 同じように機能するようにする。
+ */
+const normalizeForMatch = (raw: string): string => raw.replace(BR_TAG, '\n');
 
 /**
  * 1 エントリの正規表現として `word` を評価できるかチェックする。
@@ -49,7 +65,8 @@ const matchEntry = (entry: NgWordEntry, message: UserComment): boolean => {
   const raw = entry.target === 'name' ? message.name : message.text;
   if (typeof raw !== 'string' || raw === '') return false;
 
-  const targets = entry.multiline ? [raw] : raw.split(LINE_SPLITTER);
+  const normalized = normalizeForMatch(raw);
+  const targets = entry.multiline ? [normalized] : normalized.split(LINE_SPLITTER);
 
   if (entry.matchType === 'regexp') {
     let re: RegExp;
