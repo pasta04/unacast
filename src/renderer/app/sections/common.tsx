@@ -1,17 +1,44 @@
 import * as React from 'react';
-import { Box, Checkbox, FormControlLabel, Paper, Typography } from '@mui/material';
+import { Box, Checkbox, FormControlLabel, IconButton, Paper, Popover, Typography } from '@mui/material';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useAppStore } from '../store';
+
+/**
+ * 見出し横の「?」ボタン + クリックで開閉する吹き出し。
+ *
+ * hover の Tooltip にしない理由: マウスが離れると消えるため吹き出し内の
+ * テキストを範囲選択・コピーできない。Popover は通常の DOM なので選択可能で、
+ * Esc・外側クリックで閉じる挙動も標準で付く。開いている間はバックドロップが
+ * 手前にあるため、? ボタンの再クリックはバックドロップクリックとして閉じる
+ * (= もう一度押すと閉じる)。
+ */
+export const HelpPopover: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+  return (
+    <>
+      <IconButton size="small" aria-label="ヘルプ" onClick={(e) => setAnchorEl((prev) => (prev ? null : e.currentTarget))}>
+        <HelpOutlineIcon fontSize="small" />
+      </IconButton>
+      <Popover open={!!anchorEl} anchorEl={anchorEl} onClose={() => setAnchorEl(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} disableRestoreFocus>
+        <Box sx={{ p: 1.5, maxWidth: 420, fontSize: 13, lineHeight: 1.7 }}>{children}</Box>
+      </Popover>
+    </>
+  );
+};
 
 type SectionProps = {
   title: string;
+  /** 見出し横の ? ボタンで開く詳細説明 */
+  help?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export const SectionPanel: React.FC<SectionProps> = ({ title, children }) => (
+export const SectionPanel: React.FC<SectionProps> = ({ title, help, children }) => (
   <Paper variant="outlined" sx={{ px: 1.5, py: 1, mb: 1 }}>
-    <Typography variant="h6" sx={{ mb: 0.5 }}>
-      {title}
-    </Typography>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+      <Typography variant="h6">{title}</Typography>
+      {help && <HelpPopover>{help}</HelpPopover>}
+    </Box>
     <Box>{children}</Box>
   </Paper>
 );

@@ -4,7 +4,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
-import { SectionPanel, Caption } from './common';
+import { SectionPanel, Caption, HelpPopover } from './common';
 import { validateNgRegexp } from '../../../main/ngWord';
 
 type NgWordEntry = AppConfig['ngWords'][number];
@@ -52,9 +52,9 @@ const NgWordListDialog: React.FC = () => {
 
   return (
     <Dialog open={open} onClose={() => (hasInvalid ? undefined : setOpen(false))} maxWidth="lg" fullWidth>
-      <DialogTitle>NGワード編集</DialogTitle>
-      <DialogContent>
-        <Caption>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        NGワード編集
+        <HelpPopover>
           ・部分一致: <code>word</code> が対象テキストに含まれていればマッチ。
           <br />
           ・正規表現: <code>word</code> を正規表現として評価。
@@ -67,7 +67,9 @@ const NgWordListDialog: React.FC = () => {
           ・対象: 本文 (既定) / 名前 のどちらに対して判定するか。
           <br />
           ・表示方法: 通常NG = チャット窓に本文 + 🚫 マーク表示 / 透明NG = チャット窓にも完全非表示。 配信画面 / 読み上げ / 着信音はいずれの場合も常に非表示・無音。
-        </Caption>
+        </HelpPopover>
+      </DialogTitle>
+      <DialogContent>
         <Box
           sx={{
             display: 'grid',
@@ -165,12 +167,19 @@ export const NgWord: React.FC = () => {
   const setNgWordDialogOpen = useAppStore((s) => s.setNgWordDialogOpen);
 
   return (
-    <SectionPanel title="NGワード設定">
-      <Caption>
-        該当コメントは <strong>読み上げ・配信用チャット欄</strong> から常に除外されます。
-        <br />
-        自分のチャットウィンドウでの見え方はワードごとに <strong>通常NG</strong> (本文 + 🚫 マーク) /<strong>透明NG</strong> (一切表示しない) を選べます。デフォルトは通常NG。
-      </Caption>
+    <SectionPanel
+      title="NGワード設定"
+      help={
+        <>
+          該当コメントは <strong>読み上げ・着信音・配信用チャット欄 (OBS)</strong> から常に除外されます。
+          <br />
+          自分のチャットウィンドウでの見え方はワードごとに選べます:
+          <br />・<strong>通常NG</strong> (既定): 本文 + 🚫 マーク表示
+          <br />・<strong>透明NG</strong>: 一切表示しない (痕跡なし)
+        </>
+      }
+    >
+      <Caption>該当コメントは読み上げ・配信用チャット欄から除外されます。</Caption>
       <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Button variant="outlined" onClick={() => setNgWordDialogOpen(true)}>
           NGワード編集 ({ngWords.length} 件)
