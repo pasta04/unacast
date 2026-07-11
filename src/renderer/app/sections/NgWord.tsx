@@ -31,27 +31,36 @@ const validateEntry = (entry: NgWordEntry): { ok: true } | { ok: false; error: s
 const NgWordListDialog: React.FC = () => {
   const open = useAppStore((s) => s.ngWordDialogOpen);
   const setOpen = useAppStore((s) => s.setNgWordDialogOpen);
-  const ngWords = useAppStore((s) => s.config.ngWords);
   const setConfig = useAppStore((s) => s.setConfig);
 
-  const updateEntry = (index: number, patch: Partial<NgWordEntry>) => {
-    const next = ngWords.map((entry, i) => (i === index ? { ...entry, ...patch } : entry));
-    setConfig('ngWords', next);
-  };
-  const addEntry = () => setConfig('ngWords', [...ngWords, { ...defaultEntry }]);
-  const removeEntry = (index: number) =>
-    setConfig(
-      'ngWords',
-      ngWords.filter((_, i) => i !== index),
-    );
+  // ダイアログ内はドラフトを編集し、OK で config へ確定 / キャンセルで破棄する
+  const [draft, setDraft] = React.useState<NgWordEntry[]>([]);
+  React.useEffect(() => {
+    // ngWords は「開いた時点のスナップショット」だけ取りたいので依存は open のみ
+    if (open) setDraft(useAppStore.getState().config.ngWords.map((entry) => ({ ...entry })));
+  }, [open]);
 
-  // 1 件でも不正な正規表現があれば確定 / 追加ボタンを無効化する
-  const validations = ngWords.map(validateEntry);
+  const updateEntry = (index: number, patch: Partial<NgWordEntry>) => {
+    setDraft(draft.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)));
+  };
+  const addEntry = () => setDraft([...draft, { ...defaultEntry }]);
+  const removeEntry = (index: number) => setDraft(draft.filter((_, i) => i !== index));
+
+  /** キャンセル: 編集内容を破棄して閉じる (正規表現エラーがあっても押せる) */
+  const cancel = () => setOpen(false);
+  /** OK: ドラフトを config に反映して閉じる (その後の永続化は既存の適用ボタンに従う) */
+  const submit = () => {
+    setConfig('ngWords', draft);
+    setOpen(false);
+  };
+
+  // 1 件でも不正な正規表現があれば OK / 追加ボタンを無効化する
+  const validations = draft.map(validateEntry);
   const hasInvalid = validations.some((v) => !v.ok);
   const disabledTooltip = hasInvalid ? '正規表現エラーを修正してください' : '';
 
   return (
-    <Dialog open={open} onClose={() => (hasInvalid ? undefined : setOpen(false))} maxWidth="lg" fullWidth>
+    <Dialog open={open} onClose={cancel} maxWidth="lg" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         NGワード編集
         <HelpPopover>
@@ -95,7 +104,7 @@ const NgWordListDialog: React.FC = () => {
             表示方法
           </Typography>
           <Box />
-          {ngWords.map((entry, i) => {
+          {draft.map((entry, i) => {
             const validation = validations[i];
             const hasError = !validation.ok;
             // 例外の生メッセージ (Invalid regular expression: ... ) は冗長なので出さない
@@ -151,10 +160,11 @@ const NgWordListDialog: React.FC = () => {
         </Box>
       </DialogContent>
       <DialogActions>
+        <Button onClick={cancel}>キャンセル</Button>
         <Tooltip title={disabledTooltip} disableHoverListener={!hasInvalid}>
           <span>
-            <Button onClick={() => setOpen(false)} variant="contained" disabled={hasInvalid}>
-              閉じる
+            <Button onClick={submit} variant="contained" disabled={hasInvalid}>
+              OK
             </Button>
           </span>
         </Tooltip>
