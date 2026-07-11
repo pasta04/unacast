@@ -7,7 +7,7 @@ import { ChatClient } from 'dank-twitch-irc';
 import { LiveChat } from './youtube-chat';
 import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
-import { readWavFiles, sleep, escapeHtml, unescapeHtml, decodeNumericCharRefs, removeEmoji, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
+import { readWavFiles, sleep, escapeHtml, unescapeHtml, decodeNumericCharRefs, removeEmoji, judgeAaMessage, isNihongo, convertUrltoImgTagSrc, normalizeThreadUrl } from './util';
 import { filterByAxis } from './sourceFilter';
 import { judgeNgWord } from './ngWord';
 import { getThreadFirstPost, createThreadOnBoard } from './threadBrowser';
@@ -90,6 +90,10 @@ ipcMain.on(electronEvent.LOAD_VOICEVOX, async (event: any, config_voicevox: (typ
 ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof globalThis)['config']) => {
   log.info('[apply-config] start');
   log.info(config);
+
+  // スレURLの表記補正 (l50 / 127n- 等のレス範囲表記を除去)。renderer 側でも補正するが、
+  // 旧設定の持ち込み等に備えて main 側でも通す
+  config.url = normalizeThreadUrl(config.url ?? '');
 
   // サーバー起動前に「適用」を押された場合 globalThis.config は未初期化なので、
   // 差分判定は optional chaining で安全に取り、未初期化なら「全部新規」とみなす。
@@ -176,6 +180,9 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   app.set('view engine', 'ejs');
   // viewディレクトリの指定
   app.set('views', path.resolve(__dirname, '../../views'));
+
+  // スレURLの表記補正 (l50 / 127n- 等のレス範囲表記を除去)
+  config.url = normalizeThreadUrl(config.url ?? '');
 
   // 設定情報をグローバル変数へセットする
   globalThis.config = config;

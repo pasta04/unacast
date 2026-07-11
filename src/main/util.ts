@@ -89,6 +89,29 @@ export const convertUrltoImgTagSrc = (imgUrl: string) => {
   return imgUrl;
 };
 
+/**
+ * 掲示板スレURLの正規化。
+ *
+ * ブラウザのスレ一覧からスレを開くと、URL末尾にレス範囲の表記が付くことがある:
+ *   .../read.cgi/carbonara/1558097910/l50    (最新50レス)
+ *   .../read.cgi/carbonara/1558097910/127n-  (レス127以降)
+ *   .../read.cgi/carbonara/1558097910/2-100  (範囲指定)
+ * これらはコメントビューアの読み込みURLとしては不要なので、スレキー
+ * (read.cgi 後の9〜10桁の数値セグメント) までに切り詰めて
+ * 「.../read.cgi/{板}/{スレキー}/」の形へ補正する。個別表記の列挙ではなく
+ * スレキー以降を一括で除去するため、上記以外の表記にも耐える。
+ *
+ * read.cgi 形式でないURL (板URL等) は、前後空白と ?/# 以降の除去のみ行う。
+ */
+export const normalizeThreadUrl = (rawUrl: string): string => {
+  const url = rawUrl.trim().replace(/[?#].*$/, '');
+  const matched = url.match(/^(https?:\/\/[^/]+\/.*?read\.cgi\/.+?\/\d{9,10})(?:\/.*)?$/);
+  if (matched) {
+    return `${matched[1]}/`;
+  }
+  return url;
+};
+
 export const judgeAaMessage = (messageList: UserComment[]) => {
   return messageList.map((message) => {
     let isAA = false;
