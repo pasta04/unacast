@@ -64,18 +64,31 @@ const NgWordListDialog: React.FC = () => {
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         NGワード編集
         <HelpPopover>
-          ・部分一致: <code>word</code> が対象テキストに含まれていればマッチ。
+          <strong>マッチ方式:</strong>
           <br />
-          ・正規表現: <code>word</code> を正規表現として評価。
+          ・部分一致: <code>word</code> が対象コメントに含まれていればNGとします。
           <br />
-          ・複数行: OFF (既定) は改行で行ごとに判定、ON は対象テキスト全体を 1 つの塊として判定。
+          ・正規表現: <code>word</code> を正規表現としてコメントに含まれていればNGとします。
           <br />
-          ・本文中の改行タグ (<code>{'<br>'}</code>) は改行文字に変換してから判定します。複数行 ON の正規表現では <code>^</code> <code>$</code>{' '}
-          が各行の先頭・末尾にマッチし、行またぎは <code>\n</code> や <code>[\s\S]</code> で書けます。
+          <strong>対象:</strong>
           <br />
-          ・対象: 本文 (既定) / 名前 のどちらに対して判定するか。
+          ・本文 / 名前 のどちらに対してNGワード判定するかを選択します。
           <br />
-          ・表示方法: 通常NG = チャット窓に本文 + 🚫 マーク表示 / 透明NG = チャット窓にも完全非表示。 配信画面 / 読み上げ / 着信音はいずれの場合も常に非表示・無音。
+          <strong>複数行:</strong>
+          <br />
+          ・OFF: 行ごとに判定。
+          <br />
+          ・ON: 対象コメント全体を1つの塊として判定。
+          <br />
+          ・複数行 ON の正規表現では <code>^</code> <code>$</code> が各行の先頭・末尾にマッチし、行またぎは <code>\n</code> や <code>[\s\S]</code> で書けます。
+          <br />
+          <strong>表示方法:</strong>
+          <br />
+          chatウインドウでの表示方式を選ぶことができます。
+          <br />
+          ・通常NG: 本文 + 🚫 マーク表示
+          <br />
+          ・透明NG: 完全非表示。
         </HelpPopover>
       </DialogTitle>
       <DialogContent>
@@ -182,11 +195,9 @@ export const NgWord: React.FC = () => {
       title="NGワード設定"
       help={
         <>
-          該当コメントは <strong>読み上げ・着信音・配信用チャット欄 (OBS)</strong> から常に除外されます。
+          NGワードに該当するコメントは <strong>読み上げ・着信音・配信用表示</strong> から常に除外されます。
           <br />
-          自分のチャットウィンドウでの見え方はワードごとに選べます:
-          <br />・<strong>通常NG</strong> (既定): 本文 + 🚫 マーク表示
-          <br />・<strong>透明NG</strong>: 一切表示しない (痕跡なし)
+          chatウインドウについては、表示・非表示を選ぶことができます。
         </>
       }
     >
