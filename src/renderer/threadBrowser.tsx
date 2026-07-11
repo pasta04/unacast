@@ -27,6 +27,7 @@ import {
   ListItemButton,
   ListItemText,
   Snackbar,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -34,7 +35,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { compactTheme } from './app/theme';
 import { electronEvent } from '../main/const';
-import type { ThreadBrowserMode, ThreadPreviewItem } from '../main/threadBrowser';
+import type { ThreadBrowserMode, ThreadPreviewItem, ThreadCreateSource } from '../main/threadBrowser';
 
 const ipcRenderer = electron.ipcRenderer;
 
@@ -43,6 +44,8 @@ type InitResult = { ok: boolean; error?: string; mode?: ThreadBrowserMode; board
 type ListResult = { ok: boolean; error?: string; threads?: ThreadItem[] };
 type PreviewResult = { ok: boolean; error?: string; total?: number; comments?: ThreadPreviewItem[] };
 type ApplyResult = { ok: boolean; error?: string };
+type CreateSourceResult = { ok: boolean; error?: string; source?: ThreadCreateSource };
+type CreateResult = { ok: boolean; error?: string; newThreadUrl?: string };
 
 const mode: ThreadBrowserMode = new URLSearchParams(location.search).get('mode') === 'jpnkn' ? 'jpnkn' : 'bbs';
 
@@ -57,6 +60,161 @@ const PreviewComment: React.FC<{ item: ThreadPreviewItem }> = ({ item }) => (
     </Typography>
   </Box>
 );
+
+/**
+ * スレ立てダイアログ。編集 → 確認 → 実行 の2ステップ。
+ * 「戻る」で編集へ戻っても入力内容は保持される。
+ */
+const CreateThreadDialog: React.FC<{
+  open: boolean;
+  mode: ThreadBrowserMode;
+  boardUrl: string;
+  onClose: () => void;
+  onCreated: (newThreadUrl: string) => void;
+}> = ({ open, mode, boardUrl, onClose, onCreated }) => {
+  const [step, setStep] = React.useState<'edit' | 'confirm'>('edit');
+  const [title, setTitle] = React.useState('');
+  const [name, setName] = React.useState('');
+  const [mail, setMail] = React.useState('');
+  const [body, setBody] = React.useState('');
+  const [copyLoading, setCopyLoading] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  // 開くたびに編集ステップへ戻す (入力値は保持)
+  React.useEffect(() => {
+    if (open) {
+      setStep('edit');
+      setError('');
+    }
+  }, [open]);
+
+  const copyFromCurrent = async () => {
+    setCopyLoading(true);
+    setError('');
+    const res: CreateSourceResult = await ipcRenderer.invoke(electronEvent.THREAD_BROWSER_CREATE_SOURCE, { mode, boardUrl });
+    setCopyLoading(false);
+    if (!res.ok || !res.source) {
+      setError(res.error ?? 'コピー元の取得に失敗しました。');
+      return;
+    }
+    setTitle(res.source.title);
+    setName(res.source.name);
+    setMail(res.source.mail);
+    setBody(res.source.body);
+  };
+
+  const submit = async () => {
+    setSubmitting(true);
+    setError('');
+    const res: CreateResult = await ipcRenderer.invoke(electronEvent.THREAD_BROWSER_CREATE, { boardUrl, title, name, mail, body });
+    setSubmitting(false);
+    if (!res.ok) {
+      setError(res.error ?? 'スレッドの作成に失敗しました。');
+      return;
+    }
+    // 成功: 入力をクリアして親へ通知
+    setTitle('');
+    setName('');
+    setMail('');
+    setBody('');
+    setStep('edit');
+    onCreated(res.newThreadUrl ?? '');
+  };
+
+  const canProceed = title.trim().length > 0 && body.trim().length > 0;
+
+  return (
+    <Dialog open={open} onClose={() => (submitting ? undefined : onClose())} maxWidth="md" fullWidth>
+      {step === 'edit' ? (
+        <>
+          <DialogTitle>スレッドを作成</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+              <Button size="small" variant="outlined" onClick={copyFromCurrent} disabled={copyLoading} startIcon={copyLoading ? <CircularProgress size={14} /> : undefined}>
+                {mode === 'jpnkn' ? '最新のスレッドからコピー' : '現在のスレッドからコピー'}
+              </Button>
+            </Box>
+            <TextField label="タイトル" fullWidth size="small" value={title} onChange={(e) => setTitle(e.target.value)} sx={{ mb: 1.5 }} />
+            <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+              <TextField label="名前 (空欄可)" size="small" fullWidth value={name} onChange={(e) => setName(e.target.value)} />
+              <TextField label="メール (空欄可)" size="small" fullWidth value={mail} onChange={(e) => setMail(e.target.value)} />
+            </Box>
+            <TextField label="本文 (1レス目)" fullWidth multiline minRows={8} value={body} onChange={(e) => setBody(e.target.value)} />
+            {error && (
+              <Alert severity="error" sx={{ mt: 1 }}>
+                {error}
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={onClose}>キャンセル</Button>
+            <Button
+              variant="contained"
+              disabled={!canProceed}
+              onClick={() => {
+                setError('');
+                setStep('confirm');
+              }}
+            >
+              作成
+            </Button>
+          </DialogActions>
+        </>
+      ) : (
+        <>
+          <DialogTitle>スレッド作成の確認</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{ mb: 1.5 }}>
+              以下の内容でスレッドを作成します。よろしいですか?
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              タイトル
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, wordBreak: 'break-word' }}>
+              {title}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3, mb: 1 }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  名前
+                </Typography>
+                <Typography variant="body2">{name || '(空欄)'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  メール
+                </Typography>
+                <Typography variant="body2">{mail || '(空欄)'}</Typography>
+              </Box>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              本文
+            </Typography>
+            <Box sx={{ border: '1px solid #ddd', borderRadius: 1, p: 1, maxHeight: 260, overflowY: 'auto' }}>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {body}
+              </Typography>
+            </Box>
+            {error && (
+              <Alert severity="error" sx={{ mt: 1 }}>
+                {error}
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setStep('edit')} disabled={submitting}>
+              戻る
+            </Button>
+            <Button variant="contained" onClick={submit} disabled={submitting} startIcon={submitting ? <CircularProgress size={14} /> : undefined}>
+              OK (作成する)
+            </Button>
+          </DialogActions>
+        </>
+      )}
+    </Dialog>
+  );
+};
 
 const ThreadBrowserApp: React.FC = () => {
   const [boardName, setBoardName] = React.useState('');
@@ -73,6 +231,7 @@ const ThreadBrowserApp: React.FC = () => {
   const [previewLoading, setPreviewLoading] = React.useState(false);
 
   const [confirmTarget, setConfirmTarget] = React.useState<ThreadItem | null>(null);
+  const [createOpen, setCreateOpen] = React.useState(false);
   const [snackbar, setSnackbar] = React.useState('');
 
   const loadList = React.useCallback(async (url: string) => {
@@ -208,17 +367,37 @@ const ThreadBrowserApp: React.FC = () => {
         </Box>
       </Box>
 
-      {/* フッター: スレ移動 (bbs のみ) */}
-      {mode === 'bbs' && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, borderTop: '1px solid #ddd' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {selectedThread ? selectedThread.url : 'スレッドを選択してください'}
-          </Typography>
+      {/* フッター: スレ作成 (両モード) + スレ移動 (bbs のみ) */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, borderTop: '1px solid #ddd' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {mode === 'bbs' ? (selectedThread ? selectedThread.url : 'スレッドを選択してください') : ''}
+        </Typography>
+        <Button variant="outlined" size="small" disabled={!boardUrl} onClick={() => setCreateOpen(true)}>
+          スレッドを作成
+        </Button>
+        {mode === 'bbs' && (
           <Button variant="contained" size="small" disabled={!selectedThread || selectedThread.url === currentThreadUrl} onClick={() => setConfirmTarget(selectedThread ?? null)}>
             このスレッドに移動
           </Button>
-        </Box>
-      )}
+        )}
+      </Box>
+
+      {/* スレ立てダイアログ */}
+      <CreateThreadDialog
+        open={createOpen}
+        mode={mode}
+        boardUrl={boardUrl}
+        onClose={() => setCreateOpen(false)}
+        onCreated={async (newThreadUrl) => {
+          setCreateOpen(false);
+          setSnackbar('スレッドを作成しました');
+          await loadList(boardUrl);
+          if (newThreadUrl) {
+            // 作成したスレを選択状態にしてプレビュー表示する (移動は自動では行わない)
+            openPreview({ url: newThreadUrl, name: '', resNum: 0 });
+          }
+        }}
+      />
 
       {/* 移動確認ダイアログ */}
       <Dialog open={!!confirmTarget} onClose={() => setConfirmTarget(null)}>
