@@ -74,7 +74,7 @@ const NgWordListDialog: React.FC = () => {
           <br />
           ・本文 / 名前 のどちらに対してNGワード判定するかを選択します。
           <br />
-          <strong>複数行:</strong>
+          <strong>複数行:</strong> (正規表現でのみ有効)
           <br />
           ・OFF: 行ごとに判定。
           <br />
@@ -141,7 +141,12 @@ const NgWordListDialog: React.FC = () => {
                   <MenuItem value="name">名前</MenuItem>
                 </TextField>
                 <Box sx={{ display: 'flex', alignItems: 'center', height: '40px' }}>
-                  <Checkbox size="small" checked={entry.multiline} onChange={(e) => updateEntry(i, { multiline: e.target.checked })} />
+                  {/* 部分一致では行またぎを表現できず ON/OFF で結果が変わらないため、正規表現でのみ有効 */}
+                  <Tooltip title="複数行は正規表現でのみ有効" disableHoverListener={entry.matchType === 'regexp'}>
+                    <span>
+                      <Checkbox size="small" checked={entry.multiline} disabled={entry.matchType !== 'regexp'} onChange={(e) => updateEntry(i, { multiline: e.target.checked })} />
+                    </span>
+                  </Tooltip>
                 </Box>
                 <TextField
                   select
