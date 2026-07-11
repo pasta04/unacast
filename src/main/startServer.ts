@@ -989,9 +989,10 @@ const checkAutoCreateThread = async () => {
 
 /**
  * 自動スレ立ての早期警告。
- * スレの初回読み込み時点で、タイトルに数字が無く次スレが現スレと同名で
- * 作成されてしまうことが分かる場合、チャットウィンドウにだけ知らせる
- * (950 到達まで気付けないのを防ぐ。配信画面には流さない)。
+ * タイトルに数字が無い場合、インクリメント後も同名のため同名スレ存在チェック
+ * (現スレ自身がヒットする) で必ずスキップされ、自動スレ立ては動作しない。
+ * それをスレの初回読み込み時点でチャットウィンドウにだけ知らせる
+ * (閾値到達まで気付けないのを防ぐ。配信画面には流さない)。
  */
 const warnAutoCreateThreadTitle = (threadTitle: string | undefined) => {
   if (!globalThis.config.autoCreateThread?.enable) return;
@@ -1001,7 +1002,7 @@ const warnAutoCreateThreadTitle = (threadTitle: string | undefined) => {
     {
       name: 'unacastより',
       imgUrl: '/img/unacast.png',
-      text: `自動スレ立て: 現在のスレッドタイトルに数字が無いため、次スレは同名 「${threadTitle}」 で作成されます。連番にしたい場合はタイトル末尾に数字を入れてください`,
+      text: '自動スレ立て: 現在のスレッドタイトルに数字が無いため、自動スレ立ては動作しません。使用する場合はタイトルに数字を入れてください',
       type: 'comment',
       from: 'system',
     },

@@ -11,7 +11,6 @@ import {
   DialogTitle,
   FormControl,
   FormControlLabel,
-  FormLabel,
   Radio,
   RadioGroup,
   TextField,
@@ -88,13 +87,17 @@ export const Other: React.FC = () => {
           </Typography>
           <HelpPopover>
             レス数が指定値に達したら、次スレを自動で作成します。
-            <br /><br />
-            ・タイトル：現スレタイトルの最後に出てくる数字を +1 します。<br />
+            <br />
+            <br />
+            ・タイトル：現スレタイトルの最後に出てくる数字を +1 します。
+            <br />
             例：避難スレ70 → 避難スレ71。
             <br />
             ・名前・メール・本文：現スレの1レス目の内容をコピーします。
-            <br /><br />
-            同名スレが既に立っている場合や、一度実行したスレでは再実行しません。<br />
+            <br />
+            <br />
+            同名スレが既に立っている場合や、一度実行したスレでは再実行しません。
+            <br />
             スレッドタイトルに数値が入っていない場合は、自動スレ立ては動作しません。
           </HelpPopover>
         </Box>
