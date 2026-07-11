@@ -109,6 +109,73 @@ export type ThreadCreateSource = { title: string; name: string; mail: string; bo
 /** スレURL末尾のスレキー (作成時刻由来の数値)。取れなければ 0 */
 const threadKey = (url: string): number => Number(url.match(/(\d+)\/?$/)?.[1] ?? 0);
 
+/**
+ * スレの1レス目 (スレタイ + 名前/メール/本文) をコピー元データとして取得する。
+ * ポーリングの取得位置キャッシュを壊さないよう毎回新しいインスタンスで読む。
+ * 自動スレ立て (startServer.checkAutoCreateThread) からも使う。
+ */
+export const getThreadFirstPost = async (threadUrl: string): Promise<ThreadCreateSource | null> => {
+  const reader = threadUrl.includes('jbbs.shitaraba.net') ? new ReadSitaraba() : new Read5ch();
+  const comments = await reader.read(threadUrl, 0);
+  if (comments.length === 0) return null;
+  const first = comments[0];
+  return {
+    title: toPlainText(first.threadTitle ?? ''),
+    name: toPlainText(first.name ?? ''),
+    mail: first.email ?? '',
+    body: toPlainText(first.text ?? ''),
+  };
+};
+
+export type CreateThreadOnBoardResult = { ok: boolean; error?: string; newThreadUrl?: string };
+
+/**
+ * 板にスレを立てる。
+ * write cgi は失敗でも HTTP 200 でエラーHTMLを返すため、応答本文の判定は
+ * ベストエフォートとし、成功の最終確認は subject.txt の再取得で
+ * 「実行前に無かった新スレが現れたか」を見る。
+ * スレッドブラウザの「スレッドを作成」と自動スレ立ての両方から使う。
+ */
+export const createThreadOnBoard = async (boardUrl: string, params: { title: string; name: string; mail: string; body: string }): Promise<CreateThreadOnBoardResult> => {
+  const { title, name, mail, body } = params;
+  if (!title.trim() || !body.trim()) return { ok: false, error: 'タイトルと本文を入力してください。' };
+
+  // 実行前のスレ一覧 (新スレ出現の判定基準)
+  const before = new Set((await getThreadList(boardUrl).catch(() => [] as { url: string }[])).map((t) => t.url));
+
+  let postResult: CreateThreadPostResult;
+  if (boardUrl.includes('jbbs.shitaraba.net')) {
+    // 例: https://jbbs.shitaraba.net/game/51638/
+    const m = boardUrl.match(/^(https?:\/\/[^/]+\/)([^/]+)\/(\d+)\/?$/);
+    if (!m) return { ok: false, error: `したらばの板URLを解析できませんでした (${boardUrl})` };
+    postResult = await createThreadShitaraba(m[1], m[2], m[3], { title, name, mail, body });
+  } else {
+    // 例: https://bbs.jpnkn.com/pasta04/
+    const m = boardUrl.match(/^(https?:\/\/[^/]+\/)(.+?)\/?$/);
+    if (!m) return { ok: false, error: `板URLを解析できませんでした (${boardUrl})` };
+    postResult = await createThread5ch(m[1], m[2], { title, name, mail, body });
+  }
+  log.info(`[create] post status=${postResult.status} ${postResult.error ?? ''}`);
+
+  // subject.txt を再取得して新スレの出現を確認する (反映ラグを考慮して数回)
+  const normalize = (s: string) => s.replace(/\s+/g, '');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await sleep(1500);
+    const threads = await getThreadList(boardUrl).catch(() => [] as { url: string; name: string; resNum: number }[]);
+    const fresh = threads.filter((t) => !before.has(t.url));
+    // タイトル一致を優先し、一致が無くても新スレが1件だけなら自スレとみなす
+    const matched = fresh.find((t) => normalize(t.name).includes(normalize(title))) ?? (fresh.length === 1 ? fresh[0] : undefined);
+    if (matched) {
+      log.info(`[create] created: ${matched.url}`);
+      return { ok: true, newThreadUrl: matched.url };
+    }
+  }
+
+  // 新スレを確認できなかった。応答本文のエラーがあればそれを返す
+  if (postResult.status === 'error') return { ok: false, error: postResult.error };
+  return { ok: false, error: 'スレッドの作成を確認できませんでした。時間をおいて一覧を更新してください。' };
+};
+
 /** IPC ハンドラとウィンドウ生成を登録する。main.ts の起動処理から一度だけ呼ぶ */
 export const initThreadBrowser = (resolveUrl: () => string) => {
   resolvePageUrl = resolveUrl;
@@ -240,16 +307,8 @@ export const initThreadBrowser = (resolveUrl: () => string) => {
         if (!threadUrl) return { ok: false, error: '現在読み込み中のスレッドがありません。' };
       }
 
-      const reader = threadUrl.includes('jbbs.shitaraba.net') ? new ReadSitaraba() : new Read5ch();
-      const comments = await reader.read(threadUrl, 0);
-      if (comments.length === 0) return { ok: false, error: 'コピー元スレッドの内容を取得できませんでした。' };
-      const first = comments[0];
-      const source: ThreadCreateSource = {
-        title: toPlainText(first.threadTitle ?? ''),
-        name: toPlainText(first.name ?? ''),
-        mail: first.email ?? '',
-        body: toPlainText(first.text ?? ''),
-      };
+      const source = await getThreadFirstPost(threadUrl);
+      if (!source) return { ok: false, error: 'コピー元スレッドの内容を取得できませんでした。' };
       return { ok: true, source };
     } catch (e) {
       log.error(e);
@@ -257,51 +316,11 @@ export const initThreadBrowser = (resolveUrl: () => string) => {
     }
   });
 
-  /**
-   * スレ立ての実行。
-   * write cgi は失敗でも HTTP 200 でエラーHTMLを返すため、応答本文の判定は
-   * ベストエフォートとし、成功の最終確認は subject.txt の再取得で
-   * 「実行前に無かった新スレが現れたか」を見る。
-   */
+  /** スレ立ての実行 (実体は createThreadOnBoard) */
   ipcMain.handle(electronEvent.THREAD_BROWSER_CREATE, async (_event, payload: { boardUrl: string; title: string; name: string; mail: string; body: string }) => {
     try {
-      const { boardUrl, title, name, mail, body } = payload;
-      if (!title.trim() || !body.trim()) return { ok: false, error: 'タイトルと本文を入力してください。' };
-
-      // 実行前のスレ一覧 (新スレ出現の判定基準)
-      const before = new Set((await getThreadList(boardUrl).catch(() => [] as { url: string }[])).map((t) => t.url));
-
-      let postResult: CreateThreadPostResult;
-      if (boardUrl.includes('jbbs.shitaraba.net')) {
-        // 例: https://jbbs.shitaraba.net/game/51638/
-        const m = boardUrl.match(/^(https?:\/\/[^/]+\/)([^/]+)\/(\d+)\/?$/);
-        if (!m) return { ok: false, error: `したらばの板URLを解析できませんでした (${boardUrl})` };
-        postResult = await createThreadShitaraba(m[1], m[2], m[3], { title, name, mail, body });
-      } else {
-        // 例: https://bbs.jpnkn.com/pasta04/
-        const m = boardUrl.match(/^(https?:\/\/[^/]+\/)(.+?)\/?$/);
-        if (!m) return { ok: false, error: `板URLを解析できませんでした (${boardUrl})` };
-        postResult = await createThread5ch(m[1], m[2], { title, name, mail, body });
-      }
-      log.info(`[create] post status=${postResult.status} ${postResult.error ?? ''}`);
-
-      // subject.txt を再取得して新スレの出現を確認する (反映ラグを考慮して数回)
-      const normalize = (s: string) => s.replace(/\s+/g, '');
-      for (let attempt = 0; attempt < 3; attempt++) {
-        await sleep(1500);
-        const threads = await getThreadList(boardUrl).catch(() => [] as { url: string; name: string; resNum: number }[]);
-        const fresh = threads.filter((t) => !before.has(t.url));
-        // タイトル一致を優先し、一致が無くても新スレが1件だけなら自スレとみなす
-        const matched = fresh.find((t) => normalize(t.name).includes(normalize(title))) ?? (fresh.length === 1 ? fresh[0] : undefined);
-        if (matched) {
-          log.info(`[create] created: ${matched.url}`);
-          return { ok: true, newThreadUrl: matched.url };
-        }
-      }
-
-      // 新スレを確認できなかった。応答本文のエラーがあればそれを返す
-      if (postResult.status === 'error') return { ok: false, error: postResult.error };
-      return { ok: false, error: 'スレッドの作成を確認できませんでした。時間をおいて一覧を更新してください。' };
+      const { boardUrl, ...params } = payload;
+      return await createThreadOnBoard(boardUrl, params);
     } catch (e) {
       log.error(e);
       const message = e instanceof Error ? e.message : String(e);

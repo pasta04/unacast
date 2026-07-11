@@ -10,6 +10,8 @@ import expressWs from 'express-ws';
 import { readWavFiles, sleep, escapeHtml, unescapeHtml, decodeNumericCharRefs, removeEmoji, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
 import { filterByAxis } from './sourceFilter';
 import { judgeNgWord } from './ngWord';
+import { getThreadFirstPost, createThreadOnBoard } from './threadBrowser';
+import { incrementThreadTitle } from './readBBS/createThread';
 import { registerExternalApiRoutes } from './externalApi/routes';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
@@ -867,6 +869,8 @@ const getResInterval = async (exeId: number) => {
   }
   // status の UPDATE_STATUS は getRes 内部で success/error 双方の経路で発火するのでここでは不要
 
+  await checkAutoCreateThread();
+
   await checkAutoMoveThread();
 
   await notifyThreadResLimit();
@@ -891,6 +895,66 @@ const notifyThreadResLimit = async () => {
     ]);
     // スレ立て中だと思うのでちょっと待つ
     await sleep(10 * 1000);
+  }
+};
+
+/**
+ * 自動スレ立て済みのスレURL。1スレにつき1回しか実行しないためのガード。
+ * 失敗しても再試行しない (書き込み系のリトライ嵐を避ける)。
+ */
+let autoCreatedForThreadUrl = '';
+
+/**
+ * 自動スレ立て。
+ * レス数が設定の閾値 (既定950) に達したら、現スレのタイトルの数字を
+ * インクリメントし、1レス目の内容をコピーして次スレを作成する。
+ * 作成のみ行い、移動は既存の自動スレ移動 (1000到達で次スレを発見して移動) に任せる。
+ */
+const checkAutoCreateThread = async () => {
+  const cfg = globalThis.config.autoCreateThread;
+  if (!cfg?.enable) return;
+  const threshold = cfg.resThreshold > 0 ? cfg.resThreshold : 950;
+  if (!globalThis.electron.threadNumber || globalThis.electron.threadNumber < threshold) return;
+
+  const threadUrl = globalThis.config.url;
+  if (!threadUrl || autoCreatedForThreadUrl === threadUrl) return;
+  // 二重実行防止のため先にマークする (失敗しても同一スレでは再試行しない)
+  autoCreatedForThreadUrl = threadUrl;
+
+  try {
+    // 現スレの1レス目からコピー元を取得し、タイトルの数字をインクリメント
+    const source = await getThreadFirstPost(threadUrl);
+    if (!source || !source.title) {
+      log.error(`[autoCreateThread] コピー元スレの取得に失敗 ${threadUrl}`);
+      return;
+    }
+    const newTitle = incrementThreadTitle(source.title);
+
+    // 板一覧に同名スレが既にあれば作らない (他者が先に立てたケース)
+    const boardInfo = await threadUrlToBoardInfo(threadUrl);
+    if (boardInfo.status !== 'ok') {
+      log.error(`[autoCreateThread] 板情報の取得に失敗 ${threadUrl}`);
+      return;
+    }
+    const normalize = (s: string) => s.replace(/\s+/g, '');
+    const threadList = await getThreadList(boardInfo.boardUrl);
+    if (threadList.some((t) => normalize(t.name) === normalize(newTitle))) {
+      log.info(`[autoCreateThread] 同名スレが既に存在するためスキップ: ${newTitle}`);
+      return;
+    }
+
+    log.info(`[autoCreateThread] レス${globalThis.electron.threadNumber}到達。次スレ「${newTitle}」を作成します`);
+    const result = await createThreadOnBoard(boardInfo.boardUrl, { title: newTitle, name: source.name, mail: source.mail, body: source.body });
+    globalThis.electron.commentQueueList.push({
+      name: 'unacastより',
+      imgUrl: '/img/unacast.png',
+      text: result.ok ? `次スレ 「${newTitle}」 を自動作成しました` : `次スレの自動作成に失敗しました (${result.error ?? '原因不明'})`,
+      type: 'comment',
+      from: 'system',
+    });
+  } catch (e) {
+    log.error('[autoCreateThread] 失敗');
+    log.error(e);
   }
 };
 

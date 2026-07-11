@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Box, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
-import { SectionPanel, Caption, SourceFilterToggle } from './common';
+import { SectionPanel, Caption, SourceFilterToggle, HelpPopover } from './common';
 
 const intOrZero = (raw: string) => {
   const v = parseInt(raw, 10);
@@ -47,6 +47,46 @@ export const Other: React.FC = () => {
         </Typography>
         <Caption>スレ順に探索して、最初に見つかった1000以外のスレに移動します。移動先の初回取得結果はブラウザ側には表示しません。</Caption>
         <FormControlLabel control={<Checkbox size="small" checked={config.moveThread} onChange={(e) => setConfig('moveThread', e.target.checked)} />} label="1000で自動スレ移動" />
+      </Box>
+
+      <Box sx={{ mt: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            自動スレ立て
+          </Typography>
+          <HelpPopover>
+            レス数が指定値に達したら、次スレを自動で作成します (掲示板への書き込みが発生します)。
+            <br />
+            ・タイトル: 現スレタイトルの最後に出てくる数字を +1 します (例: 避難スレ70 → 避難スレ71)。数字が無い場合は現スレタイトルのまま。
+            <br />
+            ・名前・メール・本文: 現スレの1レス目をコピーします。
+            <br />
+            ・作成のみ行い、移動はしません。「1000で自動スレ移動」が有効なら 1000 到達時に作成済みの次スレへ自動移動します。
+            <br />
+            ・同名スレが既に立っている場合や、一度実行したスレでは再実行しません。
+          </HelpPopover>
+        </Box>
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={config.autoCreateThread.enable}
+              onChange={(e) => setConfig('autoCreateThread', { ...config.autoCreateThread, enable: e.target.checked })}
+            />
+          }
+          label="自動スレ立てを有効にする"
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2">発火するレス数</Typography>
+          <TextField
+            size="small"
+            disabled={!config.autoCreateThread.enable}
+            value={String(config.autoCreateThread.resThreshold)}
+            onChange={(e) => setConfig('autoCreateThread', { ...config.autoCreateThread, resThreshold: intOrZero(e.target.value) })}
+            inputProps={{ pattern: '[0-9]{0,4}?' }}
+            sx={{ width: 90 }}
+          />
+        </Box>
       </Box>
 
       <FormControl sx={{ display: 'block', mt: 1 }}>
