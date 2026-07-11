@@ -98,7 +98,8 @@ const NgWordListDialog: React.FC = () => {
           {ngWords.map((entry, i) => {
             const validation = validations[i];
             const hasError = !validation.ok;
-            const helperText = hasError ? `無効な正規表現: ${validation.error}` : ' ';
+            // 例外の生メッセージ (Invalid regular expression: ... ) は冗長なので出さない
+            const helperText = hasError ? '無効な正規表現' : ' ';
             return (
               <React.Fragment key={i}>
                 <TextField size="small" value={entry.word} error={hasError} helperText={helperText} onChange={(e) => updateEntry(i, { word: e.target.value })} />
