@@ -7,7 +7,7 @@ import { ChatClient } from 'dank-twitch-irc';
 import { LiveChat } from './youtube-chat';
 import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
-import { readWavFiles, sleep, escapeHtml, unescapeHtml, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
+import { readWavFiles, sleep, escapeHtml, unescapeHtml, decodeNumericCharRefs, removeEmoji, judgeAaMessage, isNihongo, convertUrltoImgTagSrc } from './util';
 import { filterByAxis } from './sourceFilter';
 import { judgeNgWord } from './ngWord';
 import { registerExternalApiRoutes } from './externalApi/routes';
@@ -1267,6 +1267,8 @@ export const sendDom = async (messageList: UserComment[]) => {
           config.yomikoDictionary.forEach((entry) => {
             text = text.replace(new RegExp(entry.pattern, 'gim'), entry.pronunciation);
           });
+          // 数値文字参照 (&#10084; 等) を復号したうえで、Unicode 絵文字は読み上げに渡さない
+          text = removeEmoji(decodeNumericCharRefs(text));
           text = unescapeHtml(text);
 
           if (globalThis.config.yomikoReplaceNewline) {

@@ -17,7 +17,7 @@ import { getThreadList, threadUrlToBoardInfo } from './getRes';
 import ReadSitaraba from './readBBS/ReadSitaraba';
 import Read5ch from './readBBS/Read5ch';
 import { createThread5ch, createThreadShitaraba, CreateThreadPostResult } from './readBBS/createThread';
-import { unescapeHtml, sleep } from './util';
+import { unescapeHtml, decodeNumericCharRefs, sleep } from './util';
 
 export type ThreadBrowserMode = 'bbs' | 'jpnkn';
 
@@ -86,13 +86,18 @@ const openWindow = (mode: ThreadBrowserMode) => {
   // browserWindow.webContents.openDevTools();
 };
 
-/** レス本文/名前の HTML を、プレビュー表示用のプレーンテキストへ変換する */
+/**
+ * レス本文/名前の HTML を、プレビュー表示用のプレーンテキストへ変換する。
+ * 絵文字等は数値文字参照 (&#10084; など) で入ってくるため復号して実際の文字にする。
+ */
 const toPlainText = (html: string): string => {
   return unescapeHtml(
-    html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .trim(),
+    decodeNumericCharRefs(
+      html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .trim(),
+    ),
   );
 };
 
