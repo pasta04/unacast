@@ -70,4 +70,8 @@ export const electronEvent = {
    * main → メイン設定ウィンドウ renderer。renderer 側で config.url を更新・永続化する。
    */
   THREAD_BROWSER_URL_SELECTED: 'thread-browser-url-selected',
+  /** スレッドブラウザ: スレ立てフォームへのコピー元 (現在のスレの1レス目) 取得 */
+  THREAD_BROWSER_CREATE_SOURCE: 'thread-browser-create-source',
+  /** スレッドブラウザ: スレ立て実行 */
+  THREAD_BROWSER_CREATE: 'thread-browser-create',
 };
