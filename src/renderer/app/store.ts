@@ -42,6 +42,11 @@ export type StoreState = {
   isServerRunning: boolean;
   /** 適用ボタンが押せるか */
   isConfigReady: boolean;
+  /**
+   * オーディオデバイス列挙の進行状態 (HeaderBar の案内表示に使う)。
+   * loading = 取得中 / ready = 出力デバイス取得済み / gaveUp = リトライを使い切った
+   */
+  audioDeviceLoadStatus: 'loading' | 'ready' | 'gaveUp';
   /** 設定変更ダイアログ系 */
   alert: AlertState;
   confirmStopOpen: boolean;
@@ -69,6 +74,7 @@ export type StoreState = {
 
   setServerRunning: (running: boolean) => void;
   setConfigReady: (ready: boolean) => void;
+  setAudioDeviceLoadStatus: (status: 'loading' | 'ready' | 'gaveUp') => void;
 
   openAlert: (message: string) => void;
   closeAlert: () => void;
@@ -104,6 +110,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
   audioInputs: null,
   isServerRunning: false,
   isConfigReady: false,
+  audioDeviceLoadStatus: 'loading' as const,
   alert: { open: false, message: '' },
   confirmStopOpen: false,
   dictionaryDialogOpen: false,
@@ -147,6 +154,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
 
   setServerRunning: (running) => set({ isServerRunning: running }),
   setConfigReady: (ready) => set({ isConfigReady: ready }),
+  setAudioDeviceLoadStatus: (status) => set({ audioDeviceLoadStatus: status }),
 
   openAlert: (message) => set({ alert: { open: true, message } }),
   closeAlert: () => set({ alert: { open: false, message: '' } }),

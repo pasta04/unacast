@@ -19,6 +19,7 @@ export const HeaderBar: React.FC = () => {
   const setServerRunning = useAppStore((s) => s.setServerRunning);
   const setConfirmStopOpen = useAppStore((s) => s.setConfirmStopOpen);
   const isConfigReady = useAppStore((s) => s.isConfigReady);
+  const audioDeviceLoadStatus = useAppStore((s) => s.audioDeviceLoadStatus);
 
   const isDirty = React.useMemo(() => JSON.stringify(config) !== JSON.stringify(appliedConfig), [config, appliedConfig]);
 
@@ -92,6 +93,18 @@ export const HeaderBar: React.FC = () => {
           </Box>
         )}
       </Box>
+
+      {/* オーディオデバイス列挙の進行状況。取得完了までは起動・適用ボタンが disabled のため理由を示す */}
+      {!isConfigReady && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          オーディオデバイスの読み込み中です… 完了するとサーバーを起動できます。
+        </Typography>
+      )}
+      {isConfigReady && audioDeviceLoadStatus === 'gaveUp' && (
+        <Typography variant="caption" sx={{ display: 'block', color: 'warning.main' }}>
+          オーディオデバイスを取得できませんでした。サーバーは起動できますが、着信音・読み上げの出力先が正しいか確認してください。「サウンド」の再読込で再取得できます。
+        </Typography>
+      )}
     </Box>
   );
 };

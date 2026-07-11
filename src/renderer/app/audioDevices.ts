@@ -57,6 +57,7 @@ const apply = (result: EnumerateResult) => {
 export const loadAudioDevicesWithRetry = async (shouldAbort: () => boolean = () => false): Promise<void> => {
   // 0ms = 即時 1 回試す → ダメなら短い間隔から徐々に伸ばす
   const delays = [0, 300, 700, 1500, 3000, 6000];
+  useAppStore.getState().setAudioDeviceLoadStatus('loading');
   for (let attempt = 0; attempt < delays.length; attempt++) {
     if (shouldAbort()) return;
     if (delays[attempt] > 0) {
@@ -71,7 +72,10 @@ export const loadAudioDevicesWithRetry = async (shouldAbort: () => boolean = () 
       // 取れた分は毎回ストアへ反映する (null のまま固まるのを防ぐ)
       apply(result);
       // 着信音出力先が 1 件以上あればもう十分とみなしリトライ終了
-      if (result.outputs.length > 0) return;
+      if (result.outputs.length > 0) {
+        useAppStore.getState().setAudioDeviceLoadStatus('ready');
+        return;
+      }
     } catch (e) {
       // タイムアウト (ハング) を含む個別の失敗は無視して次の機会に再取得する
       log.warn(`[${attempt + 1}/${delays.length}] enumerateDevices failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -80,6 +84,7 @@ export const loadAudioDevicesWithRetry = async (shouldAbort: () => boolean = () 
   // ここまで来た時点で出力が 0 件のまま。状態は最後の試行値 (空配列 or null) になっている。
   // null のままだと UI が読み込み中のままになるので空配列で確定する。
   log.warn('audio device enumeration gave up: no audiooutput found');
+  useAppStore.getState().setAudioDeviceLoadStatus('gaveUp');
   if (useAppStore.getState().audioOutputs === null) useAppStore.getState().setAudioOutputs([]);
   if (useAppStore.getState().audioInputs === null) useAppStore.getState().setAudioInputs([]);
 };
@@ -97,6 +102,8 @@ export const refreshAudioDevicesFromEvent = async (): Promise<void> => {
   try {
     const result = await enumerateAudioDevicesOnce();
     apply(result);
+    // リトライオーバー後でもデバイスが現れたら案内表示を解除する
+    if (result.outputs.length > 0) useAppStore.getState().setAudioDeviceLoadStatus('ready');
   } catch {
     // 無視
   }
