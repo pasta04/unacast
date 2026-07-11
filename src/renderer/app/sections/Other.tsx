@@ -1,7 +1,25 @@
 import * as React from 'react';
-import { Box, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Radio,
+  RadioGroup,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
+import { invokeAutoCreateThreadPreview, AutoCreateThreadPreview } from '../ipc';
 import { SectionPanel, Caption, SourceFilterToggle, HelpPopover } from './common';
 
 const intOrZero = (raw: string) => {
@@ -14,6 +32,20 @@ export const Other: React.FC = () => {
   const setConfig = useAppStore((s) => s.setConfig);
   const port = config.port;
   const updateExternal = (patch: Partial<AppConfig['external']>) => setConfig('external', { ...config.external, ...patch });
+
+  // 自動スレ立てプレビュー
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+  const [previewLoading, setPreviewLoading] = React.useState(false);
+  const [preview, setPreview] = React.useState<AutoCreateThreadPreview | null>(null);
+
+  const openAutoCreatePreview = async () => {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreview(null);
+    const result = await invokeAutoCreateThreadPreview(config.url);
+    setPreviewLoading(false);
+    setPreview(result);
+  };
 
   return (
     <SectionPanel title="その他">
@@ -86,7 +118,75 @@ export const Other: React.FC = () => {
             inputProps={{ pattern: '[0-9]{0,4}?' }}
             sx={{ width: 90 }}
           />
+          <Button size="small" variant="outlined" disabled={!config.url} onClick={openAutoCreatePreview}>
+            プレビュー
+          </Button>
         </Box>
+        <Caption>プレビューで、現在の掲示板URLからどんなタイトル・本文で次スレが立つのかを確認できます (書き込みは行いません)。</Caption>
+
+        {/* 自動スレ立てプレビューダイアログ */}
+        <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle>自動スレ立てプレビュー</DialogTitle>
+          <DialogContent>
+            {previewLoading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                <CircularProgress size={22} />
+              </Box>
+            )}
+            {preview && !preview.ok && <Alert severity="error">{preview.error}</Alert>}
+            {preview?.ok && (
+              <>
+                <Typography variant="body2" sx={{ mb: 1.5 }}>
+                  自動スレ立てが実行された場合、以下の内容でスレッドが作成されます (このプレビューでは書き込みは行っていません)。
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  現在のスレッド
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, wordBreak: 'break-word' }}>
+                  {preview.currentTitle}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  作成されるタイトル
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, wordBreak: 'break-word' }}>
+                  {preview.title}
+                  {preview.title === preview.currentTitle && (
+                    <Typography component="span" variant="caption" color="warning.main" sx={{ ml: 1 }}>
+                      (タイトルに数字が無いため現在のスレッドと同名になります)
+                    </Typography>
+                  )}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 3, mb: 1 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      名前
+                    </Typography>
+                    <Typography variant="body2">{preview.name || '(空欄)'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      メール
+                    </Typography>
+                    <Typography variant="body2">{preview.mail || '(空欄)'}</Typography>
+                  </Box>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  本文 (現在のスレッドの1レス目のコピー)
+                </Typography>
+                <Box sx={{ border: '1px solid #ddd', borderRadius: 1, p: 1, maxHeight: 260, overflowY: 'auto' }}>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {preview.body}
+                  </Typography>
+                </Box>
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button variant="contained" onClick={() => setPreviewOpen(false)}>
+              閉じる
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
 
       <FormControl sx={{ display: 'block', mt: 1 }}>

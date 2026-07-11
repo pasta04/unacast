@@ -899,6 +899,30 @@ const notifyThreadResLimit = async () => {
 };
 
 /**
+ * 自動スレ立てのプレビュー。
+ * 現在の掲示板URLを元に、自動スレ立てが実行された場合に「どんなタイトル・本文で
+ * 立つのか」のサンプルを返す (書き込みは行わない)。ユーザーが有効化を判断する材料。
+ */
+ipcMain.handle(electronEvent.AUTO_CREATE_THREAD_PREVIEW, async (_event, threadUrl: string) => {
+  try {
+    if (!threadUrl) return { ok: false, error: '掲示板URLが設定されていません。' };
+    const source = await getThreadFirstPost(threadUrl);
+    if (!source || !source.title) return { ok: false, error: 'スレッドの内容を取得できませんでした。URLを確認してください。' };
+    return {
+      ok: true,
+      currentTitle: source.title,
+      title: incrementThreadTitle(source.title),
+      name: source.name,
+      mail: source.mail,
+      body: source.body,
+    };
+  } catch (e) {
+    log.error(e);
+    return { ok: false, error: 'プレビューの取得中にエラーが発生しました。' };
+  }
+});
+
+/**
  * 自動スレ立て済みのスレURL。1スレにつき1回しか実行しないためのガード。
  * 失敗しても再試行しない (書き込み系のリトライ嵐を避ける)。
  */

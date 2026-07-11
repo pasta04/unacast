@@ -74,4 +74,6 @@ export const electronEvent = {
   THREAD_BROWSER_CREATE_SOURCE: 'thread-browser-create-source',
   /** スレッドブラウザ: スレ立て実行 */
   THREAD_BROWSER_CREATE: 'thread-browser-create',
+  /** 自動スレ立て: 生成されるタイトル・本文のプレビュー */
+  AUTO_CREATE_THREAD_PREVIEW: 'auto-create-thread-preview',
 };
