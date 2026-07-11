@@ -155,10 +155,17 @@ export const registerIpcSubscribers = () => {
     }
   });
 
-  // main プロセス側で config が書き換えられた時の通知 (現状は自動スレ移動による url 変更のみ)。
+  // main プロセス側で config が書き換えられた時の通知 (自動スレ移動・スレッドブラウザによる url 変更)。
   // フォーム編集中の値を消さないよう、未編集のフィールドだけマージする。
   ipcRenderer.on(electronEvent.SAVE_CONFIG, (_event: any, arg: AppConfig) => {
     useAppStore.getState().mergeFromServer(arg);
+    useAppStore.getState().persist();
+  });
+
+  // スレッドブラウザでのスレ移動 (main 側 config 未初期化時のフォールバック)。
+  // url フィールドだけ更新して永続化する。適用ボタンで main へ反映される。
+  ipcRenderer.on(electronEvent.THREAD_BROWSER_URL_SELECTED, (_event: any, url: string) => {
+    useAppStore.getState().setConfig('url', url);
     useAppStore.getState().persist();
   });
 
@@ -185,4 +192,13 @@ export const sendCommentTest = (config: AppConfig) => {
 
 export const sendLoadVoicevox = (voicevox: AppConfig['voicevox']) => {
   ipcRenderer.send(electronEvent.LOAD_VOICEVOX, voicevox);
+};
+
+/**
+ * スレッドブラウザを開く。
+ * source には設定画面で入力中の値 (bbs: スレURL / jpnkn: 板ID) を渡す。
+ * 適用前でも入力中の掲示板を開けるようにするため。
+ */
+export const sendOpenThreadBrowser = (mode: 'bbs' | 'jpnkn', source: string) => {
+  ipcRenderer.send(electronEvent.OPEN_THREAD_BROWSER, { mode, source });
 };

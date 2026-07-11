@@ -54,4 +54,20 @@ export const electronEvent = {
   AZURE_STT_START: 'azure-stt-start',
   AZURE_STT_STOP: 'azure-stt-stop',
   AZURE_STT_EVENT: 'azure-stt-event',
+
+  /** スレッドブラウザを開く (renderer → main) */
+  OPEN_THREAD_BROWSER: 'open-thread-browser',
+  /** スレッドブラウザ: 初期化 (板情報の解決) */
+  THREAD_BROWSER_INIT: 'thread-browser-init',
+  /** スレッドブラウザ: スレ一覧取得 */
+  THREAD_BROWSER_LIST: 'thread-browser-list',
+  /** スレッドブラウザ: スレ内容プレビュー */
+  THREAD_BROWSER_PREVIEW: 'thread-browser-preview',
+  /** スレッドブラウザ: コメント読み込みスレッドの切り替え */
+  THREAD_BROWSER_APPLY: 'thread-browser-apply',
+  /**
+   * スレッドブラウザ: main 側 config 未初期化時 (サーバー起動・適用前) のスレURL変更通知。
+   * main → メイン設定ウィンドウ renderer。renderer 側で config.url を更新・永続化する。
+   */
+  THREAD_BROWSER_URL_SELECTED: 'thread-browser-url-selected',
 };

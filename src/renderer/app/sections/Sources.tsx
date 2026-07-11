@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { Box, TextField, Typography } from '@mui/material';
+import { Box, Button, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
+import { sendOpenThreadBrowser } from '../ipc';
 import { SectionPanel, LabeledInput, Caption, SourceFilterToggle, StatusDot, getStatusColor } from './common';
 
 /**
@@ -44,6 +45,11 @@ export const Sources: React.FC = () => {
         />
         <SourceFilterToggle source="bbs" axis="broadcast" />
         <StatusLine label="status" value={status.bbs} configured={!!config.url} />
+        <Box sx={{ mt: 0.5 }}>
+          <Button size="small" variant="outlined" disabled={!config.url} onClick={() => sendOpenThreadBrowser('bbs', config.url)}>
+            掲示板を開く
+          </Button>
+        </Box>
       </Box>
 
       {/* Jpnkn Fast */}
@@ -56,6 +62,11 @@ export const Sources: React.FC = () => {
         </LabeledInput>
         <SourceFilterToggle source="jpnkn" axis="broadcast" />
         <StatusLine label="status" value={status.jpnknFast} configured={!!config.jpnknFastBoardId} />
+        <Box sx={{ mt: 0.5 }}>
+          <Button size="small" variant="outlined" disabled={!config.jpnknFastBoardId} onClick={() => sendOpenThreadBrowser('jpnkn', config.jpnknFastBoardId)}>
+            掲示板を開く
+          </Button>
+        </Box>
       </Box>
 
       {/* YouTube */}
