@@ -194,6 +194,23 @@ export const sendLoadVoicevox = (voicevox: AppConfig['voicevox']) => {
   ipcRenderer.send(electronEvent.LOAD_VOICEVOX, voicevox);
 };
 
+export type AutoCreateThreadPreview = {
+  ok: boolean;
+  error?: string;
+  /** 現スレのタイトル */
+  currentTitle?: string;
+  /** 生成されるタイトル (数字インクリメント後) */
+  title?: string;
+  name?: string;
+  mail?: string;
+  body?: string;
+};
+
+/** 自動スレ立てのプレビュー (書き込みは行わない)。threadUrl は設定画面で入力中の掲示板URL */
+export const invokeAutoCreateThreadPreview = (threadUrl: string): Promise<AutoCreateThreadPreview> => {
+  return ipcRenderer.invoke(electronEvent.AUTO_CREATE_THREAD_PREVIEW, threadUrl);
+};
+
 /**
  * スレッドブラウザを開く。
  * source には設定画面で入力中の値 (bbs: スレURL / jpnkn: 板ID) を渡す。

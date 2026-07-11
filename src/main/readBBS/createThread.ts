@@ -35,6 +35,22 @@ export type CreateThreadPostResult = {
   error?: string;
 };
 
+/**
+ * スレタイの「最後に出現する数字」(半角/全角) をインクリメントした新タイトルを返す。
+ * 例: 「避難スレ70」→「避難スレ71」、「Part１２★」→「Part１３★」(全角は全角のまま)。
+ * 数字が無い場合はそのまま返す (自動スレ立てでは現タイトルのコピーになる)。
+ */
+export const incrementThreadTitle = (title: string): string => {
+  const m = title.match(/([0-9０-９]+)(?![\s\S]*[0-9０-９])/);
+  if (!m || m.index === undefined) return title;
+  const isZenkaku = /[０-９]/.test(m[1]);
+  const value = Number(m[1].replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)));
+  if (!Number.isSafeInteger(value)) return title;
+  let next = String(value + 1);
+  if (isZenkaku) next = next.replace(/[0-9]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0xfee0));
+  return title.slice(0, m.index) + next + title.slice(m.index + m[1].length);
+};
+
 /** 文字列を指定文字コードへ変換して URL エンコードする (postRes と同じ方式) */
 const toEncodedParam = (value: string, to: 'SJIS' | 'EUCJP'): string => {
   const unicodeArray: number[] = [];

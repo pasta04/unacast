@@ -56,6 +56,7 @@ export const defaultConfig: AppConfig = {
   notifyThreadConnectionErrorLimit: 0,
   notifyThreadResLimit: 0,
   moveThread: true,
+  autoCreateThread: { enable: false, resThreshold: 950 },
   commentProcessType: 0,
   dispType: 0,
   aamode: {

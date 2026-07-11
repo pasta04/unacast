@@ -186,6 +186,17 @@ declare global {
     /** 自動スレ移動 */
     let moveThread: boolean;
     /**
+     * 自動スレ立て。レス数が resThreshold に達したら現スレの内容を元に次スレを作成する。
+     * タイトルは最後に出現する数字をインクリメント (無ければ現タイトルのまま)。
+     * 作成のみ行い、移動は既存の自動スレ移動 (moveThread) に任せる。
+     * 掲示板への書き込みを伴うため既定は無効。
+     */
+    let autoCreateThread: {
+      enable: boolean;
+      /** 発火するレス数 (既定 950) */
+      resThreshold: number;
+    };
+    /**
      * レスの処理方法
      * - 0: 新着を優先
      * - 1: 1個ずつ順に処理

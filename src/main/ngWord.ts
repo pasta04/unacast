@@ -10,7 +10,9 @@
  *  - matchType=include は部分一致、regexp は new RegExp。
  *  - 判定前にマッチ対象テキストを正規化する: bbs / jpnkn の本文は改行が実際の
  *    改行文字ではなく <br> タグでのみ入ってくるため、<br> を \n に変換して
- *    「見た目の行」と正規表現上の行を一致させる。
+ *    「見た目の行」と正規表現上の行を一致させる。さらに数値文字参照
+ *    (&#10084; 等) と HTML エンティティ (&gt; 等) を復号し、ユーザーが
+ *    画面で見たままの文字列 (>>1 や ❤) で NG ワードを書けるようにする。
  *  - multiline=false の場合は正規化後のテキストを改行で分割し、
  *    いずれかの行に一致したら NG。
  *  - multiline=true の場合は正規化後のテキスト全体を 1 つの塊として判定。
@@ -22,8 +24,10 @@
  *    (アプリを止めない)。UI 側でも事前バリデーションを行うので通常は到達しない。
  *
  * `validateNgRegexp` は renderer 側 (NgWord.tsx) のフォームバリデーションでも
- * 使う。
+ * 使う。util の import は renderer からも解決できる (ipc.ts が sleep を
+ * import している前例に同じ)。
  */
+import { decodeNumericCharRefs, unescapeHtml } from './util';
 
 /** NG ワード設定 1 件の型 (config.ngWords の要素) */
 type NgWordEntry = (typeof globalThis.config.ngWords)[number];
@@ -35,11 +39,13 @@ const BR_TAG = /<br\s*\/?>/gi;
 const LINE_SPLITTER = /\r\n|\r|\n/;
 
 /**
- * マッチ対象テキストを正規化する。<br> タグを実際の改行文字 \n に変換し、
- * 1行判定の分割・複数行判定の ^ $ (mフラグ)・\n がどのソース由来のテキストでも
- * 同じように機能するようにする。
+ * マッチ対象テキストを正規化する。
+ * 1. <br> タグを実際の改行文字 \n に変換 (1行判定の分割・^ $ ・\n を全ソースで一致させる)
+ * 2. 数値文字参照 (&#10084; → ❤) を復号
+ * 3. HTML エンティティ (&gt;&gt;1 → >>1) を復号
+ * これによりユーザーは画面で見たままの文字列で NG ワードを書ける。
  */
-const normalizeForMatch = (raw: string): string => raw.replace(BR_TAG, '\n');
+const normalizeForMatch = (raw: string): string => unescapeHtml(decodeNumericCharRefs(raw.replace(BR_TAG, '\n')));
 
 /**
  * 1 エントリの正規表現として `word` を評価できるかチェックする。
