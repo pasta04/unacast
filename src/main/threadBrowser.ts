@@ -142,7 +142,15 @@ export const initThreadBrowser = (resolveUrl: () => string) => {
   ipcMain.handle(electronEvent.THREAD_BROWSER_LIST, async (_event, boardUrl: string) => {
     try {
       const threads = await getThreadList(boardUrl);
-      return { ok: true, threads };
+      // subject.txt は「最終更新スレ」が先頭にもう一度重複して現れる掲示板がある
+      // (したらば・jpnkn) ため、URL で重複を除く (先頭 = 更新順の位置を残す)
+      const seen = new Set<string>();
+      const unique = threads.filter((t) => {
+        if (seen.has(t.url)) return false;
+        seen.add(t.url);
+        return true;
+      });
+      return { ok: true, threads: unique };
     } catch (e) {
       log.error(e);
       return { ok: false, error: 'スレッド一覧を取得できませんでした。' };
