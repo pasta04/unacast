@@ -87,13 +87,13 @@ export const Other: React.FC = () => {
             自動スレ立て
           </Typography>
           <HelpPopover>
-            レス数が指定値に達したら、次スレを自動で作成します (掲示板への書き込みが発生します)。
+            レス数が指定値に達したら、次スレを自動で作成します。
             <br />
-            ・タイトル: 現スレタイトルの最後に出てくる数字を +1 します (例: 避難スレ70 → 避難スレ71)。数字が無い場合は現スレタイトルのまま。
+            ・タイトル: 現スレタイトルの最後に出てくる数字を +1 します<br />
+             　例: 避難スレ70 → 避難スレ71。
+             　数字が無い場合は現スレタイトルがそのまま使われます。
             <br />
-            ・名前・メール・本文: 現スレの1レス目をコピーします。
-            <br />
-            ・作成のみ行い、移動はしません。「1000で自動スレ移動」が有効なら 1000 到達時に作成済みの次スレへ自動移動します。
+            ・名前・メール・本文: 現スレの1レス目の内容をコピーします。
             <br />
             ・同名スレが既に立っている場合や、一度実行したスレでは再実行しません。
           </HelpPopover>
@@ -109,7 +109,7 @@ export const Other: React.FC = () => {
           label="自動スレ立てを有効にする"
         />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2">発火するレス数</Typography>
+          <Typography variant="body2">実行するレス数</Typography>
           <TextField
             size="small"
             disabled={!config.autoCreateThread.enable}
@@ -122,7 +122,6 @@ export const Other: React.FC = () => {
             プレビュー
           </Button>
         </Box>
-        <Caption>プレビューで、現在の掲示板URLからどんなタイトル・本文で次スレが立つのかを確認できます (書き込みは行いません)。</Caption>
 
         {/* 自動スレ立てプレビューダイアログ */}
         <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="md" fullWidth>
@@ -137,7 +136,7 @@ export const Other: React.FC = () => {
             {preview?.ok && (
               <>
                 <Typography variant="body2" sx={{ mb: 1.5 }}>
-                  自動スレ立てが実行された場合、以下の内容でスレッドが作成されます (このプレビューでは書き込みは行っていません)。
+                  自動スレ立てが実行された場合、以下の内容でスレッドが作成されます。
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   現在のスレッド
@@ -171,7 +170,7 @@ export const Other: React.FC = () => {
                   </Box>
                 </Box>
                 <Typography variant="caption" color="text.secondary">
-                  本文 (現在のスレッドの1レス目のコピー)
+                  本文
                 </Typography>
                 <Box sx={{ border: '1px solid #ddd', borderRadius: 1, p: 1, maxHeight: 260, overflowY: 'auto' }}>
                   <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -190,7 +189,9 @@ export const Other: React.FC = () => {
       </Box>
 
       <FormControl sx={{ display: 'block', mt: 1 }}>
-        <FormLabel>レスの処理単位</FormLabel>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+          レスの処理単位
+        </Typography>
         <RadioGroup value={String(config.commentProcessType)} onChange={(_, v) => setConfig('commentProcessType', Number(v) as AppConfig['commentProcessType'])}>
           <FormControlLabel value="0" control={<Radio size="small" />} label="新着を優先(着信音等が鳴ってる場合は中断されます)" />
           <FormControlLabel value="1" control={<Radio size="small" />} label="1つずつ" />
