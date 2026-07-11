@@ -1,8 +1,25 @@
 import * as React from 'react';
-import { Box, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
-import { SectionPanel, Caption, SourceFilterToggle } from './common';
+import { invokeAutoCreateThreadPreview, AutoCreateThreadPreview } from '../ipc';
+import { SectionPanel, Caption, SourceFilterToggle, HelpPopover } from './common';
 
 const intOrZero = (raw: string) => {
   const v = parseInt(raw, 10);
@@ -14,6 +31,20 @@ export const Other: React.FC = () => {
   const setConfig = useAppStore((s) => s.setConfig);
   const port = config.port;
   const updateExternal = (patch: Partial<AppConfig['external']>) => setConfig('external', { ...config.external, ...patch });
+
+  // 自動スレ立てプレビュー
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+  const [previewLoading, setPreviewLoading] = React.useState(false);
+  const [preview, setPreview] = React.useState<AutoCreateThreadPreview | null>(null);
+
+  const openAutoCreatePreview = async () => {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreview(null);
+    const result = await invokeAutoCreateThreadPreview(config.url);
+    setPreviewLoading(false);
+    setPreview(result);
+  };
 
   return (
     <SectionPanel title="その他">
@@ -49,8 +80,127 @@ export const Other: React.FC = () => {
         <FormControlLabel control={<Checkbox size="small" checked={config.moveThread} onChange={(e) => setConfig('moveThread', e.target.checked)} />} label="1000で自動スレ移動" />
       </Box>
 
+      <Box sx={{ mt: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            自動スレ立て
+          </Typography>
+          <HelpPopover>
+            レス数が指定値に達したら、次スレを自動で作成します。
+            <br />
+            <br />
+            <strong>タイトル:</strong>
+            <br />
+            ・現スレタイトルの最後に出てくる数字を +1 します。
+            <br />
+            ・例：避難スレ70 → 避難スレ71。
+            <br />
+            <strong>名前・メール・本文:</strong>
+            <br />
+            ・現スレの1レス目の内容をコピーします。
+            <br />
+            <br />
+            <strong>注意事項:</strong>
+            <br />
+            同名スレが既に立っている場合や、一度実行したスレでは再実行しません。
+            <br />
+            スレッドタイトルに数値が入っていない場合は、自動スレ立ては動作しません。
+          </HelpPopover>
+        </Box>
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={config.autoCreateThread.enable}
+              onChange={(e) => setConfig('autoCreateThread', { ...config.autoCreateThread, enable: e.target.checked })}
+            />
+          }
+          label="自動スレ立てを有効にする"
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2">実行するレス数</Typography>
+          <TextField
+            size="small"
+            disabled={!config.autoCreateThread.enable}
+            value={String(config.autoCreateThread.resThreshold)}
+            onChange={(e) => setConfig('autoCreateThread', { ...config.autoCreateThread, resThreshold: intOrZero(e.target.value) })}
+            inputProps={{ pattern: '[0-9]{0,4}?' }}
+            sx={{ width: 90 }}
+          />
+          <Button size="small" variant="outlined" disabled={!config.url} onClick={openAutoCreatePreview}>
+            プレビュー
+          </Button>
+        </Box>
+
+        {/* 自動スレ立てプレビューダイアログ */}
+        <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle>自動スレ立てプレビュー</DialogTitle>
+          <DialogContent>
+            {previewLoading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                <CircularProgress size={22} />
+              </Box>
+            )}
+            {preview && !preview.ok && <Alert severity="error">{preview.error}</Alert>}
+            {preview?.ok && (
+              <>
+                <Typography variant="body2" sx={{ mb: 1.5 }}>
+                  自動スレ立てが実行された場合、以下の内容でスレッドが作成されます。
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  現在のスレッド
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, wordBreak: 'break-word' }}>
+                  {preview.currentTitle}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  作成されるタイトル
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, wordBreak: 'break-word' }}>
+                  {preview.title}
+                  {preview.title === preview.currentTitle && (
+                    <Typography component="span" variant="caption" color="warning.main" sx={{ ml: 1 }}>
+                      (現在のスレッドタイトルに数字が無いため、自動スレ立ては動作しません)
+                    </Typography>
+                  )}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 3, mb: 1 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      名前
+                    </Typography>
+                    <Typography variant="body2">{preview.name || '(空欄)'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      メール
+                    </Typography>
+                    <Typography variant="body2">{preview.mail || '(空欄)'}</Typography>
+                  </Box>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  本文
+                </Typography>
+                <Box sx={{ border: '1px solid #ddd', borderRadius: 1, p: 1, maxHeight: 260, overflowY: 'auto' }}>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {preview.body}
+                  </Typography>
+                </Box>
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button variant="contained" onClick={() => setPreviewOpen(false)}>
+              閉じる
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+
       <FormControl sx={{ display: 'block', mt: 1 }}>
-        <FormLabel>レスの処理単位</FormLabel>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+          レスの処理単位
+        </Typography>
         <RadioGroup value={String(config.commentProcessType)} onChange={(_, v) => setConfig('commentProcessType', Number(v) as AppConfig['commentProcessType'])}>
           <FormControlLabel value="0" control={<Radio size="small" />} label="新着を優先(着信音等が鳴ってる場合は中断されます)" />
           <FormControlLabel value="1" control={<Radio size="small" />} label="1つずつ" />
