@@ -186,3 +186,12 @@ export const sendCommentTest = (config: AppConfig) => {
 export const sendLoadVoicevox = (voicevox: AppConfig['voicevox']) => {
   ipcRenderer.send(electronEvent.LOAD_VOICEVOX, voicevox);
 };
+
+/**
+ * スレッドブラウザを開く。
+ * source には設定画面で入力中の値 (bbs: スレURL / jpnkn: 板ID) を渡す。
+ * 適用前でも入力中の掲示板を開けるようにするため。
+ */
+export const sendOpenThreadBrowser = (mode: 'bbs' | 'jpnkn', source: string) => {
+  ipcRenderer.send(electronEvent.OPEN_THREAD_BROWSER, { mode, source });
+};

@@ -8,6 +8,7 @@ import windowStateKeeper from 'electron-window-state';
 import ElectronStore from 'electron-store';
 // サーバー起動モジュール (IPC ハンドラ等の副作用登録目的)
 import './startServer';
+import { initThreadBrowser } from './threadBrowser';
 remote.initialize();
 
 /**
@@ -15,7 +16,7 @@ remote.initialize();
  *  - electron-vite dev 中: process.env.ELECTRON_RENDERER_URL に dev サーバの URL が入る
  *  - production: dist/main/index.js から見た dist/renderer/src/html/<name>.html を file:// で読む
  */
-const resolveRendererUrl = (htmlName: 'index' | 'chat' | 'translate' | 'imagePreview') => {
+const resolveRendererUrl = (htmlName: 'index' | 'chat' | 'translate' | 'imagePreview' | 'threadBrowser') => {
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   if (devUrl) {
     return `${devUrl}/src/html/${htmlName}.html`;
@@ -250,6 +251,7 @@ if (!app.requestSingleInstanceLock()) {
     createChatWindow();
     createTranslateWindow();
     createImagePreviewWindow();
+    initThreadBrowser(() => resolveRendererUrl('threadBrowser'));
 
     applyTaskbarState();
   });

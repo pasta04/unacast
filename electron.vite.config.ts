@@ -42,6 +42,7 @@ export default defineConfig({
           chat: resolve(__dirname, 'src/html/chat.html'),
           translate: resolve(__dirname, 'src/html/translate.html'),
           imagePreview: resolve(__dirname, 'src/html/imagePreview.html'),
+          threadBrowser: resolve(__dirname, 'src/html/threadBrowser.html'),
         },
       },
     },
