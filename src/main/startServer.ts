@@ -841,6 +841,8 @@ const getResInterval = async (exeId: number) => {
   if (isfirst && result.length > 0) {
     const threadTitle = result[0].threadTitle as string;
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'bbs', category: 'title', message: threadTitle });
+    // 自動スレ立てが同名スレを作ることになる場合、この時点で知らせる (チャット窓のみ)
+    warnAutoCreateThreadTitle(threadTitle);
   }
 
   // 指定したレス番以下は除外対象
@@ -969,17 +971,41 @@ const checkAutoCreateThread = async () => {
 
     log.info(`[autoCreateThread] レス${globalThis.electron.threadNumber}到達。次スレ「${newTitle}」を作成します`);
     const result = await createThreadOnBoard(boardInfo.boardUrl, { title: newTitle, name: source.name, mail: source.mail, body: source.body });
-    globalThis.electron.commentQueueList.push({
-      name: 'unacastより',
-      imgUrl: '/img/unacast.png',
-      text: result.ok ? `次スレ 「${newTitle}」 を自動作成しました` : `次スレの自動作成に失敗しました (${result.error ?? '原因不明'})`,
-      type: 'comment',
-      from: 'system',
-    });
+    // 結果通知はチャットウィンドウのみ (配信画面・SE・読み上げには流さない)
+    sendDomForChatWindow([
+      {
+        name: 'unacastより',
+        imgUrl: '/img/unacast.png',
+        text: result.ok ? `次スレ 「${newTitle}」 を自動作成しました` : `次スレの自動作成に失敗しました (${result.error ?? '原因不明'})`,
+        type: 'comment',
+        from: 'system',
+      },
+    ]);
   } catch (e) {
     log.error('[autoCreateThread] 失敗');
     log.error(e);
   }
+};
+
+/**
+ * 自動スレ立ての早期警告。
+ * スレの初回読み込み時点で、タイトルに数字が無く次スレが現スレと同名で
+ * 作成されてしまうことが分かる場合、チャットウィンドウにだけ知らせる
+ * (950 到達まで気付けないのを防ぐ。配信画面には流さない)。
+ */
+const warnAutoCreateThreadTitle = (threadTitle: string | undefined) => {
+  if (!globalThis.config.autoCreateThread?.enable) return;
+  if (!threadTitle) return;
+  if (incrementThreadTitle(threadTitle) !== threadTitle) return;
+  sendDomForChatWindow([
+    {
+      name: 'unacastより',
+      imgUrl: '/img/unacast.png',
+      text: `自動スレ立て: 現在のスレッドタイトルに数字が無いため、次スレは同名 「${threadTitle}」 で作成されます。連番にしたい場合はタイトル末尾に数字を入れてください`,
+      type: 'comment',
+      from: 'system',
+    },
+  ]);
 };
 
 const checkAutoMoveThread = async () => {
