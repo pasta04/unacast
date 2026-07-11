@@ -274,6 +274,8 @@ const createChatWindow = () => {
 
     useContentSize: true,
     icon: iconPath,
+    // CSS 適用前の下地色。style-window.css の既定背景と合わせて白フラッシュを防ぐ
+    backgroundColor: '#1e1e1e',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -312,6 +314,8 @@ const createTranslateWindow = () => {
 
     useContentSize: true,
     icon: iconPath,
+    // CSS 適用前の下地色。style-window.css の既定背景と合わせて白フラッシュを防ぐ
+    backgroundColor: '#1e1e1e',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

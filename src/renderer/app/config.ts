@@ -95,6 +95,7 @@ export const defaultConfig: AppConfig = {
       external: true,
     },
   },
+  ngWords: [],
 };
 
 const STORAGE_KEY = 'config';
