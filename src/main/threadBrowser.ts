@@ -20,9 +20,6 @@ import { unescapeHtml } from './util';
 
 export type ThreadBrowserMode = 'bbs' | 'jpnkn';
 
-/** プレビューで末尾から表示するレス数 */
-const PREVIEW_TAIL_COUNT = 10;
-
 let browserWindow: electron.BrowserWindow | null = null;
 
 /** threadBrowser.html の URL を解決する関数。main.ts の初期化時に渡される */
@@ -34,14 +31,18 @@ let resolvePageUrl: () => string = () => '';
  */
 let requestedSource: string | null = null;
 
-/** モードから板URL解決の元になる値を返す。設定が無い場合は null */
+/**
+ * モードから板URL解決の元になる値を返す。設定が無い場合は null。
+ * globalThis.config はサーバー起動・適用・テストのいずれかを行うまで main 側では
+ * undefined のため (renderer からしか渡されない)、optional chaining で参照する。
+ */
 const resolveBoardUrl = (mode: ThreadBrowserMode): string | null => {
   if (mode === 'jpnkn') {
-    const boardId = requestedSource || globalThis.config.jpnknFastBoardId;
+    const boardId = requestedSource || globalThis.config?.jpnknFastBoardId;
     if (!boardId) return null;
     return `https://bbs.jpnkn.com/${boardId}/`;
   }
-  const threadUrl = requestedSource || globalThis.config.url;
+  const threadUrl = requestedSource || globalThis.config?.url;
   if (!threadUrl) return null;
   return threadUrl;
 };
@@ -122,7 +123,7 @@ export const initThreadBrowser = (resolveUrl: () => string) => {
         mode,
         boardUrl: info.boardUrl,
         boardName: info.boardName,
-        currentThreadUrl: globalThis.config.url ?? '',
+        currentThreadUrl: globalThis.config?.url ?? '',
       };
     } catch (e) {
       log.error(e);
@@ -142,24 +143,22 @@ export const initThreadBrowser = (resolveUrl: () => string) => {
   });
 
   /**
-   * スレ内容のプレビュー。1レス目 + 末尾数レスをプレーンテキストで返す。
+   * スレ内容のプレビュー。全レスをプレーンテキストで返す (テンプレ確認等のため省略しない)。
+   * resNum は「この番号より後」の意味なので、レス1を含む全件は 0 を指定する。
    * コメント取得のポーリングが使う共有インスタンス (getRes.ts のシングルトン) の
    * 取得位置キャッシュを壊さないよう、毎回新しいインスタンスで読む。
    */
   ipcMain.handle(electronEvent.THREAD_BROWSER_PREVIEW, async (_event, threadUrl: string) => {
     try {
       const reader = threadUrl.includes('jbbs.shitaraba.net') ? new ReadSitaraba() : new Read5ch();
-      const comments = await reader.read(threadUrl, 1);
-      const slim = (c: UserComment): ThreadPreviewItem => ({
+      const comments = await reader.read(threadUrl, 0);
+      const items: ThreadPreviewItem[] = comments.map((c) => ({
         number: c.number ?? '',
         name: toPlainText(c.name ?? ''),
         date: c.date ?? '',
         text: toPlainText(c.text ?? ''),
-      });
-      const total = comments.length;
-      const head = comments.slice(0, 1).map(slim);
-      const tail = comments.slice(1).slice(-PREVIEW_TAIL_COUNT).map(slim);
-      return { ok: true, total, head, tail };
+      }));
+      return { ok: true, total: items.length, comments: items };
     } catch (e) {
       log.error(e);
       return { ok: false, error: 'スレッドの内容を取得できませんでした。' };
@@ -174,9 +173,15 @@ export const initThreadBrowser = (resolveUrl: () => string) => {
   ipcMain.handle(electronEvent.THREAD_BROWSER_APPLY, async (_event, threadUrl: string) => {
     try {
       log.info(`[apply] ${threadUrl}`);
-      globalThis.config.url = threadUrl;
-      globalThis.electron.threadNumber = 0;
-      globalThis.electron.mainWindow.webContents.send(electronEvent.SAVE_CONFIG, globalThis.config);
+      if (globalThis.config) {
+        globalThis.config.url = threadUrl;
+        globalThis.electron.threadNumber = 0;
+        globalThis.electron.mainWindow.webContents.send(electronEvent.SAVE_CONFIG, globalThis.config);
+      } else {
+        // main 側の config はサーバー起動・適用・テストのいずれかまで未初期化。
+        // その場合は renderer に URL だけ通知し、renderer 側で config.url を更新・永続化する
+        globalThis.electron.mainWindow.webContents.send(electronEvent.THREAD_BROWSER_URL_SELECTED, threadUrl);
+      }
 
       // サーバー起動中ならシステムコメントで移動を通知する
       if (globalThis.electron.commentQueueList) {

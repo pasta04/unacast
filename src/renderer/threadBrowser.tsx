@@ -22,7 +22,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   IconButton,
   List,
   ListItemButton,
@@ -42,7 +41,7 @@ const ipcRenderer = electron.ipcRenderer;
 type ThreadItem = { url: string; name: string; resNum: number };
 type InitResult = { ok: boolean; error?: string; mode?: ThreadBrowserMode; boardUrl?: string; boardName?: string; currentThreadUrl?: string };
 type ListResult = { ok: boolean; error?: string; threads?: ThreadItem[] };
-type PreviewResult = { ok: boolean; error?: string; total?: number; head?: ThreadPreviewItem[]; tail?: ThreadPreviewItem[] };
+type PreviewResult = { ok: boolean; error?: string; total?: number; comments?: ThreadPreviewItem[] };
 type ApplyResult = { ok: boolean; error?: string };
 
 const mode: ThreadBrowserMode = new URLSearchParams(location.search).get('mode') === 'jpnkn' ? 'jpnkn' : 'bbs';
@@ -124,7 +123,6 @@ const ThreadBrowserApp: React.FC = () => {
   };
 
   const selectedThread = threads.find((t) => t.url === selectedUrl);
-  const omitted = preview?.ok ? Math.max(0, (preview.total ?? 0) - 1 - (preview.tail?.length ?? 0)) : 0;
 
   if (initError) {
     return (
@@ -206,23 +204,7 @@ const ThreadBrowserApp: React.FC = () => {
             </Box>
           )}
           {preview && !preview.ok && <Alert severity="error">{preview.error}</Alert>}
-          {preview?.ok && (
-            <>
-              {preview.head?.map((item) => (
-                <PreviewComment key={`h-${item.number}`} item={item} />
-              ))}
-              {omitted > 0 && (
-                <Divider sx={{ my: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    … {omitted} レス省略 …
-                  </Typography>
-                </Divider>
-              )}
-              {preview.tail?.map((item) => (
-                <PreviewComment key={`t-${item.number}`} item={item} />
-              ))}
-            </>
-          )}
+          {preview?.ok && preview.comments?.map((item) => <PreviewComment key={item.number} item={item} />)}
         </Box>
       </Box>
 

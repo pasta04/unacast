@@ -65,4 +65,9 @@ export const electronEvent = {
   THREAD_BROWSER_PREVIEW: 'thread-browser-preview',
   /** スレッドブラウザ: コメント読み込みスレッドの切り替え */
   THREAD_BROWSER_APPLY: 'thread-browser-apply',
+  /**
+   * スレッドブラウザ: main 側 config 未初期化時 (サーバー起動・適用前) のスレURL変更通知。
+   * main → メイン設定ウィンドウ renderer。renderer 側で config.url を更新・永続化する。
+   */
+  THREAD_BROWSER_URL_SELECTED: 'thread-browser-url-selected',
 };
