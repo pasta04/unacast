@@ -10,7 +10,7 @@ import expressWs from 'express-ws';
 import { readWavFiles, sleep, escapeHtml, unescapeHtml, decodeNumericCharRefs, removeEmoji, judgeAaMessage, isNihongo, convertUrltoImgTagSrc, normalizeThreadUrl } from './util';
 import { filterByAxis } from './sourceFilter';
 import { judgeNgWord } from './ngWord';
-import { getThreadFirstPost, createThreadOnBoard } from './threadBrowser';
+import { getThreadFirstPost, createThreadOnBoard, getThreadResCount } from './threadBrowser';
 import { incrementThreadTitle } from './readBBS/createThread';
 import { resolveYomikoTemplate, applyYomikoTemplate } from './yomikoTemplate';
 import { registerExternalApiRoutes } from './externalApi/routes';
@@ -1052,6 +1052,9 @@ const warnAutoCreateThreadTitle = (threadTitle: string | undefined) => {
   ]);
 };
 
+/** 自動スレ移動で1回の探索につき実レス数を検証する候補数の上限 (負荷対策) */
+const AUTO_MOVE_VERIFY_LIMIT = 5;
+
 const checkAutoMoveThread = async () => {
   if (!globalThis.config.moveThread) return;
   if (globalThis.electron.threadNumber < 1000) return;
@@ -1061,7 +1064,20 @@ const checkAutoMoveThread = async () => {
   // スレ一覧を取得
   const boardInfo = await threadUrlToBoardInfo(threadUrl);
   const threadList = await getThreadList(boardInfo.boardUrl);
-  const target = threadList.find((item) => item.url !== threadUrl && item.resNum < 1000);
+  const candidates = threadList.filter((item) => item.url !== threadUrl && item.resNum < 1000);
+
+  // subject.txt のレス数は実態とずれることがある (999 表示だが実際は 1000 到達済み等)。
+  // 候補スレを実際に読んでレス数を検証し、本当に 1000 未到達のスレへだけ移動する。
+  // 到達済み・取得失敗の候補は除外して次の候補を試す。
+  let target: (typeof candidates)[number] | undefined;
+  for (const candidate of candidates.slice(0, AUTO_MOVE_VERIFY_LIMIT)) {
+    const actualResCount = await getThreadResCount(candidate.url);
+    if (actualResCount !== null && actualResCount < 1000) {
+      target = candidate;
+      break;
+    }
+    log.info(`[autoMoveThread] 候補「${candidate.name}」を除外 (一覧上=${candidate.resNum} 実レス数=${actualResCount ?? '取得失敗'})`);
+  }
   if (!target) return;
 
   // 次スレが見つかったので移動する

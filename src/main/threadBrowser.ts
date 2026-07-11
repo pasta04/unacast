@@ -127,6 +127,25 @@ export const getThreadFirstPost = async (threadUrl: string): Promise<ThreadCreat
   };
 };
 
+/**
+ * スレの実際のレス数を取得する。
+ * subject.txt のレス数は実態とずれることがある (999 表示だが実際は 1000 到達済み等)
+ * ため、自動スレ移動の候補検証に使う。あぼーん等で件数と番号がずれる可能性に備え、
+ * 末尾レスのレス番を優先して返す。取得できない場合は null。
+ */
+export const getThreadResCount = async (threadUrl: string): Promise<number | null> => {
+  try {
+    const reader = threadUrl.includes('jbbs.shitaraba.net') ? new ReadSitaraba() : new Read5ch();
+    const comments = await reader.read(threadUrl, 0);
+    if (comments.length === 0) return null;
+    const lastNumber = Number(comments[comments.length - 1].number);
+    return Number.isFinite(lastNumber) && lastNumber > 0 ? lastNumber : comments.length;
+  } catch (e) {
+    log.error(e);
+    return null;
+  }
+};
+
 export type CreateThreadOnBoardResult = { ok: boolean; error?: string; newThreadUrl?: string };
 
 /**
