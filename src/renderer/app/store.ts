@@ -52,6 +52,7 @@ export type StoreState = {
   confirmStopOpen: boolean;
   dictionaryDialogOpen: boolean;
   ngWordDialogOpen: boolean;
+  yomikoTemplateDialogOpen: boolean;
 
   setConfig: <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => void;
   patchConfig: (patch: Partial<AppConfig>) => void;
@@ -81,6 +82,7 @@ export type StoreState = {
   setConfirmStopOpen: (open: boolean) => void;
   setDictionaryDialogOpen: (open: boolean) => void;
   setNgWordDialogOpen: (open: boolean) => void;
+  setYomikoTemplateDialogOpen: (open: boolean) => void;
 
   /** 現在の config をローカルストレージへ保存 */
   persist: () => void;
@@ -115,6 +117,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
   confirmStopOpen: false,
   dictionaryDialogOpen: false,
   ngWordDialogOpen: false,
+  yomikoTemplateDialogOpen: false,
 
   setConfig: (key, value) =>
     set((state) => ({
@@ -161,6 +164,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
   setConfirmStopOpen: (open) => set({ confirmStopOpen: open }),
   setDictionaryDialogOpen: (open) => set({ dictionaryDialogOpen: open }),
   setNgWordDialogOpen: (open) => set({ ngWordDialogOpen: open }),
+  setYomikoTemplateDialogOpen: (open) => set({ yomikoTemplateDialogOpen: open }),
 
   persist: () => saveConfigToStorage(get().config),
 }));

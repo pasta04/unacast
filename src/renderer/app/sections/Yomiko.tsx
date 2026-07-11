@@ -22,7 +22,8 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
-import { SectionPanel, Caption, StatusDot, getStatusColor } from './common';
+import { SectionPanel, Caption, StatusDot, getStatusColor, HelpPopover } from './common';
+import { findUnknownPlaceholders } from '../../../main/yomikoTemplate';
 
 type YomikoType = AppConfig['typeYomiko'];
 
@@ -32,6 +33,180 @@ const yomikoOptions: { value: YomikoType; label: string }[] = [
   { value: 'bouyomi', label: '棒読みちゃん' },
   { value: 'voicevox', label: 'VOICE VOX' },
 ];
+
+/** テンプレートのソース別設定の行定義。anonymous=true のソースだけ匿名用テンプレートを持てる */
+const TEMPLATE_SOURCE_DEFS: { key: CommentSource; label: string; anonymous: boolean }[] = [
+  { key: 'bbs', label: '掲示板', anonymous: true },
+  { key: 'jpnkn', label: 'jpnkn Fast', anonymous: true },
+  { key: 'youtube', label: 'YouTube', anonymous: false },
+  { key: 'twitch', label: 'Twitch', anonymous: false },
+  { key: 'niconico', label: 'ニコ生', anonymous: true },
+  { key: 'twitcasting', label: 'ツイキャス', anonymous: false },
+  { key: 'stt', label: '音声認識', anonymous: false },
+  { key: 'external', label: '外部API', anonymous: false },
+];
+
+/** テンプレート入力の検証。未知のプレースホルダがあればエラーメッセージを返す */
+const validateTemplate = (template: string): string => {
+  const unknown = findUnknownPlaceholders(template);
+  return unknown.length > 0 ? `不明なプレースホルダ: ${unknown.join(' ')}` : '';
+};
+
+type TemplateDraftRow = { template: string; anonymousTemplate: string };
+
+/**
+ * 読み上げテンプレートのソース別設定ダイアログ。
+ * ドラフト編集 + キャンセル/OK 方式 (NGワード編集と同じパターン)。
+ * 空欄 = 既定テンプレートを使う。
+ */
+const YomikoTemplateDialog: React.FC = () => {
+  const open = useAppStore((s) => s.yomikoTemplateDialogOpen);
+  const setOpen = useAppStore((s) => s.setYomikoTemplateDialogOpen);
+  const setConfig = useAppStore((s) => s.setConfig);
+
+  const [draft, setDraft] = React.useState<Record<string, TemplateDraftRow>>({});
+  const [draftBbsName, setDraftBbsName] = React.useState('');
+
+  React.useEffect(() => {
+    if (!open) return;
+    const cfg = useAppStore.getState().config;
+    const next: Record<string, TemplateDraftRow> = {};
+    for (const def of TEMPLATE_SOURCE_DEFS) {
+      const per = cfg.yomikoTemplate.perSource[def.key];
+      next[def.key] = { template: per?.template ?? '', anonymousTemplate: per?.anonymousTemplate ?? '' };
+    }
+    setDraft(next);
+    setDraftBbsName(cfg.bbsAnonymousName ?? '');
+  }, [open]);
+
+  const updateRow = (key: string, patch: Partial<TemplateDraftRow>) => {
+    setDraft((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  };
+
+  const errors: Record<string, { template: string; anonymousTemplate: string }> = {};
+  let hasInvalid = false;
+  for (const def of TEMPLATE_SOURCE_DEFS) {
+    const row = draft[def.key];
+    const e = { template: row ? validateTemplate(row.template) : '', anonymousTemplate: row ? validateTemplate(row.anonymousTemplate) : '' };
+    if (e.template || e.anonymousTemplate) hasInvalid = true;
+    errors[def.key] = e;
+  }
+
+  const cancel = () => setOpen(false);
+  const submit = () => {
+    const cfg = useAppStore.getState().config;
+    const perSource: AppConfig['yomikoTemplate']['perSource'] = {};
+    for (const def of TEMPLATE_SOURCE_DEFS) {
+      const row = draft[def.key];
+      if (!row) continue;
+      const template = row.template.trim();
+      const anonymousTemplate = def.anonymous ? row.anonymousTemplate.trim() : '';
+      if (template || anonymousTemplate) {
+        perSource[def.key] = { ...(template ? { template } : {}), ...(anonymousTemplate ? { anonymousTemplate } : {}) };
+      }
+    }
+    setConfig('yomikoTemplate', { ...cfg.yomikoTemplate, perSource });
+    setConfig('bbsAnonymousName', draftBbsName.trim());
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onClose={cancel} maxWidth="lg" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        ソース別読み上げテンプレート
+        <HelpPopover>
+          空欄のソースは既定テンプレートを使います。
+          <br />
+          <br />
+          <strong>プレースホルダ:</strong>
+          <br />
+          <code>{'{text}'}</code> 本文
+          <br />
+          <code>{'{name}'}</code> 名前
+          <br />
+          <code>{'{res}'}</code> レス番号・コメント番号
+          <br />
+          <br />
+          <strong>例:</strong>
+          <br />
+          ・掲示板: <code>{'レス{res}番さん、{text}'}</code>
+          <br />
+          ・YouTube: <code>{'{name}さん、{text}'}</code>
+          <br />
+          <br />
+          <strong>匿名用テンプレート:</strong>
+          <br />
+          匿名コメント (掲示板: デフォルトネームでの書き込み / ニコ生: 184) のときに使うテンプレートです。
+          <br />
+          空欄なら通常のテンプレートを使います。
+          <br />
+          <br />
+          <strong>デフォルトネーム:</strong>
+          <br />
+          掲示板のデフォルトネームは SETTING.TXT から自動取得します。
+          <br />
+          取得できない板を使う場合のみ下部の手動指定を設定してください。
+        </HelpPopover>
+      </DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '110px 1fr 1fr', gap: 1, alignItems: 'start', mt: 1 }}>
+          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+            ソース
+          </Typography>
+          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+            テンプレート (空欄=既定)
+          </Typography>
+          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+            匿名用テンプレート (空欄=通常と同じ)
+          </Typography>
+          {TEMPLATE_SOURCE_DEFS.map((def) => {
+            const row = draft[def.key] ?? { template: '', anonymousTemplate: '' };
+            const error = errors[def.key];
+            return (
+              <React.Fragment key={def.key}>
+                <Typography variant="body2" sx={{ pt: 1 }}>
+                  {def.label}
+                </Typography>
+                <TextField
+                  size="small"
+                  value={row.template}
+                  error={!!error.template}
+                  helperText={error.template || ' '}
+                  onChange={(e) => updateRow(def.key, { template: e.target.value })}
+                />
+                {def.anonymous ? (
+                  <TextField
+                    size="small"
+                    value={row.anonymousTemplate}
+                    error={!!error.anonymousTemplate}
+                    helperText={error.anonymousTemplate || ' '}
+                    onChange={(e) => updateRow(def.key, { anonymousTemplate: e.target.value })}
+                  />
+                ) : (
+                  <Typography variant="caption" color="text.secondary" sx={{ pt: 1 }}>
+                    (匿名の概念なし)
+                  </Typography>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </Box>
+        <Box sx={{ mt: 1, maxWidth: 400 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+            掲示板のデフォルトネーム手動指定 (通常は空欄のまま。自動取得できない板でのみ設定)
+          </Typography>
+          <TextField size="small" fullWidth value={draftBbsName} placeholder="例: 名無しさん" onChange={(e) => setDraftBbsName(e.target.value)} />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={cancel}>キャンセル</Button>
+        <Button onClick={submit} variant="contained" disabled={hasInvalid}>
+          OK
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const YomikoDictionaryDialog: React.FC = () => {
   const open = useAppStore((s) => s.dictionaryDialogOpen);
@@ -93,6 +268,7 @@ export const Yomiko: React.FC = () => {
   const speakers = useAppStore((s) => s.voicevoxSpeakers);
   const voicevoxStatus = useAppStore((s) => s.status.voicevox);
   const setDictionaryDialogOpen = useAppStore((s) => s.setDictionaryDialogOpen);
+  const setYomikoTemplateDialogOpen = useAppStore((s) => s.setYomikoTemplateDialogOpen);
 
   return (
     <SectionPanel title="読み子設定">
@@ -143,14 +319,6 @@ export const Yomiko: React.FC = () => {
         </Typography>
         <Slider min={-1} max={100} value={config.bouyomiVolume} onChange={(_, v) => setConfig('bouyomiVolume', Number(v))} sx={{ maxWidth: 480 }} />
       </Box>
-      <Box sx={{ maxWidth: 600 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          プレフィックス
-        </Typography>
-        <Caption>読み子に送信するテキストの先頭に固定文字列を追加します。</Caption>
-        <TextField fullWidth size="small" value={config.bouyomiPrefix} onChange={(e) => setConfig('bouyomiPrefix', e.target.value)} />
-      </Box>
-
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 1 }}>
         VOICE VOX設定
       </Typography>
@@ -202,7 +370,58 @@ export const Yomiko: React.FC = () => {
           読み上げ辞書編集
         </Button>
       </Box>
+
+      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          読み上げテンプレート
+        </Typography>
+        <HelpPopover>
+          読み上げに渡すテキストの形式を指定します。
+          <br />
+          <br />
+          <strong>プレースホルダ:</strong>
+          <br />
+          <code>{'{text}'}</code> 本文
+          <br />
+          <code>{'{name}'}</code> 名前
+          <br />
+          <code>{'{res}'}</code> レス番号・コメント番号
+          <br />
+          ※値が無いプレースホルダは空になります。
+          <br />
+          <br />
+          <strong>例:</strong>
+          <br />・<code>{'{name}さん、{text}'}</code>
+          <br />・<code>{'レス{res}番さん、{text}'}</code>
+          <br />
+          <br />
+          <strong>ソース別設定:</strong>
+          <br />
+          「ソース別に設定」で取得元ごとの上書きと、匿名コメント用テンプレートを指定できます。
+        </HelpPopover>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, maxWidth: 600 }}>
+        <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+          既定
+        </Typography>
+        <TextField
+          size="small"
+          fullWidth
+          value={config.yomikoTemplate.default}
+          error={!!validateTemplate(config.yomikoTemplate.default)}
+          helperText={validateTemplate(config.yomikoTemplate.default) || undefined}
+          placeholder="{text}"
+          onChange={(e) => setConfig('yomikoTemplate', { ...config.yomikoTemplate, default: e.target.value })}
+        />
+      </Box>
+      <Box sx={{ mt: 0.5 }}>
+        <Button variant="outlined" onClick={() => setYomikoTemplateDialogOpen(true)}>
+          ソース別に設定 ({Object.keys(config.yomikoTemplate.perSource).length} 件)
+        </Button>
+      </Box>
+
       <YomikoDictionaryDialog />
+      <YomikoTemplateDialog />
     </SectionPanel>
   );
 };

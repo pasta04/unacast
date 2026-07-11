@@ -77,6 +77,8 @@ if (!app.requestSingleInstanceLock()) {
     jpnknFast: null as any,
     azureStt: null as any,
     threadNumber: 0,
+    bbsDefaultName: '',
+    jpnknDefaultName: '',
     commentQueueList: [],
     translateQueueList: [],
   };
