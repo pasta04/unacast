@@ -288,7 +288,8 @@ export const initThreadBrowser = (resolveUrl: () => string) => {
       return { ok: false, error: 'スレッドの作成を確認できませんでした。時間をおいて一覧を更新してください。' };
     } catch (e) {
       log.error(e);
-      return { ok: false, error: 'スレッド作成中にエラーが発生しました。' };
+      const message = e instanceof Error ? e.message : String(e);
+      return { ok: false, error: `スレッド作成中にエラーが発生しました (${message})` };
     }
   });
 };

@@ -72,6 +72,13 @@ const buildCookieHeader = (setCookies: string[] | undefined): string => {
   return setCookies.map((c) => c.split(';')[0]).join('; ');
 };
 
+/**
+ * 書き込み系リクエストで名乗る User-Agent。
+ * したらば等は UA 無し (axios 既定) の write.cgi POST を 403 で弾くことがあるため、
+ * 掲示板ツールの慣習である Monazilla 形式を名乗る。
+ */
+const WRITE_USER_AGENT = 'Monazilla/1.00 (unacast)';
+
 const post = async (url: string, payload: string, charset: string, headers: Record<string, string>) => {
   const options: AxiosRequestConfig = {
     url,
@@ -82,15 +89,24 @@ const post = async (url: string, payload: string, charset: string, headers: Reco
     headers: {
       Accept: '*/*',
       'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': WRITE_USER_AGENT,
       ...headers,
     },
-    // 302 (成功時にリダイレクトを返す板がある) も許容する
-    validateStatus: (status: number) => status >= 200 && status < 400,
+    // エラーHTML (4xx/5xx) も本文を読んで判定したいので、HTTPステータスでは例外にしない
+    validateStatus: () => true,
     maxRedirects: 0,
   };
   const response = await instance(options);
   const html = iconv.decode(Buffer.from(response.data as any), charset);
+  log.info(`[post] ${url} -> ${response.status} body=${html.replace(/\s+/g, ' ').slice(0, 200)}`);
   return { response, html };
+};
+
+/** HTTP ステータスも加味した応答判定 */
+const judgeResponse = (status: number, html: string): CreateThreadPostResult => {
+  if (status >= 300 && status < 400) return { status: 'ok' }; // 成功時にリダイレクトを返す板がある
+  if (status >= 400) return { status: 'error', error: `HTTP ${status}: ${extractErrorMessage(html)}` };
+  return judgeResponseHtml(html);
 };
 
 /**
@@ -122,41 +138,43 @@ export const createThread5ch = async (hostname: string, boardId: string, p: Crea
     log.info('[createThread5ch] confirm page returned. retrying with cookies');
     const cookie = buildCookieHeader(first.response.headers['set-cookie']);
     const second = await post(url, payload, 'Shift_JIS', { ...baseHeaders, ...(cookie ? { Cookie: cookie } : {}) });
-    return judgeResponseHtml(second.html);
+    return judgeResponse(second.response.status, second.html);
   }
-  return judgeResponseHtml(first.html);
+  return judgeResponse(first.response.status, first.html);
 };
 
 /**
  * したらばのスレ立て。
- * POST {hostname}bbs/write.cgi/{dir}/{bbs}/ (スレ番号なし) + subject で新規スレッド作成。
+ * POST {hostname}bbs/write.cgi/{dir}/{bbs}/ (スレ番号なし) + SUBJECT で新規スレッド作成。
+ * したらばの write.cgi のパラメータ名は大文字 (DIR/BBS/TIME/NAME/MAIL/MESSAGE/SUBJECT)。
+ * また http だと 403 になることがあるため https に正規化する。
  *
  * @param hostname 例 https://jbbs.shitaraba.net/
  * @param dir 例 game
  * @param bbs 例 51638
  */
 export const createThreadShitaraba = async (hostname: string, dir: string, bbs: string, p: CreateThreadParams): Promise<CreateThreadPostResult> => {
+  const secureHost = hostname.replace(/^http:/, 'https:');
   const payload = [
-    `dir=${dir}`,
-    `bbs=${bbs}`,
-    `time=${Math.floor(Date.now() / 1000)}`,
-    `subject=${toEncodedParam(p.title, 'EUCJP')}`,
+    `DIR=${dir}`,
+    `BBS=${bbs}`,
+    `TIME=${Math.floor(Date.now() / 1000)}`,
+    `SUBJECT=${toEncodedParam(p.title, 'EUCJP')}`,
     `NAME=${toEncodedParam(p.name, 'EUCJP')}`,
     `MAIL=${toEncodedParam(p.mail, 'EUCJP')}`,
     `MESSAGE=${toEncodedParam(normalizeBody(p.body), 'EUCJP')}`,
-    `submit=${toEncodedParam('新規書き込み', 'EUCJP')}`,
+    `submit=${toEncodedParam('新規スレッド作成', 'EUCJP')}`,
   ].join('&');
-  const url = `${hostname}bbs/write.cgi/${dir}/${bbs}/`;
+  const url = `${secureHost}bbs/write.cgi/${dir}/${bbs}/`;
+  const baseHeaders = { Referer: `${secureHost}${dir}/${bbs}/` };
 
   log.info(`[createThreadShitaraba] ${url}`);
-  const { response, html } = await post(url, payload, 'EUC-JP', { Referer: `${hostname}${dir}/${bbs}/` });
-  // したらばは成功時に302を返すことがある
-  if (response.status >= 300 && response.status < 400) return { status: 'ok' };
-  if (isConfirmPage(html)) {
-    const cookie = buildCookieHeader(response.headers['set-cookie']);
-    const second = await post(url, payload, 'EUC-JP', { Referer: `${hostname}${dir}/${bbs}/`, ...(cookie ? { Cookie: cookie } : {}) });
-    if (second.response.status >= 300 && second.response.status < 400) return { status: 'ok' };
-    return judgeResponseHtml(second.html);
+  const first = await post(url, payload, 'EUC-JP', baseHeaders);
+  if (isConfirmPage(first.html)) {
+    log.info('[createThreadShitaraba] confirm page returned. retrying with cookies');
+    const cookie = buildCookieHeader(first.response.headers['set-cookie']);
+    const second = await post(url, payload, 'EUC-JP', { ...baseHeaders, ...(cookie ? { Cookie: cookie } : {}) });
+    return judgeResponse(second.response.status, second.html);
   }
-  return judgeResponseHtml(html);
+  return judgeResponse(first.response.status, first.html);
 };
