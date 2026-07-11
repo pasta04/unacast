@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
 import { sendOpenThreadBrowser } from '../ipc';
+import { normalizeThreadUrl } from '../../../main/util';
 import { SectionPanel, LabeledInput, Caption, SourceFilterToggle, StatusDot, getStatusColor } from './common';
 
 /**
@@ -40,6 +41,11 @@ export const Sources: React.FC = () => {
           size="small"
           value={config.url}
           onChange={(e) => setConfig('url', e.target.value)}
+          onBlur={() => {
+            // ブラウザからコピーしたURLに付く l50 / 127n- 等のレス範囲表記を自動補正する
+            const normalized = normalizeThreadUrl(config.url);
+            if (normalized !== config.url) setConfig('url', normalized);
+          }}
           inputProps={{ pattern: 'http.?://.+/$' }}
           placeholder="http(s)://.../"
         />
