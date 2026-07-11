@@ -88,14 +88,14 @@ export const Other: React.FC = () => {
           </Typography>
           <HelpPopover>
             レス数が指定値に達したら、次スレを自動で作成します。
+            <br /><br />
+            ・タイトル：現スレタイトルの最後に出てくる数字を +1 します。<br />
+            例：避難スレ70 → 避難スレ71。
             <br />
-            ・タイトル: 現スレタイトルの最後に出てくる数字を +1 します<br />
-             　例: 避難スレ70 → 避難スレ71。
-             　数字が無い場合は現スレタイトルがそのまま使われます。
-            <br />
-            ・名前・メール・本文: 現スレの1レス目の内容をコピーします。
-            <br />
-            ・同名スレが既に立っている場合や、一度実行したスレでは再実行しません。
+            ・名前・メール・本文：現スレの1レス目の内容をコピーします。
+            <br /><br />
+            同名スレが既に立っている場合や、一度実行したスレでは再実行しません。<br />
+            スレッドタイトルに数値が入っていない場合は、自動スレ立ては動作しません。
           </HelpPopover>
         </Box>
         <FormControlLabel
@@ -151,7 +151,7 @@ export const Other: React.FC = () => {
                   {preview.title}
                   {preview.title === preview.currentTitle && (
                     <Typography component="span" variant="caption" color="warning.main" sx={{ ml: 1 }}>
-                      (タイトルに数字が無いため現在のスレッドと同名になります)
+                      (現在のスレッドタイトルに数字が無いため、自動スレ立ては動作しません)
                     </Typography>
                   )}
                 </Typography>
