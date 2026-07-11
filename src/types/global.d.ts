@@ -32,6 +32,10 @@ declare global {
     let azureStt: AzureSpeechToText;
     /** 掲示板の読み込み済みのレス番号 */
     let threadNumber: number;
+    /** bbs 板のデフォルトネーム (SETTING.TXT の BBS_NONAME_NAME。匿名判定に使う) */
+    let bbsDefaultName: string;
+    /** jpnkn Fast 板のデフォルトネーム (匿名判定に使う) */
+    let jpnknDefaultName: string;
     /** コメントの処理待ちリスト */
     let commentQueueList: UserComment[];
     /** 翻訳の処理待ちリスト */
@@ -164,8 +168,6 @@ declare global {
     let bouyomiPort: number;
     /** 棒読みちゃんの音量 */
     let bouyomiVolume: number;
-    /** 棒読みちゃんへ送るときのプレフィックス */
-    let bouyomiPrefix: string;
     /** VOICE VOX 設定 **/
     let voicevox: {
       /** VOICE VOX CORE のパス **/
@@ -175,6 +177,35 @@ declare global {
     };
     /** 読み子へ渡す時に改行を置換 */
     let yomikoReplaceNewline: boolean;
+    /**
+     * 読み上げテンプレート。
+     * プレースホルダ: {text}=本文 / {name}=名前 / {res}=レス番。
+     * 値の無いプレースホルダは空文字になる。
+     */
+    let yomikoTemplate: {
+      /** 全ソース共通の既定テンプレート。既定値 '{text}' (= 従来挙動) */
+      default: string;
+      /**
+       * ソース別の上書き。キーが無いソースは default を使う。
+       * anonymousTemplate は匿名コメント (bbs/jpnkn: デフォルトネーム一致、niconico: 184) 用。
+       * 未設定なら template → default の順でフォールバック。
+       */
+      perSource: Partial<
+        Record<
+          CommentSource,
+          {
+            template?: string;
+            anonymousTemplate?: string;
+          }
+        >
+      >;
+    };
+    /**
+     * bbs の匿名判定で「デフォルトネームとみなす名前」の手動指定。
+     * 通常は SETTING.TXT の BBS_NONAME_NAME を自動取得するため空でよい。
+     * SETTING.TXT を取得できない板向けのフォールバック。
+     */
+    let bbsAnonymousName: string;
     /**
      * コメント取得 (掲示板/jpnkn/ニコ生/ツイキャス/YouTube/Twitch) が連続で通信エラー状態の時、
      * その状態が継続した秒数がこの値以上になったら通知する。0 以下なら機能 OFF。

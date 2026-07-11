@@ -54,6 +54,18 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * bbs レスの匿名判定。
+ * 自動取得した板のデフォルトネーム (SETTING.TXT の BBS_NONAME_NAME)、または
+ * 手動指定 (config.bbsAnonymousName) と名前が一致すれば匿名とみなす。
+ * どちらも無い場合は判定不能 (undefined)。
+ */
+const isBbsAnonymousName = (name: string | undefined): boolean | undefined => {
+  const defaultName = globalThis.electron?.bbsDefaultName || globalThis.config?.bbsAnonymousName || '';
+  if (!defaultName || typeof name !== 'string') return undefined;
+  return name.trim() === defaultName.trim();
+};
+
+/**
  * 掲示板のレスを取得する
  * @param threadUrl スレのURL
  * @param resNum この番号以降を取得する。指定しない場合は全件取得
@@ -83,6 +95,7 @@ export const getRes = async (threadUrl: string, resNum: number): Promise<UserCom
       return {
         ...res,
         imgUrl: globalThis.electron.iconList.getBbs(),
+        isAnonymous: isBbsAnonymousName(res.name),
       };
     });
   } catch (e) {
@@ -146,10 +159,13 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
     status: 'ok' | 'ng';
     boardUrl: string;
     boardName: string;
+    /** 板のデフォルトネーム (SETTING.TXT の BBS_NONAME_NAME)。取得できなければ空 */
+    defaultName: string;
   } = {
     status: 'ng',
     boardUrl: threadUrl,
     boardName: '★取得失敗★',
+    defaultName: '',
   };
 
   let boardUrl = '';
@@ -224,6 +240,11 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
           result.boardName = matched[1];
           result.boardUrl = boardUrl;
           result.status = 'ok';
+        }
+        // デフォルトネーム (匿名判定用)。名前欄を空で書き込むとこの名前になる
+        const noname = text.match(/BBS_NONAME_NAME=(.+)/);
+        if (noname) {
+          result.defaultName = noname[1].trim();
         }
       });
     }

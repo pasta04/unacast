@@ -12,6 +12,7 @@ import { filterByAxis } from './sourceFilter';
 import { judgeNgWord } from './ngWord';
 import { getThreadFirstPost, createThreadOnBoard } from './threadBrowser';
 import { incrementThreadTitle } from './readBBS/createThread';
+import { resolveYomikoTemplate, applyYomikoTemplate } from './yomikoTemplate';
 import { registerExternalApiRoutes } from './externalApi/routes';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
@@ -149,7 +150,6 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
   }
   if (voiceVox) {
     voiceVox.speaker = config.voicevox?.speakerAndStyle || '';
-    voiceVox.prefix = config.bouyomiPrefix;
     voiceVox.volume = config.bouyomiVolume;
   }
 });
@@ -269,6 +269,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
           text: item.comment,
           type: 'comment',
           from: 'niconico',
+          isAnonymous: item.isAnonymous,
         } as UserComment;
       });
       if (!globalThis.config.dispSort) {
@@ -286,6 +287,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
         text: event.comment,
         type: 'comment',
         from: 'niconico',
+        isAnonymous: event.isAnonymous,
       });
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
         commentType: 'niconico',
@@ -397,6 +399,17 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   if (globalThis.config.jpnknFastBoardId) {
     const jpn = new JpnknFast(globalThis.config.jpnknFastBoardId);
     globalThis.electron.jpnknFast = jpn;
+    // 板のデフォルトネームを取得しておく (匿名判定用)
+    void (async () => {
+      try {
+        const info = await threadUrlToBoardInfo(`https://bbs.jpnkn.com/${globalThis.config.jpnknFastBoardId}/`);
+        globalThis.electron.jpnknDefaultName = info.status === 'ok' ? info.defaultName : '';
+        log.info(`[jpnknDefaultName] "${globalThis.electron.jpnknDefaultName}"`);
+      } catch (e) {
+        log.error(e);
+        globalThis.electron.jpnknDefaultName = '';
+      }
+    })();
     jpn.on('start', () => {
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'jpnkn', category: 'status', message: `connection waiting` });
     });
@@ -412,7 +425,10 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
 
     jpn.on('comment', (event) => {
       recordConnectionSuccess('jpnkn');
-      globalThis.electron.commentQueueList.push({ ...event, imgUrl: globalThis.electron.iconList.getBbs() });
+      // 匿名判定: 板のデフォルトネームと一致するか (取得できていなければ判定不能)
+      const jpnknDefaultName = globalThis.electron.jpnknDefaultName;
+      const isAnonymous = jpnknDefaultName && typeof event.name === 'string' ? event.name.trim() === jpnknDefaultName.trim() : undefined;
+      globalThis.electron.commentQueueList.push({ ...event, imgUrl: globalThis.electron.iconList.getBbs(), isAnonymous });
       globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
         commentType: 'jpnkn',
         category: 'status',
@@ -437,7 +453,7 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
   // 棒読みちゃん接続
   if (config.typeYomiko === 'bouyomi' || config.typeYomikoStt === 'bouyomi') {
     if (config.bouyomiPort) {
-      bouyomi = new bouyomiChan({ port: config.bouyomiPort, volume: config.bouyomiVolume, prefix: config.bouyomiPrefix });
+      bouyomi = new bouyomiChan({ port: config.bouyomiPort, volume: config.bouyomiVolume });
     }
   }
 
@@ -449,12 +465,10 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
           path: config.voicevox.path,
           speaker: config.voicevox.speakerAndStyle,
           volume: config.bouyomiVolume,
-          prefix: config.bouyomiPrefix,
         });
       } else {
         voiceVox.speaker = config.voicevox.speakerAndStyle;
         voiceVox.volume = config.bouyomiVolume;
-        voiceVox.prefix = config.bouyomiPrefix;
       }
     }
   }
@@ -817,6 +831,26 @@ ipcMain.on(electronEvent.STOP_SERVER, (event) => {
   resetAllConnectionErrors();
 });
 
+/** デフォルトネームを取得済みのスレURL (スレが変わった時だけ再取得するためのガード) */
+let bbsDefaultNameFetchedFor = '';
+
+/**
+ * bbs 板のデフォルトネーム (SETTING.TXT の BBS_NONAME_NAME) を取得してキャッシュする。
+ * bbs レスの匿名判定 (getRes.ts) が参照する。
+ */
+const refreshBbsDefaultName = async (threadUrl: string) => {
+  if (!threadUrl || bbsDefaultNameFetchedFor === threadUrl) return;
+  bbsDefaultNameFetchedFor = threadUrl;
+  try {
+    const info = await threadUrlToBoardInfo(threadUrl);
+    globalThis.electron.bbsDefaultName = info.status === 'ok' ? info.defaultName : '';
+    log.info(`[bbsDefaultName] "${globalThis.electron.bbsDefaultName}"`);
+  } catch (e) {
+    log.error(e);
+    globalThis.electron.bbsDefaultName = '';
+  }
+};
+
 const getResInterval = async (exeId: number) => {
   let resNum: number;
   let isfirst = false;
@@ -832,6 +866,8 @@ const getResInterval = async (exeId: number) => {
     // 初回
     isfirst = true;
     resNum = NaN;
+    // 板のデフォルトネームを取得しておく (匿名判定用)。初回とスレ移動後に走る
+    void refreshBbsDefaultName(globalThis.config.url);
   } else {
     // 2回目以降
     resNum = globalThis.electron.threadNumber;
@@ -1369,26 +1405,38 @@ export const sendDom = async (messageList: UserComment[]) => {
     if (speakTarget) {
       const typeYomiko = speakTarget.from === 'stt' ? globalThis.config.typeYomikoStt : globalThis.config.typeYomiko;
       if (typeYomiko !== 'none') {
-        // 対象のレスがAAで、AAモードが有効なら、読み上げ分はアスキーアートにする
+        // 読み上げテンプレートを解決 (ソース別 × 匿名/非匿名。{text} {name} {res} が使える)
+        const template = resolveYomikoTemplate(globalThis.config.yomikoTemplate, speakTarget.from, speakTarget.isAnonymous);
+
+        let text: string;
         if (speakTarget.isAA && config.aamode.enable) {
-          await playYomiko(typeYomiko, config.aamode.speakWord);
-        } else {
-          // タグを除去する
-          let text = speakTarget.text;
-          text = text.replace(/<br\s*\/?>\s*/g, '\n ');
-          text = text.replace(/<img.*?\/>/g, '');
-          text = text.replace(/<a .*?>/g, '').replace(/<\/a>/g, '');
-          // 読み上げ辞書の置き換え
-          config.yomikoDictionary.forEach((entry) => {
-            text = text.replace(new RegExp(entry.pattern, 'gim'), entry.pronunciation);
-          });
-          // 数値文字参照 (&#10084; 等) を復号したうえで、Unicode 絵文字は読み上げに渡さない
+          // 対象のレスがAAで、AAモードが有効なら、{text} はアスキーアート (speakWord) にする
+          text = applyYomikoTemplate(template, speakTarget, config.aamode.speakWord);
           text = removeEmoji(decodeNumericCharRefs(text));
           text = unescapeHtml(text);
+        } else {
+          // タグを除去する
+          let t = speakTarget.text;
+          t = t.replace(/<br\s*\/?>\s*/g, '\n ');
+          t = t.replace(/<img.*?\/>/g, '');
+          t = t.replace(/<a .*?>/g, '').replace(/<\/a>/g, '');
+          // テンプレート展開 (整形後・辞書前: 読み上げ辞書が {name} 部分にも効くように)
+          t = applyYomikoTemplate(template, speakTarget, t);
+          // 読み上げ辞書の置き換え
+          config.yomikoDictionary.forEach((entry) => {
+            t = t.replace(new RegExp(entry.pattern, 'gim'), entry.pronunciation);
+          });
+          // 数値文字参照 (&#10084; 等) を復号したうえで、Unicode 絵文字は読み上げに渡さない
+          t = removeEmoji(decodeNumericCharRefs(t));
+          t = unescapeHtml(t);
 
           if (globalThis.config.yomikoReplaceNewline) {
-            text = text.replace(/\r\n/g, ' ').replace(/\n/g, ' ');
+            t = t.replace(/\r\n/g, ' ').replace(/\n/g, ' ');
           }
+          text = t;
+        }
+        // テンプレート展開の結果が空 (本文が絵文字のみ等) なら読み上げない
+        if (text.trim()) {
           await playYomiko(typeYomiko, text);
         }
       }

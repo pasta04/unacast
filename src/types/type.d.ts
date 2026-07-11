@@ -23,6 +23,11 @@ type UserComment = {
   from: 'system' | 'bbs' | 'youtube' | 'twitch' | 'niconico' | 'twitcasting' | 'jpnkn' | 'stt' | 'external';
   /** AAモード判定後に付与される。createDom が読む */
   isAA?: boolean;
+  /**
+   * 匿名コメントか (bbs/jpnkn: デフォルトネーム一致 / niconico: 184)。
+   * 判定できないソースでは undefined。読み上げテンプレートの匿名用切り替えに使う。
+   */
+  isAnonymous?: boolean;
   /** NGワード判定後に付与される。NGワードに該当した場合 true */
   isNg?: boolean;
   /**

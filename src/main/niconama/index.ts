@@ -13,6 +13,8 @@ type CommentItem = {
   number: string;
   name: string;
   comment: string;
+  /** 184 (匿名) コメントか。判定できない場合は undefined */
+  isAnonymous?: boolean;
 };
 
 type EventMap = {
@@ -134,14 +136,18 @@ class NiconamaComment extends EventEmitter<EventMap> {
   };
 
   /** Chat → CommentItem 変換。空コメントやコマンド (/xxx ...) は null を返す */
-  private chatToCommentItem = (chat: { content: string; no: number }): CommentItem | null => {
+  private chatToCommentItem = (chat: { content: string; no: number; name?: string; source?: { case?: string } }): CommentItem | null => {
     const comment = chat.content;
     if (!comment) return null;
     if (comment.match(/^\/[a-z]+ /)) return null;
+    // 184 (匿名) 判定: NDGR の Chat.source oneof が hashedUserId なら匿名、rawUserId なら生ID
+    const isAnonymous = chat.source?.case === 'hashedUserId' ? true : chat.source?.case === 'rawUserId' ? false : undefined;
     return {
       number: chat.no.toString(),
-      name: '',
+      // NDGR の Chat.name (非匿名コメント等で入る)。184 (匿名) には名前が無いので空になる
+      name: chat.name ?? '',
       comment,
+      isAnonymous,
     };
   };
 
