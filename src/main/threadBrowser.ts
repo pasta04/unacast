@@ -188,6 +188,9 @@ export const initThreadBrowser = (resolveUrl: () => string) => {
   ipcMain.handle(electronEvent.THREAD_BROWSER_APPLY, async (_event, threadUrl: string) => {
     try {
       log.info(`[apply] ${threadUrl}`);
+      // 「掲示板を開く」時に渡された入力値は config より優先されるため、
+      // 移動後の「現在のスレッドからコピー」等が旧スレを参照しないよう追従させる
+      requestedSource = threadUrl;
       if (globalThis.config) {
         globalThis.config.url = threadUrl;
         globalThis.electron.threadNumber = 0;
