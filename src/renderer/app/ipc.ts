@@ -18,8 +18,17 @@ type UpdateStatusPayload = {
 type VoicevoxConfigPayload = {
   path: string | undefined;
   available: boolean;
+  /** 接続方式 (dll-0.15 / dll-0.16 = DLL直接読み込み, http = エンジンAPI) */
+  mode: 'none' | 'dll-0.15' | 'dll-0.16' | 'http';
   speakers: { speaker: string; style: string }[];
   speakerAndStyle: string;
+};
+
+const voicevoxModeLabel: Record<VoicevoxConfigPayload['mode'], string> = {
+  none: '-',
+  'dll-0.15': 'DLL直接 (core 0.15)',
+  'dll-0.16': 'DLL直接 (core 0.16)',
+  http: 'エンジンAPI',
 };
 
 let speakWavElement: HTMLAudioElement | null = null;
@@ -93,7 +102,7 @@ export const registerIpcSubscribers = () => {
       label: `${val.speaker} - ${val.style}`,
     }));
     useAppStore.getState().setVoicevoxSpeakers(speakers);
-    useAppStore.getState().setStatus('voicevox', arg.available ? 'OK' : 'VOICEVOXが読み込めません');
+    useAppStore.getState().setStatus('voicevox', arg.available ? `OK [${voicevoxModeLabel[arg.mode] ?? arg.mode}]` : 'VOICEVOXが読み込めません (DLL・エンジンAPIとも接続不可)');
     // 既存値が speaker 一覧に無い場合は config 側を先頭に寄せておく
     const current = useAppStore.getState().config.voicevox.speakerAndStyle;
     if (current && !speakers.some((s) => s.value === current) && speakers.length > 0) {

@@ -172,11 +172,27 @@ declare global {
     let voicevox: {
       /** VOICE VOX CORE のパス **/
       path: string;
+      /**
+       * エンジン HTTP API の URL。空の場合は既定 (http://127.0.0.1:50021)。
+       * DLL が読み込めない場合のフォールバック接続先。AivisSpeech 等の互換エンジンも指定できる。
+       */
+      engineUrl: string;
       /** 話者とスタイル(名前を\で区切った文字列) **/
       speakerAndStyle: string;
     };
     /** 読み子へ渡す時に改行を置換 */
     let yomikoReplaceNewline: boolean;
+    /**
+     * 読み上げ省略ライン。
+     * テンプレート展開・辞書置換後の最終テキストが maxLength 文字を超えたら
+     * 先頭 maxLength 文字 + 「、以下省略」に切り詰める。全読み子種別に共通で効く。
+     */
+    let yomikoOmit: {
+      /** 省略機能を使うか。既定 false */
+      enable: boolean;
+      /** この文字数を超えたら省略する。既定 100 */
+      maxLength: number;
+    };
     /**
      * 読み上げテンプレート。
      * プレースホルダ: {text}=本文 / {name}=名前 / {res}=レス番。
