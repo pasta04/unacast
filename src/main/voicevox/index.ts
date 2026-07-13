@@ -294,10 +294,20 @@ class VoiceVoxCore_0_16 implements IVoiceVoxCore {
         log.error(`[voicevox] 音声モデルディレクトリが見つかりません (path=${libpath})`);
         return;
       }
-      const vvmFiles = fs
-        .readdirSync(modelDir)
-        .filter((f) => f.endsWith('.vvm'))
-        .map((f) => path.join(modelDir, f));
+      const listVvm = (dir: string) =>
+        fs
+          .readdirSync(dir)
+          .filter((f) => f.endsWith('.vvm'))
+          .map((f) => path.join(dir, f));
+      let vvmFiles = listVvm(modelDir);
+      if (vvmFiles.length === 0) {
+        // 配布形態によっては model 直下でなくサブディレクトリに置かれるため、1階層下も探す
+        vvmFiles = fs
+          .readdirSync(modelDir)
+          .map((f) => path.join(modelDir, f))
+          .filter((p) => fs.statSync(p).isDirectory())
+          .flatMap(listVvm);
+      }
       const speakers: VoiceVoxSpeaker[] = [];
       for (const vvmPath of vvmFiles) {
         const model = [null];
@@ -518,16 +528,29 @@ class VoiceVoxClient {
       // macOS の場合は
       // * /Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
       // * $HOME/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS
-      // のいずれか
+      // のいずれか (新しめのバージョンはエンジンが Resources/vv-engine 配下にある)
       const appDir = '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS';
       const userAppDir = path.join(os.homedir(), '/Applications/VOICEVOX/VOICEVOX.app/Contents/MacOS');
 
       const search_paths = voicevox_path ? [voicevox_path] : [appDir, userAppDir];
       voicevox_path = search_paths.find((p) => fs.existsSync(path.join(p, 'libvoicevox_core.dylib'))) || '';
+      if (!voicevox_path) {
+        const engineDirs = search_paths.flatMap((p) => [path.join(p, 'vv-engine'), path.join(p, '..', 'Resources', 'vv-engine')]);
+        voicevox_path = engineDirs.find((p) => fs.existsSync(path.join(p, 'libvoicevox_core.dylib'))) || '';
+      }
     }
 
     try {
-      const voicevox_core = koffi.load('voicevox_core');
+      // まずライブラリ名での読み込み (Windows は SetDllDirectoryW 済みなので通る)。
+      // 通らない場合は見つけたインストール先のフルパスで試す (macOS 等は検索パスに乗らないため)
+      let voicevox_core: IKoffiLib;
+      try {
+        voicevox_core = koffi.load('voicevox_core');
+      } catch (e) {
+        if (!voicevox_path) throw e;
+        const libName = os.platform() === 'win32' ? 'voicevox_core.dll' : os.platform() === 'darwin' ? 'libvoicevox_core.dylib' : 'libvoicevox_core.so';
+        voicevox_core = koffi.load(path.join(voicevox_path, libName));
+      }
       const voicevox_get_version = voicevox_core.func('string voicevox_get_version()');
       const version = voicevox_get_version()
         .split('.')
