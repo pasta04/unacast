@@ -13,6 +13,7 @@ import { judgeNgWord } from './ngWord';
 import { getThreadFirstPost, createThreadOnBoard, getThreadResCount } from './threadBrowser';
 import { incrementThreadTitle } from './readBBS/createThread';
 import { resolveYomikoTemplate, applyYomikoTemplate } from './yomikoTemplate';
+import { splitYomikoText, applyYomikoOmit } from './speechText';
 import { registerExternalApiRoutes } from './externalApi/routes';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
@@ -63,11 +64,14 @@ let serverId = 0;
  */
 const loadVoiceVox = async (config_voicevox: (typeof config)['voicevox'], force = false) => {
   if (!voiceVox?.available || force) {
-    voiceVox = new VoiceVoxClient({ path: config_voicevox.path });
+    voiceVox = new VoiceVoxClient({ path: config_voicevox.path, engineUrl: config_voicevox.engineUrl });
+    // DLL が読めない場合はエンジン HTTP API へのフォールバックを試す
+    await voiceVox.init();
   }
   const configuration = {
     path: voiceVox.path,
     available: voiceVox.available,
+    mode: voiceVox.mode,
     speakerAndStyle: config_voicevox.speakerAndStyle,
     speakers: voiceVox.speakers.reduce((state: { speaker: string; style: string }[], speaker) => {
       return state.concat(
@@ -144,8 +148,8 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
   // VOICE VOX 関連
   if (config.typeYomiko === 'voicevox' || config.typeYomikoStt === 'voicevox') {
     // VOICEVOX 利用の場合のみ
-    if (oldConfig?.voicevox?.path !== config.voicevox?.path) {
-      // VOICEVOX 読み込み先パスが変わっていれば強制読み込み直し
+    if (oldConfig?.voicevox?.path !== config.voicevox?.path || oldConfig?.voicevox?.engineUrl !== config.voicevox?.engineUrl) {
+      // VOICEVOX 読み込み先パス・エンジンURLが変わっていれば強制読み込み直し
       loadVoiceVox(config.voicevox, true);
     } else {
       // パスが変わっていない場合は未読み込みの時だけ読み込む
@@ -470,9 +474,12 @@ ipcMain.on(electronEvent.START_SERVER, async (event: any, config: (typeof global
       if (!voiceVox?.available) {
         voiceVox = new VoiceVoxClient({
           path: config.voicevox.path,
+          engineUrl: config.voicevox.engineUrl,
           speaker: config.voicevox.speakerAndStyle,
           volume: config.bouyomiVolume,
         });
+        // DLL が読めない場合はエンジン HTTP API へのフォールバックを試す
+        await voiceVox.init();
       } else {
         voiceVox.speaker = config.voicevox.speakerAndStyle;
         voiceVox.volume = config.bouyomiVolume;
@@ -1179,9 +1186,55 @@ const translateTaskScheduler = async (exeId: number) => {
 
 /** 読み子によって発話中であるか */
 let isSpeaking = false;
+/**
+ * 発話の世代。playYomiko が呼ばれるたびに増える。
+ * 分割読み上げのチャンクループは自分の世代と一致しなくなった時点で自発的に停止する
+ * (commentProcessType=0 で並走する後続の発話が来た場合の中断用)。
+ */
+let speechGeneration = 0;
+
+/**
+ * VOICEVOX の分割読み上げ。
+ * テキストを文単位のチャンクに分割し、先頭チャンクの再生中に次のチャンクを合成することで
+ * 第一声までの時間を短くする。1チャンクに収まる短文は従来と同じ一括合成・再生になる。
+ *
+ * 注意: DLL 接続 (FFI) の場合は合成が main プロセスをブロックする (従来の全文一括合成と同じ制約。
+ * 再生自体は renderer の audio 要素なので途切れない)。エンジン HTTP API 接続の場合は非同期。
+ * 将来課題: FFI 合成の worker_threads 化。
+ */
+const speakVoicevoxChunked = async (msg: string, gen: number) => {
+  const chunks = splitYomikoText(msg);
+  if (chunks.length > 1) log.info(`[playYomiko] voicevox 分割読み上げ (${chunks.length}チャンク)`);
+  // 先頭チャンクを合成 (プレフィックスは先頭のみ)
+  let next = await voiceVox.synthesize(chunks[0], true);
+  for (let i = 0; i < chunks.length; i++) {
+    if (gen !== speechGeneration) return; // 新しい発話に中断された (isSpeaking は新しい発話の所有物なので触らない)
+    const buf = next;
+    next = null;
+    if (buf) {
+      isSpeaking = true;
+      voiceVox.playWav(buf);
+    }
+    // 再生中に次のチャンクを合成しておく
+    if (i + 1 < chunks.length) {
+      next = await voiceVox.synthesize(chunks[i + 1], false);
+    }
+    if (buf) {
+      // このチャンクの再生完了 (SPEAKING_END) または中断を待つ。
+      // 合成に失敗したチャンクは再生していないので待たずに次へ (待つと SPEAKING_END が来ずハングする)
+      while (isSpeaking && gen === speechGeneration) {
+        await sleep(50);
+      }
+      if (gen !== speechGeneration) return;
+    }
+  }
+  isSpeaking = false;
+};
+
 /** 読み子を再生する */
 const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => {
   // log.info('[playYomiko] start');
+  const gen = ++speechGeneration;
   if (isSpeaking) {
     // 以前の読み子がまだ読んでいる
     switch (typeYomiko) {
@@ -1223,7 +1276,9 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
     }
     case 'voicevox': {
       if (voiceVox) {
-        voiceVox.speak(msg);
+        // 分割読み上げ (全チャンクの再生完了まで待つので、末尾の while は使わない)
+        await speakVoicevoxChunked(msg, gen);
+        return;
       } else {
         isSpeaking = false;
       }
@@ -1458,6 +1513,8 @@ export const sendDom = async (messageList: UserComment[]) => {
           }
           text = t;
         }
+        // 読み上げ省略ライン (全読み子共通。最終整形後のテキストの文字数で判定する)
+        text = applyYomikoOmit(text, globalThis.config.yomikoOmit);
         // テンプレート展開の結果が空 (本文が絵文字のみ等) なら読み上げない
         if (text.trim()) {
           await playYomiko(typeYomiko, text);

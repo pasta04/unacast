@@ -49,9 +49,14 @@ export const defaultConfig: AppConfig = {
   bouyomiVolume: 50,
   voicevox: {
     path: '',
+    engineUrl: '',
     speakerAndStyle: '',
   },
   yomikoReplaceNewline: false,
+  yomikoOmit: {
+    enable: false,
+    maxLength: 100,
+  },
   yomikoTemplate: { default: '{text}', perSource: {} },
   bbsAnonymousName: '',
   notifyThreadConnectionErrorLimit: 0,
@@ -107,7 +112,14 @@ export const loadConfigFromStorage = (): AppConfig => {
   if (!raw) return { ...defaultConfig };
   try {
     const stored = JSON.parse(raw) as Partial<AppConfig>;
-    return { ...defaultConfig, ...stored };
+    return {
+      ...defaultConfig,
+      ...stored,
+      // トップレベルの浅いマージだけだと、後から増えたネストのキー (engineUrl 等) が
+      // 旧保存データで欠けたままになるため、ネストしたオブジェクトは既定値で補完する
+      voicevox: { ...defaultConfig.voicevox, ...stored.voicevox },
+      yomikoOmit: { ...defaultConfig.yomikoOmit, ...stored.yomikoOmit },
+    };
   } catch {
     return { ...defaultConfig };
   }

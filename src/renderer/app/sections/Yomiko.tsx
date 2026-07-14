@@ -323,14 +323,57 @@ export const Yomiko: React.FC = () => {
         VOICE VOX設定
       </Typography>
       <Box sx={{ maxWidth: 600 }}>
-        <Typography variant="caption" sx={{ display: 'block', color: 'warning.main', mb: 0.5 }}>
-          ※直接利用可能なバージョンは0.15以下のみ。0.16以上は民安☆Talkを経由してください。
-        </Typography>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          インストールパス
-        </Typography>
-        <Caption>VOICE VOXがインストールされているパスを指定します。空の場合は既定のインストール先を調べます。</Caption>
-        <TextField fullWidth size="small" value={config.voicevox.path} onChange={(e) => setConfig('voicevox', { ...config.voicevox, path: e.target.value })} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            インストールパス
+          </Typography>
+          <HelpPopover>
+            VOICE VOXがインストールされているフォルダを指定します。空の場合は既定のインストール先を調べます。
+            <br />
+            <br />
+            <strong>例:</strong>
+            <br />
+            <code>{'C:\\Program Files\\VOICEVOX'}</code>
+            <br />
+            <code>{'C:\\Users\\(ユーザー名)\\AppData\\Local\\Programs\\VOICEVOX'}</code>
+            <br />
+            ※フォルダ内の vv-engine は自動で探索されるため、指定はVOICEVOXフォルダまでで大丈夫です。
+          </HelpPopover>
+        </Box>
+        <Caption>空の場合は既定のインストール先を調べます。</Caption>
+        <TextField
+          fullWidth
+          size="small"
+          value={config.voicevox.path}
+          placeholder="C:\Users\(ユーザー名)\AppData\Local\Programs\VOICEVOX"
+          onChange={(e) => setConfig('voicevox', { ...config.voicevox, path: e.target.value })}
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            エンジンURL
+          </Typography>
+          <HelpPopover>
+            VOICEVOXへの接続は、まずインストールパスから直接読み込みを試し、できない場合はここで指定したエンジンAPIに接続します。
+            <br />
+            <br />
+            <strong>エンジンAPI接続:</strong>
+            <br />
+            VOICEVOXアプリを起動しておく必要があります。空の場合は既定 (http://127.0.0.1:50021) に接続します。
+            <br />
+            <br />
+            <strong>互換エンジン:</strong>
+            <br />
+            AivisSpeech (http://127.0.0.1:10101) など、VOICEVOX互換APIを持つエンジンのURLも指定できます。
+          </HelpPopover>
+        </Box>
+        <Caption>空の場合は http://127.0.0.1:50021 に接続します。</Caption>
+        <TextField
+          fullWidth
+          size="small"
+          value={config.voicevox.engineUrl}
+          placeholder="http://127.0.0.1:50021"
+          onChange={(e) => setConfig('voicevox', { ...config.voicevox, engineUrl: e.target.value })}
+        />
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1 }}>
           話者
         </Typography>
@@ -365,6 +408,33 @@ export const Yomiko: React.FC = () => {
         control={<Checkbox checked={config.yomikoReplaceNewline} onChange={(e) => setConfig('yomikoReplaceNewline', e.target.checked)} size="small" />}
         label="読み子に渡す時に改行削除"
       />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <FormControlLabel
+          control={<Checkbox checked={config.yomikoOmit.enable} onChange={(e) => setConfig('yomikoOmit', { ...config.yomikoOmit, enable: e.target.checked })} size="small" />}
+          label="長文の読み上げを省略する"
+        />
+        <HelpPopover>
+          読み上げるテキストが指定した文字数を超える場合、先頭だけを読んで「以下省略」と読み上げます。
+          <br />
+          <br />
+          文字数は、読み上げテンプレートの展開や読み上げ辞書の置き換えを行った後の、実際に読み子へ渡すテキスト全体で数えます。
+        </HelpPopover>
+      </Box>
+      {config.yomikoOmit.enable && (
+        <Box sx={{ ml: 4, mb: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            省略する文字数
+          </Typography>
+          <TextField
+            size="small"
+            value={String(config.yomikoOmit.maxLength)}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              setConfig('yomikoOmit', { ...config.yomikoOmit, maxLength: Number.isNaN(v) ? 0 : v });
+            }}
+          />
+        </Box>
+      )}
       <Box sx={{ mt: 1 }}>
         <Button variant="outlined" onClick={() => setDictionaryDialogOpen(true)}>
           読み上げ辞書編集
