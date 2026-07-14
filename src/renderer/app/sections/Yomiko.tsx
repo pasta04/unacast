@@ -323,11 +323,31 @@ export const Yomiko: React.FC = () => {
         VOICE VOX設定
       </Typography>
       <Box sx={{ maxWidth: 600 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          インストールパス
-        </Typography>
-        <Caption>VOICE VOXがインストールされているパスを指定します。空の場合は既定のインストール先を調べます。</Caption>
-        <TextField fullWidth size="small" value={config.voicevox.path} onChange={(e) => setConfig('voicevox', { ...config.voicevox, path: e.target.value })} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            インストールパス
+          </Typography>
+          <HelpPopover>
+            VOICE VOXがインストールされているフォルダを指定します。空の場合は既定のインストール先を調べます。
+            <br />
+            <br />
+            <strong>例:</strong>
+            <br />
+            <code>{'C:\\Program Files\\VOICEVOX'}</code>
+            <br />
+            <code>{'C:\\Users\\(ユーザー名)\\AppData\\Local\\Programs\\VOICEVOX'}</code>
+            <br />
+            ※フォルダ内の vv-engine は自動で探索されるため、指定はVOICEVOXフォルダまでで大丈夫です。
+          </HelpPopover>
+        </Box>
+        <Caption>空の場合は既定のインストール先を調べます。</Caption>
+        <TextField
+          fullWidth
+          size="small"
+          value={config.voicevox.path}
+          placeholder="C:\Users\(ユーザー名)\AppData\Local\Programs\VOICEVOX"
+          onChange={(e) => setConfig('voicevox', { ...config.voicevox, path: e.target.value })}
+        />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
             エンジンURL
