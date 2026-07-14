@@ -26,8 +26,8 @@ type VoicevoxConfigPayload = {
 
 const voicevoxModeLabel: Record<VoicevoxConfigPayload['mode'], string> = {
   none: '-',
-  'dll-0.15': 'DLL直接 (core 0.15)',
-  'dll-0.16': 'DLL直接 (core 0.16)',
+  'dll-0.15': 'DLL (core 0.15)',
+  'dll-0.16': 'DLL (core 0.16)',
   http: 'エンジンAPI',
 };
 
