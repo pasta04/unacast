@@ -99,6 +99,32 @@ const getStructs015 = () => {
   return structs015;
 };
 
+/**
+ * Open JTalk 辞書ディレクトリを探す。
+ * 既知の配置:
+ *   旧レイアウト: {engine}/pyopenjtalk/open_jtalk_dic_utf_8-1.11
+ *   新レイアウト (PyInstaller の contents_directory 構成。VOICEVOX 0.2x 系の vv-engine):
+ *     {engine}/engine_internal/pyopenjtalk/open_jtalk_dic_utf_8-1.11
+ * バージョン差 (辞書名の末尾やディレクトリ名変更) に耐えるよう前方一致で探索する。
+ */
+export const findOpenJtalkDict = (libpath: string): string | null => {
+  const candidates = [path.join(libpath, 'pyopenjtalk'), path.join(libpath, 'engine_internal', 'pyopenjtalk'), path.join(libpath, '_internal', 'pyopenjtalk'), libpath];
+  for (const dir of candidates) {
+    if (!fs.existsSync(dir)) continue;
+    try {
+      const found = fs
+        .readdirSync(dir)
+        .filter((f) => f.startsWith('open_jtalk_dic_utf_8'))
+        .map((f) => path.join(dir, f))
+        .find((p) => fs.statSync(p).isDirectory());
+      if (found) return found;
+    } catch {
+      // 読めないディレクトリはスキップ
+    }
+  }
+  return null;
+};
+
 /** 0.15 用: 解放関数付き JSON 文字列型 (これも名前付きなので一度だけ登録する) */
 let audioQueryJsonType015: any = null;
 
@@ -126,8 +152,8 @@ class VoiceVoxCore_0_15 implements IVoiceVoxCore {
         accelerationMode: 0, // 利用モードは自動(GPUが使えれば使う)
         cpuNumThreads: 0,
         loadAllModels: false,
-        // 辞書ファイルの場所は今のところ固定(VOICEVOXインストール先/pyopenjtalk/open_jtalk_dic_utf_8-1.11)
-        openJTalkDictDir: path.join(libpath, 'pyopenjtalk', 'open_jtalk_dic_utf_8-1.11'),
+        // 辞書ディレクトリは配置のバリエーションがあるため探索する (見つからなければ従来の固定パス)
+        openJTalkDictDir: findOpenJtalkDict(libpath) ?? path.join(libpath, 'pyopenjtalk', 'open_jtalk_dic_utf_8-1.11'),
       };
       if (this.voicevox_core.voicevox_initialize(opts) == 0) {
         const metas: VoiceVoxSpeaker[] = JSON.parse(this.voicevox_core.voicevox_get_metas_json()!);
@@ -267,7 +293,7 @@ class VoiceVoxCore_0_16 implements IVoiceVoxCore {
       }
 
       // Open JTalk 辞書ディレクトリの探索
-      const dictDir = this.findOpenJtalkDict(libpath);
+      const dictDir = findOpenJtalkDict(libpath);
       if (!dictDir) {
         log.error(`[voicevox] Open JTalk 辞書が見つかりません (path=${libpath})`);
         return;
@@ -342,7 +368,7 @@ class VoiceVoxCore_0_16 implements IVoiceVoxCore {
       }
       this.speakers = speakers;
       this.available = true;
-      log.info(`[voicevox] core 0.16 系で初期化完了 (話者=${speakers.length} モデル=${vvmFiles.length})`);
+      log.info(`[voicevox] core 0.16 系で初期化完了 (話者=${speakers.length} モデル=${vvmFiles.length} 辞書=${dictDir})`);
     } catch (e) {
       log.error(`[voicevox] core 0.16 系の初期化に失敗: ${e}`);
       this.available = false;
@@ -359,26 +385,6 @@ class VoiceVoxCore_0_16 implements IVoiceVoxCore {
   private styleIdToVvmPath = new Map<number, string>();
   /** ロード済みの vvm ファイルパス */
   private loadedVvmPaths = new Set<string>();
-
-  /** Open JTalk 辞書ディレクトリを探す */
-  private findOpenJtalkDict(libpath: string): string | null {
-    // 既知の配置: {engine}/pyopenjtalk/open_jtalk_dic_utf_8-1.11
-    const candidates = [path.join(libpath, 'pyopenjtalk'), libpath];
-    for (const dir of candidates) {
-      if (!fs.existsSync(dir)) continue;
-      try {
-        const found = fs
-          .readdirSync(dir)
-          .filter((f) => f.startsWith('open_jtalk_dic_utf_8'))
-          .map((f) => path.join(dir, f))
-          .find((p) => fs.statSync(p).isDirectory());
-        if (found) return found;
-      } catch {
-        // 読めないディレクトリはスキップ
-      }
-    }
-    return null;
-  }
 
   async speak(opts: Options, message: string): Promise<Uint8Array | null> {
     if (!this.available || !this.synthesizer) return null;
