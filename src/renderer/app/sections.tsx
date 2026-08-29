@@ -11,7 +11,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import TuneIcon from '@mui/icons-material/Tune';
 import BlockIcon from '@mui/icons-material/Block';
 
-export type SectionId = 'all' | 'sources' | 'fetch' | 'display' | 'sound' | 'yomiko' | 'aamode' | 'translate' | 'azureStt' | 'sherpaStt' | 'ngword' | 'other';
+export type SectionId = 'all' | 'sources' | 'fetch' | 'display' | 'sound' | 'yomiko' | 'aamode' | 'translate' | 'sherpaStt' | 'ngword' | 'other';
 
 export type SectionDef = {
   id: SectionId;
@@ -28,7 +28,6 @@ export const sections: SectionDef[] = [
   { id: 'yomiko', label: '読み子設定', icon: <RecordVoiceOverIcon /> },
   { id: 'aamode', label: 'AAモード', icon: <FontDownloadIcon /> },
   { id: 'translate', label: 'レス翻訳(実験的)', icon: <TranslateIcon /> },
-  { id: 'azureStt', label: 'Azure音声認識', icon: <MicIcon /> },
   { id: 'sherpaStt', label: 'ローカル音声認識', icon: <MicIcon /> },
   { id: 'ngword', label: 'NGワード', icon: <BlockIcon /> },
   { id: 'other', label: 'その他', icon: <TuneIcon /> },

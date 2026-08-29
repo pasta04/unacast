@@ -77,7 +77,6 @@ if (!app.requestSingleInstanceLock()) {
     niconicoChat: null as any,
     twitcastingChat: null as any,
     jpnknFast: null as any,
-    azureStt: null as any,
     sherpaStt: new SherpaSpeechToText(),
     threadNumber: 0,
     bbsDefaultName: '',

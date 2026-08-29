@@ -5,7 +5,6 @@ import NiconamaComment from '../main/niconama';
 import TwicasComment from '../main/twicas';
 import JpnknFast from '../main/jpnkn';
 import CommentIcons from '../main/CommentIcons';
-import AzureSpeechToText from '../main/azureStt';
 import SherpaSpeechToText from '../main/sherpaStt';
 
 declare global {
@@ -29,8 +28,6 @@ declare global {
     let niconicoChat: NiconamaComment;
     /** ツイキャス */
     let twitcastingChat: TwicasComment;
-    /** Azure Speech To Text */
-    let azureStt: AzureSpeechToText;
     /** Sherpa Speech To Text */
     let sherpaStt: SherpaSpeechToText;
     /** 掲示板の読み込み済みのレス番号 */
@@ -69,22 +66,6 @@ declare global {
     let niconicoId: string;
     /** ツイキャスユーザID */
     let twitcastingId: string;
-
-    /** Azure Speech To Text 設定 **/
-    let azureStt: {
-      /** 有効にするかどうか **/
-      enable: boolean;
-      /** サブスクリプションキー **/
-      key: string;
-      /** サブスクリプションリージョン **/
-      region: string;
-      /** 発言者表示名 **/
-      name: string;
-      /** 認識言語 **/
-      language: 'ja-JP' | 'en-US';
-      /** 入力デバイスID **/
-      inputDevice: string;
-    };
 
     let sherpaStt: {
       /** 有効にするかどうか **/

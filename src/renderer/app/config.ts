@@ -77,14 +77,6 @@ export const defaultConfig: AppConfig = {
     enable: true,
     targetLang: 'ja',
   },
-  azureStt: {
-    enable: true,
-    name: '',
-    key: '',
-    region: '',
-    language: 'ja-JP',
-    inputDevice: 'default',
-  },
   sherpaStt: {
     enable: false,
     name: '',
