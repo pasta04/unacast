@@ -159,7 +159,14 @@ export const registerIpcSubscribers = () => {
         if (args.category === 'status') setStatus('twitcasting', args.message);
         break;
       case 'stt':
-        if (args.category === 'status') setStatus('stt', args.message);
+        switch (args.category) {
+          case 'status':
+            setStatus('stt', args.message);
+            break;
+          case 'modelStatus':
+            setStatus('sttModel', args.message);
+            break;
+        }
         break;
     }
   });

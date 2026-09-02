@@ -10,7 +10,7 @@ import { Sound } from './sections/Sound';
 import { Yomiko } from './sections/Yomiko';
 import { AaMode } from './sections/AaMode';
 import { Translate } from './sections/Translate';
-import { AzureStt } from './sections/AzureStt';
+import { SherpaStt } from './sections/SherpaStt';
 import { NgWord } from './sections/NgWord';
 import { Other } from './sections/Other';
 import { AlertDialog, ConfirmStopDialog } from './Dialogs';
@@ -27,7 +27,7 @@ const sectionRenderers: Record<Exclude<SectionId, 'all'>, React.FC> = {
   yomiko: Yomiko,
   aamode: AaMode,
   translate: Translate,
-  azureStt: AzureStt,
+  sherpaStt: SherpaStt,
   ngword: NgWord,
   other: Other,
 };
@@ -43,7 +43,7 @@ const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
         <Yomiko />
         <AaMode />
         <Translate />
-        <AzureStt />
+        <SherpaStt />
         <NgWord />
         <Other />
       </>
