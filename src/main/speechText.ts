@@ -142,3 +142,14 @@ export const applyYomikoOmit = (text: string, cfg: YomikoOmitConfig | undefined)
   if (cps.length <= maxLength) return text;
   return cps.slice(0, maxLength).join('') + OMIT_SUFFIX;
 };
+
+/**
+ * >>1 (スレッドの1レス目) として読み上げをスキップする対象か。
+ * 掲示板系 (bbs / jpnkn) のレス番号1のみ対象で、YouTube 等のコメント番号1は巻き込まない。
+ * レス番号を持たないコメント (Number(undefined) = NaN) も対象外。
+ */
+export const isYomikoSkippedFirstRes = (comment: { from?: string; number?: string }, enable: boolean | undefined): boolean => {
+  if (!enable) return false;
+  if (comment.from !== 'bbs' && comment.from !== 'jpnkn') return false;
+  return Number(comment.number) === 1;
+};

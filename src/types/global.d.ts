@@ -183,6 +183,12 @@ declare global {
     /** 読み子へ渡す時に改行を置換 */
     let yomikoReplaceNewline: boolean;
     /**
+     * >>1 (スレッドの1レス目) の読み上げをスキップする。
+     * テンプレートや注意書きが書かれていることが多く読み上げるとうるさいため。
+     * 掲示板 (bbs) と jpnkn のレス番号1が対象で、表示と着信音には影響しない。既定 false
+     */
+    let yomikoSkipFirstRes: boolean;
+    /**
      * 読み上げ省略ライン。
      * テンプレート展開・辞書置換後の最終テキストが maxLength 文字を超えたら
      * 先頭 maxLength 文字 + 「、以下省略」に切り詰める。全読み子種別に共通で効く。
