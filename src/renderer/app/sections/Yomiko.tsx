@@ -435,6 +435,20 @@ export const Yomiko: React.FC = () => {
           />
         </Box>
       )}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <FormControlLabel
+          control={<Checkbox checked={config.yomikoSkipFirstRes} onChange={(e) => setConfig('yomikoSkipFirstRes', e.target.checked)} size="small" />}
+          label=">>1の読み上げをスキップ"
+        />
+        <HelpPopover>
+          掲示板・jpnkn のレス1の読み上げをスキップします。
+          <br />
+          <br />
+          <strong>注意事項:</strong>
+          <br />
+          チャットウィンドウ・配信画面への表示とレス着信音の動作には影響しません。
+        </HelpPopover>
+      </Box>
       <Box sx={{ mt: 1 }}>
         <Button variant="outlined" onClick={() => setDictionaryDialogOpen(true)}>
           読み上げ辞書編集

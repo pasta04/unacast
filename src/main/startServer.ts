@@ -13,7 +13,7 @@ import { judgeNgWord } from './ngWord';
 import { getThreadFirstPost, createThreadOnBoard, getThreadResCount } from './threadBrowser';
 import { incrementThreadTitle } from './readBBS/createThread';
 import { resolveYomikoTemplate, applyYomikoTemplate } from './yomikoTemplate';
-import { splitYomikoText, applyYomikoOmit } from './speechText';
+import { splitYomikoText, applyYomikoOmit, isYomikoSkippedFirstRes } from './speechText';
 import { registerExternalApiRoutes } from './externalApi/routes';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
@@ -1462,10 +1462,14 @@ export const sendDom = async (messageList: UserComment[]) => {
 
     // 読み上げ・SE は NG でない最後のコメントを対象にする (全件 NG なら無音)
     const nonNgList = newList.filter((m) => !m.isNg);
-    const speakTarget = nonNgList[nonNgList.length - 1];
+    const seTarget = nonNgList[nonNgList.length - 1];
+    // 読み上げだけは >>1 スキップ設定に該当するレスを候補から外す。
+    // (同じ回に他のレスも来ていればそちらを読む。表示・SE には影響させない)
+    const speakCandidates = nonNgList.filter((m) => !isYomikoSkippedFirstRes(m, globalThis.config.yomikoSkipFirstRes));
+    const speakTarget = speakCandidates[speakCandidates.length - 1];
 
     // レス着信音
-    if (speakTarget && globalThis.electron.seList.length > 0) {
+    if (seTarget && globalThis.electron.seList.length > 0) {
       if (nonNgList.every((message) => message.from === 'stt')) {
         // メッセージが全て音声認識の場合は専用の設定を見る
         if (config.playSeStt) {
