@@ -53,7 +53,7 @@ export const defaultConfig: AppConfig = {
     speakerAndStyle: '',
   },
   yomikoReplaceNewline: false,
-  yomikoSkipFirstRes: false,
+  yomikoSkipResNumbers: '',
   yomikoOmit: {
     enable: false,
     maxLength: 100,
