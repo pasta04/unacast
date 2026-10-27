@@ -1,5 +1,6 @@
 import electron, { shell } from 'electron';
 import { Menu, MenuItem, getCurrentWindow } from '@electron/remote';
+import { writeClipboardText } from './clipboard';
 import electronlog from 'electron-log/renderer';
 const log = electronlog.scope('renderer-chat');
 import { electronEvent } from '../main/const';
@@ -22,7 +23,7 @@ contextMenuInText.append(
       const text = window.getSelection()?.toString() ?? '';
       if (!text) return;
 
-      electron.clipboard.writeText(text);
+      void writeClipboardText(text);
     },
   }),
 );
@@ -35,7 +36,7 @@ const createContextMenuInImage = (e: MouseEvent, src: string) => {
       label: 'Copy URL',
       type: 'normal',
       click: (_menu, _browser, _event) => {
-        electron.clipboard.writeText(src);
+        void writeClipboardText(src);
       },
     }),
   );

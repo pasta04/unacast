@@ -74,6 +74,10 @@ export const electronEvent = {
 
   /** Sherpa Speech To text **/
   SHERPA_STT: 'sherpa-stt',
+  /** クリップボードへの書き込み (renderer → main)。Electron 44 以降 renderer から clipboard を直接使えないため */
+  CLIPBOARD_WRITE_TEXT: 'clipboard-write-text',
+  /** クリップボードの読み出し (renderer → main) */
+  CLIPBOARD_READ_TEXT: 'clipboard-read-text',
   /** 音声認識: マイク音声を認識プロセスへ直接送る MessagePort の受け渡し (main → renderer) */
   SHERPA_STT_AUDIO_PORT: 'sherpa-stt-audio-port',
 };

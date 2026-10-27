@@ -7,8 +7,10 @@ export default defineConfig({
   main: {
     build: {
       outDir: 'dist/main',
-      // dependencies は既定で外部モジュール扱い (require のまま残す)。
+      // dependencies は外部モジュール扱い (require のまま残す)。
+      // electron-store 9 以降は ESM 専用で CJS の main から require できないため、バンドルに取り込む。
       // src 配下の事前バンドル済み CJS (googletrans.js) は Rolldown がそのまま扱う
+      externalizeDeps: { exclude: ['electron-store'] },
       rolldownOptions: {
         input: {
           index: resolve(__dirname, 'src/main/main.ts'),
