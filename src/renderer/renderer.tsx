@@ -5,7 +5,7 @@ import { App } from './app/App';
 import { useAppStore } from './app/store';
 import { registerIpcSubscribers } from './app/ipc';
 import { registerContextMenu } from './app/contextMenu';
-import './azureStt';
+import sherpaStt from './sherpaStt';
 
 const log = electronlog.scope('renderer-main');
 
@@ -19,6 +19,7 @@ const bootstrap = () => {
   });
 
   registerIpcSubscribers();
+  sherpaStt.registerIpcSubscribers();
   registerContextMenu();
 
   const container = document.getElementById('root');

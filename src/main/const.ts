@@ -50,11 +50,6 @@ export const electronEvent = {
   /** 画像プレビュー */
   PREVIEW_IMAGE: 'PREVIEW_IMAGE',
 
-  /** Azure Speech To text **/
-  AZURE_STT_START: 'azure-stt-start',
-  AZURE_STT_STOP: 'azure-stt-stop',
-  AZURE_STT_EVENT: 'azure-stt-event',
-
   /** スレッドブラウザを開く (renderer → main) */
   OPEN_THREAD_BROWSER: 'open-thread-browser',
   /** スレッドブラウザ: 初期化 (板情報の解決) */
@@ -76,4 +71,9 @@ export const electronEvent = {
   THREAD_BROWSER_CREATE: 'thread-browser-create',
   /** 自動スレ立て: 生成されるタイトル・本文のプレビュー */
   AUTO_CREATE_THREAD_PREVIEW: 'auto-create-thread-preview',
+
+  /** Sherpa Speech To text **/
+  SHERPA_STT: 'sherpa-stt',
+  /** 音声認識: マイク音声を認識プロセスへ直接送る MessagePort の受け渡し (main → renderer) */
+  SHERPA_STT_AUDIO_PORT: 'sherpa-stt-audio-port',
 };

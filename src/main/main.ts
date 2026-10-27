@@ -1,6 +1,6 @@
 // Electronのモジュール
 import path from 'path';
-import electron, { Tray, Menu, dialog } from 'electron';
+import electron, { Tray, Menu, dialog, ipcMain } from 'electron';
 import * as remote from '@electron/remote/main';
 import log from 'electron-log';
 import { sleep } from './util';
@@ -9,6 +9,8 @@ import ElectronStore from 'electron-store';
 // サーバー起動モジュール (IPC ハンドラ等の副作用登録目的)
 import './startServer';
 import { initThreadBrowser } from './threadBrowser';
+import SherpaSpeechToText from './sherpaStt';
+import { electronEvent } from './const';
 remote.initialize();
 
 /**
@@ -75,7 +77,7 @@ if (!app.requestSingleInstanceLock()) {
     niconicoChat: null as any,
     twitcastingChat: null as any,
     jpnknFast: null as any,
-    azureStt: null as any,
+    sherpaStt: new SherpaSpeechToText(),
     threadNumber: 0,
     bbsDefaultName: '',
     jpnknDefaultName: '',
@@ -254,6 +256,7 @@ if (!app.requestSingleInstanceLock()) {
     createTranslateWindow();
     createImagePreviewWindow();
     initThreadBrowser(() => resolveRendererUrl('threadBrowser'));
+    initializeSherpaStt(globalThis.electron.sherpaStt);
 
     applyTaskbarState();
   });
@@ -407,4 +410,77 @@ const applyTaskbarState = () => {
       win.setSkipTaskbar(!map[key]);
     }
   }
+};
+
+const initializeSherpaStt = (stt: SherpaSpeechToText) => {
+  stt.on('start', () => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: `読み取り開始`,
+    });
+  });
+
+  stt.on('comment', (event) => {
+    globalThis.electron.commentQueueList.push({ ...event, imgUrl: globalThis.electron.iconList.getStt() });
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: `ok`,
+    });
+  });
+  // 読み取り終了
+  stt.on('end', () => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: `読み取り終了`,
+    });
+  });
+  stt.on('error', (error, message) => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      // 見出しが無いエラー (マイク関連など) は理由だけを出す
+      message: message ? `${message}: ${error}` : `${error}`,
+    });
+  });
+  stt.on('status', (message) => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'status',
+      message: message,
+    });
+  });
+
+  /** モデルのダウンロード状態を renderer に通知する */
+  const sendModelStatus = () => {
+    globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
+      commentType: 'stt',
+      category: 'modelStatus',
+      message: stt.checkModels() ? 'ダウンロード済み' : '未ダウンロード',
+    });
+  };
+
+  ipcMain.on(electronEvent.SHERPA_STT, async (_event: any, command: string, arg?: unknown) => {
+    switch (command) {
+      case 'micStarted':
+        stt.onMicStarted();
+        break;
+      case 'micError':
+        stt.onMicError(String(arg));
+        break;
+      case 'restart':
+        stt.restart((arg as { inputDevice?: string } | undefined)?.inputDevice);
+        break;
+      case 'downloadModels':
+        await stt.downloadModels();
+        sendModelStatus();
+        break;
+      case 'checkModelStatus':
+        // 起動直後は renderer の準備前に送っても届かないため、設定画面の表示時に renderer から問い合わせる
+        sendModelStatus();
+        break;
+    }
+  });
 };
