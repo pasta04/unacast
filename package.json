@@ -64,10 +64,10 @@
     "@types/react-dom": "^18.3.7",
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@vitejs/plugin-react": "^6.1.2",
     "electron": "^35.7.5",
     "electron-rebuild": "^3.2.9",
-    "electron-vite": "^2.3.0",
+    "electron-vite": "^6.0.0",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-html": "^8.2.1",
@@ -77,8 +77,8 @@
     "react-dom": "^18.3.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.72.1",
-    "vite": "^5.4.21",
-    "vite-plugin-electron-renderer": "^0.14.7",
+    "vite": "^8.3.5",
+    "vite-plugin-electron-renderer": "^1.0.0",
     "zustand": "^4.5.7"
   }
 }

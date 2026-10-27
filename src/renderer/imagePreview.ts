@@ -2,9 +2,9 @@ import electron, { shell } from 'electron';
 import { Menu, MenuItem, getCurrentWindow } from '@electron/remote';
 import electronlog from 'electron-log/renderer';
 import path from 'path';
-const log = electronlog.scope('renderer-imagePreview');
 import { electronEvent } from '../main/const';
 import crypto from 'crypto';
+const log = electronlog.scope('renderer-imagePreview');
 const ipcRenderer = electron.ipcRenderer;
 
 document.addEventListener('DOMContentLoaded', () => {
