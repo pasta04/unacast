@@ -97,7 +97,7 @@ if (!app.requestSingleInstanceLock()) {
   // });
 
   // Electronの初期化完了後に実行
-  app.on('ready', async () => {
+  app.on('ready', () => {
     const windowState = windowStateKeeper({
       defaultWidth: 700,
       defaultHeight: 720,
@@ -129,7 +129,7 @@ if (!app.requestSingleInstanceLock()) {
     mainWin.setMenu(null);
 
     // // レンダラーで使用するhtmlファイルを指定する
-    await mainWin.loadURL(resolveRendererUrl('index'));
+    mainWin.loadURL(resolveRendererUrl('index'));
 
     // ウィンドウが閉じられたらアプリも終了
     mainWin.on('close', (event) => {
@@ -452,40 +452,25 @@ const initializeSherpaStt = (stt: SherpaSpeechToText) => {
     });
   });
 
-  ipcMain.on(electronEvent.SHERPA_STT, async (event: any, command: string, args: any) => {
-    switch (command) {
-      case 'downloadModels':
-        {
-          await globalThis.electron.sherpaStt.downloadModels();
-          const status = globalThis.electron.sherpaStt.checkModels();
-          globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
-            commentType: 'stt',
-            category: 'modelStatus',
-            message: status ? 'ダウンロード済み' : '未ダウンロード',
-          });
-        }
-        break;
-      case 'checkModelStatus':
-        {
-          const status = globalThis.electron.sherpaStt.checkModels();
-          globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
-            commentType: 'stt',
-            category: 'modelStatus',
-            message: status ? 'ダウンロード済み' : '未ダウンロード',
-          });
-        }
-        break;
-    }
-  });
-
-  {
-    const status = globalThis.electron.sherpaStt.checkModels();
+  /** モデルのダウンロード状態を renderer に通知する */
+  const sendModelStatus = () => {
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
       commentType: 'stt',
       category: 'modelStatus',
-      message: status ? 'ダウンロード済み' : '未ダウンロード',
+      message: stt.checkModels() ? 'ダウンロード済み' : '未ダウンロード',
     });
-  }
+  };
 
+  ipcMain.on(electronEvent.SHERPA_STT, async (_event: any, command: string) => {
+    switch (command) {
+      case 'downloadModels':
+        await stt.downloadModels();
+        sendModelStatus();
+        break;
+      case 'checkModelStatus':
+        // 起動直後は renderer の準備前に送っても届かないため、設定画面の表示時に renderer から問い合わせる
+        sendModelStatus();
+        break;
+    }
+  });
 };
-

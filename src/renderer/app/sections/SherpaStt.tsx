@@ -15,6 +15,11 @@ export const SherpaStt: React.FC = () => {
 
   const update = (patch: Partial<AppConfig['sherpaStt']>) => setConfig('sherpaStt', { ...config.sherpaStt, ...patch });
 
+  // モデルのダウンロード状態は表示時に main へ問い合わせる
+  React.useEffect(() => {
+    sherpaStt.checkSherpaSttModelStatus();
+  }, []);
+
   return (
     <SectionPanel title="ローカル音声認識">
       <Caption>マイクからの音声を認識し、レスのように表示します。</Caption>
@@ -52,7 +57,7 @@ export const SherpaStt: React.FC = () => {
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1 }}>
           モデルファイル
         </Typography>
-        <Caption>音声認識に必要な追加のファイルです。サイズが大きいので別途ダウンロードする必要があります(200MB程度)。</Caption>
+        <Caption>音声認識に必要な追加のファイルです。サイズが大きいので別途ダウンロードする必要があります(170MB程度)。</Caption>
         <Stack direction="row" spacing={2} alignItems="center">
           <Typography variant="caption" color="text.secondary">
             ダウンロード状態: {modelStatus}

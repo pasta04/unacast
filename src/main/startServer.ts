@@ -25,7 +25,6 @@ import { electronEvent } from './const';
 import NiconamaComment from './niconama';
 import TwicasComment from './twicas';
 import JpnknFast from './jpnkn';
-import SherpaSpeechToText from './sherpaStt';
 import tr from './googletrans';
 import CommentIcons from './CommentIcons';
 import { recordConnectionError, recordConnectionSuccess, resetAllConnectionErrors, setNotifyCallback } from './connectionErrorNotifier';
@@ -41,9 +40,6 @@ let bouyomi: bouyomiChan;
 
 /** VoiceVoxインスタンス */
 let voiceVox: VoiceVoxClient;
-
-/** SherpaSttインスタンス */
-let sherpaStt: SherpaSpeechToText;
 
 /** スレッド定期取得実行するか */
 let threadIntervalEvent = false;
