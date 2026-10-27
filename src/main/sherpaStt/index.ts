@@ -127,25 +127,72 @@ class SherpaSpeechToText extends EventEmitter {
     }
   }
 
+  /**
+   * サーバーが音声認識を動かしたい状態か (サーバー起動中で音声認識が有効)。
+   * マイクのエラーで認識プロセスを止めても true のまま残り、デバイス再読込で再接続できる。
+   */
+  private enabled = false;
+  /** renderer のマイクが開始済みか */
+  private micStarted = false;
+
+  /** サーバー起動時に呼ぶ */
   public start() {
-    if (this.child) {
-      // 開始済み
-      return;
-    }
+    this.enabled = true;
+    this.startRecognition();
+  }
+
+  /** サーバー停止時に呼ぶ */
+  public stop() {
+    const wasEnabled = this.enabled;
+    this.enabled = false;
+    this.stopRecognition();
+    if (wasEnabled) this.emit('end');
+  }
+
+  /** デバイス再読込から呼ぶ。サーバー起動中なら、指定のデバイスでマイクと認識プロセスをつなぎ直す */
+  public restart(inputDevice?: string) {
+    if (!this.enabled) return;
+    if (inputDevice) this.inputDevice = inputDevice;
+    logger.info(`restart speech recognition (inputDevice=${this.inputDevice})`);
+    this.stopRecognition();
+    this.startRecognition();
+  }
+
+  /** renderer でマイクを開始できた。ここで初めて「読み取り開始」とする */
+  public onMicStarted() {
+    if (!this.child || this.micStarted) return;
+    this.micStarted = true;
+    this.emit('start');
+  }
+
+  /** renderer でマイクを開始できなかった、または使用中に切断された */
+  public onMicError(reason: string) {
+    if (!this.child) return;
+    logger.error(`microphone error: ${reason}`);
+    this.stopRecognition();
+    // 理由の文面でマイクの問題と分かるため、見出しは付けない
+    this.emit('error', new Error(reason), '');
+  }
+
+  private startRecognition() {
+    if (this.child) return;
 
     if (!this.checkModels()) {
       logger.error(`model files not found`);
-      this.emit('status', 'モデルファイルがダウンロードされていません');
+      this.emit('error', new Error('モデルファイルがダウンロードされていません'), '');
       return;
     }
 
+    this.emit('status', '準備中');
     const child = utilityProcess.fork(workerPath, [], { serviceName: 'unacast 音声認識' });
     this.child = child;
+    this.micStarted = false;
     child.on('message', (message: WorkerResponse) => this.onWorkerMessage(child, message));
     child.on('exit', (code) => {
-      // stop() による終了は child を先に外しているので、ここに来るのは予期しない終了だけ
+      // stopRecognition() による終了は child を先に外しているので、ここに来るのは予期しない終了だけ
       if (this.child !== child) return;
       this.child = null;
+      this.micStarted = false;
       logger.error(`speech recognition process exited unexpectedly (code=${code})`);
       globalThis.electron.mainWindow.webContents.send(electronEvent.SHERPA_STT, 'stop');
       this.emit('error', new Error(`exit code ${code}`), '音声認識プロセスが終了しました');
@@ -162,13 +209,14 @@ class SherpaSpeechToText extends EventEmitter {
     });
   }
 
-  public stop() {
+  /** 認識プロセスと renderer のマイクを止める (enabled は変えない) */
+  private stopRecognition() {
     const child = this.child;
     if (!child) return;
     this.child = null;
+    this.micStarted = false;
     globalThis.electron.mainWindow.webContents.send(electronEvent.SHERPA_STT, 'stop');
     child.kill();
-    this.emit('end');
   }
 
   private postToWorker(child: UtilityProcess, message: WorkerRequest, ports?: Electron.MessagePortMain[]) {
@@ -182,8 +230,8 @@ class SherpaSpeechToText extends EventEmitter {
         // renderer のマイク音声を main を経由せず子プロセスへ直接流す
         const { port1, port2 } = new MessageChannelMain();
         this.postToWorker(child, { type: 'audioPort' }, [port1]);
+        // 「読み取り開始」は renderer からマイク開始の成功が届いてから出す (onMicStarted)
         globalThis.electron.mainWindow.webContents.postMessage(electronEvent.SHERPA_STT_AUDIO_PORT, { inputDevice: this.inputDevice }, [port2]);
-        this.emit('start');
         break;
       }
       case 'text': {
@@ -200,7 +248,7 @@ class SherpaSpeechToText extends EventEmitter {
       }
       case 'error':
         logger.error(`speech recognition failed ${message.message}`);
-        this.stop();
+        this.stopRecognition();
         this.emit('error', new Error(message.message), '音声認識に失敗しました');
         break;
     }

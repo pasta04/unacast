@@ -441,7 +441,8 @@ const initializeSherpaStt = (stt: SherpaSpeechToText) => {
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
       commentType: 'stt',
       category: 'status',
-      message: `${message}: ${error}`,
+      // 見出しが無いエラー (マイク関連など) は理由だけを出す
+      message: message ? `${message}: ${error}` : `${error}`,
     });
   });
   stt.on('status', (message) => {
@@ -461,8 +462,17 @@ const initializeSherpaStt = (stt: SherpaSpeechToText) => {
     });
   };
 
-  ipcMain.on(electronEvent.SHERPA_STT, async (_event: any, command: string) => {
+  ipcMain.on(electronEvent.SHERPA_STT, async (_event: any, command: string, arg?: unknown) => {
     switch (command) {
+      case 'micStarted':
+        stt.onMicStarted();
+        break;
+      case 'micError':
+        stt.onMicError(String(arg));
+        break;
+      case 'restart':
+        stt.restart((arg as { inputDevice?: string } | undefined)?.inputDevice);
+        break;
       case 'downloadModels':
         await stt.downloadModels();
         sendModelStatus();
