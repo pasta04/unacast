@@ -74,4 +74,6 @@ export const electronEvent = {
 
   /** Sherpa Speech To text **/
   SHERPA_STT: 'sherpa-stt',
+  /** 音声認識: マイク音声を認識プロセスへ直接送る MessagePort の受け渡し (main → renderer) */
+  SHERPA_STT_AUDIO_PORT: 'sherpa-stt-audio-port',
 };

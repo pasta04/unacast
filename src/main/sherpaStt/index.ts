@@ -1,18 +1,18 @@
 /**
  * Sherpa ONNX speech to text
  */
-import { app, ipcMain, net } from 'electron';
+import { app, net, utilityProcess, MessageChannelMain, UtilityProcess } from 'electron';
 import { electronEvent } from '../const';
 import { EventEmitter } from 'events';
 import electronlog from 'electron-log';
-import sherpa_onnx from 'sherpa-onnx';
 import fsPromise from 'node:fs/promises';
 import fs from 'node:fs';
 import path from 'node:path';
 import { downloadFile } from './download';
+import workerPath from './worker?modulePath';
+import type { WorkerRequest, WorkerResponse } from './worker';
 
 const logger = electronlog.scope('sherpaStt');
-const bufferSizeInSeconds = 30;
 
 /** モデルの保存先。userData 直下は Chromium のセッションデータと混ざるため専用フォルダに置く */
 const getModelDir = () => path.join(app.getPath('userData'), 'sherpa-models');
@@ -68,26 +68,16 @@ const modelPath = (file: ModelFile) => path.join(getModelDir(), file.fileName);
 class SherpaSpeechToText extends EventEmitter {
   name: string;
   inputDevice?: string;
-  recognizer?: any;
-  vad?: any;
-  buffer?: any;
+  /**
+   * 音声認識を行う utilityProcess。認識は CPU を使う同期処理のため main では動かさない
+   * (sherpa-onnx の読み込み自体も重いので、開始時にだけ子プロセス側で読み込む)。
+   */
+  private child: UtilityProcess | null = null;
+
   constructor() {
     super();
     this.name = '';
     this.inputDevice = 'default';
-    this.recognizer = null;
-    this.vad = null;
-    this.buffer = null;
-
-    ipcMain.on(electronEvent.SHERPA_STT, (event: any, command: string, arg?: { timeStamp: number; data: Float32Array }) => {
-      switch (command) {
-        case 'audio':
-          if (arg) {
-            this.onAudio(arg.data);
-          }
-          break;
-      }
-    });
   }
 
   /** ダウンロード実行中か (二重実行防止) */
@@ -138,7 +128,7 @@ class SherpaSpeechToText extends EventEmitter {
   }
 
   public start() {
-    if (this.recognizer) {
+    if (this.child) {
       // 開始済み
       return;
     }
@@ -149,62 +139,70 @@ class SherpaSpeechToText extends EventEmitter {
       return;
     }
 
-    try {
-      this.recognizer = sherpa_onnx.createOfflineRecognizer({
-        featConfig: {
-          sampleRate: 16000,
-          featureDim: 80,
-        },
-        modelConfig: {
-          transducer: {
-            encoder: modelPath(ModelFiles.encoder),
-            decoder: modelPath(ModelFiles.decoder),
-            joiner: modelPath(ModelFiles.joiner),
-          },
-          tokens: modelPath(ModelFiles.tokens),
-          numThreads: 1,
-          provider: 'cpu',
-          debug: false,
-        },
-      });
-
-      this.vad = sherpa_onnx.createVad(
-        {
-          sileroVad: {
-            model: modelPath(ModelFiles.vad),
-            threshold: 0.25,
-            minSpeechDuration: 0.1,
-            minSilenceDuration: 1.0,
-            maxSpeechDuration: 10.0,
-            windowSize: 512,
-          },
-          sampleRate: 16000,
-          debug: false,
-          numThreads: 1,
-          provider: 'cpu',
-        },
-        bufferSizeInSeconds * 2,
-      );
-      this.buffer = sherpa_onnx.createCircularBuffer(bufferSizeInSeconds * this.vad.config.sampleRate);
-    } catch (err) {
-      this.recognizer = null;
-      this.vad = null;
-      this.buffer = null;
-      logger.error(`start failed ${err}`);
-      this.emit('error', err instanceof Error ? err : new Error(String(err)), '初期化に失敗しました');
-      return;
-    }
-    globalThis.electron.mainWindow.webContents.send(electronEvent.SHERPA_STT, 'start', { inputDevice: this.inputDevice });
-    this.emit('start');
+    const child = utilityProcess.fork(workerPath, [], { serviceName: 'unacast 音声認識' });
+    this.child = child;
+    child.on('message', (message: WorkerResponse) => this.onWorkerMessage(child, message));
+    child.on('exit', (code) => {
+      // stop() による終了は child を先に外しているので、ここに来るのは予期しない終了だけ
+      if (this.child !== child) return;
+      this.child = null;
+      logger.error(`speech recognition process exited unexpectedly (code=${code})`);
+      globalThis.electron.mainWindow.webContents.send(electronEvent.SHERPA_STT, 'stop');
+      this.emit('error', new Error(`exit code ${code}`), '音声認識プロセスが終了しました');
+    });
+    this.postToWorker(child, {
+      type: 'init',
+      paths: {
+        encoder: modelPath(ModelFiles.encoder),
+        decoder: modelPath(ModelFiles.decoder),
+        joiner: modelPath(ModelFiles.joiner),
+        tokens: modelPath(ModelFiles.tokens),
+        vad: modelPath(ModelFiles.vad),
+      },
+    });
   }
 
   public stop() {
-    if (this.recognizer) {
-      globalThis.electron.mainWindow.webContents.send(electronEvent.SHERPA_STT, 'stop');
-      this.emit('end');
-      this.recognizer = null;
-      this.vad = null;
-      this.buffer = null;
+    const child = this.child;
+    if (!child) return;
+    this.child = null;
+    globalThis.electron.mainWindow.webContents.send(electronEvent.SHERPA_STT, 'stop');
+    child.kill();
+    this.emit('end');
+  }
+
+  private postToWorker(child: UtilityProcess, message: WorkerRequest, ports?: Electron.MessagePortMain[]) {
+    child.postMessage(message, ports);
+  }
+
+  private onWorkerMessage(child: UtilityProcess, message: WorkerResponse) {
+    if (this.child !== child) return;
+    switch (message.type) {
+      case 'ready': {
+        // renderer のマイク音声を main を経由せず子プロセスへ直接流す
+        const { port1, port2 } = new MessageChannelMain();
+        this.postToWorker(child, { type: 'audioPort' }, [port1]);
+        globalThis.electron.mainWindow.webContents.postMessage(electronEvent.SHERPA_STT_AUDIO_PORT, { inputDevice: this.inputDevice }, [port2]);
+        this.emit('start');
+        break;
+      }
+      case 'text': {
+        const item: UserComment = {
+          type: 'comment',
+          name: this.name,
+          date: new Date().toLocaleString(),
+          text: message.text,
+          imgUrl: globalThis.electron.iconList.getStt(),
+          from: 'stt',
+        };
+        this.emit('comment', item);
+        break;
+      }
+      case 'error':
+        logger.error(`speech recognition failed ${message.message}`);
+        this.stop();
+        this.emit('error', new Error(message.message), '音声認識に失敗しました');
+        break;
     }
   }
 
@@ -224,43 +222,6 @@ class SherpaSpeechToText extends EventEmitter {
 
   public on(event: string | symbol, listener: (...args: any[]) => void): this {
     return super.on(event, listener);
-  }
-
-  private onAudio(data: Float32Array) {
-    if (!this.buffer || !this.recognizer || !this.vad) {
-      return;
-    }
-
-    this.buffer.push(data);
-    const windowSize = this.vad.config.sileroVad.windowSize;
-    while (this.buffer.size() > windowSize) {
-      const samples = this.buffer.get(this.buffer.head(), windowSize);
-      this.vad.acceptWaveform(samples);
-      this.buffer.pop(windowSize);
-    }
-
-    while (!this.vad.isEmpty()) {
-      const segment = this.vad.front();
-      this.vad.pop();
-      const stream = this.recognizer.createStream();
-      const offset = this.recognizer.config.featConfig.sampleRate * 0.9;
-      const samples = new Float32Array(segment.samples.length + offset);
-      samples.set(segment.samples, offset);
-      stream.acceptWaveform(this.recognizer.config.featConfig.sampleRate, samples);
-      this.recognizer.decode(stream);
-      const r = this.recognizer.getResult(stream);
-      if (r.text.length > 0) {
-        const item: UserComment = {
-          type: 'comment',
-          name: this.name,
-          date: new Date().toLocaleString(),
-          text: r.text,
-          imgUrl: globalThis.electron.iconList.getBbs(),
-          from: 'stt',
-        };
-        this.emit('comment', item);
-      }
-    }
   }
 }
 

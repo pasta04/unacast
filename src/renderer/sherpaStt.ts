@@ -14,42 +14,54 @@ let audioCtx: AudioContext | undefined;
 let mediaStream: MediaStream | undefined;
 let sourceNode: MediaStreamAudioSourceNode | undefined;
 let processorNode: ScriptProcessorNode | undefined;
+/** 認識プロセスへ音声を直接送る port (main を経由しない) */
+let audioPort: MessagePort | undefined;
 
-async function start(inputDevice?: string) {
-  if (audioCtx) return;
+async function start(port: MessagePort, inputDevice?: string) {
+  if (audioCtx) {
+    port.close();
+    return;
+  }
   logger.info('starting text recognition from microphone.');
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      deviceId: inputDevice,
-      channelCount: 1,
-      sampleRate: SAMPLE_RATE,
-      sampleSize: 16,
-      echoCancellation: false,
-      noiseSuppression: true,
-      autoGainControl: false,
-    },
-  });
+  let stream: MediaStream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        deviceId: inputDevice,
+        channelCount: 1,
+        sampleRate: SAMPLE_RATE,
+        sampleSize: 16,
+        echoCancellation: false,
+        noiseSuppression: true,
+        autoGainControl: false,
+      },
+    });
+  } catch (err) {
+    logger.error(`failed to open microphone: ${err}`);
+    port.close();
+    return;
+  }
   // AudioContext を最初から 16kHz で作り、マイク入力のリサンプルは Chromium に任せる
   const ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
   if (ctx.sampleRate !== SAMPLE_RATE) {
     logger.error(`AudioContext could not be created with ${SAMPLE_RATE}Hz (actual: ${ctx.sampleRate}Hz).`);
     stream.getTracks().forEach((track) => track.stop());
     await ctx.close();
+    port.close();
     return;
   }
   const source = ctx.createMediaStreamSource(stream);
   const processor = ctx.createScriptProcessor(0, 1, 1);
   // 同期処理で送ることで、音声チャンクの送信順を保証する
   processor.onaudioprocess = (evt) => {
-    ipcRenderer.send(electronEvent.SHERPA_STT, 'audio', {
-      timeStamp: evt.timeStamp,
-      // inputBuffer は使い回されるためコピーして送る
-      data: evt.inputBuffer.getChannelData(0).slice(),
-    });
+    // inputBuffer は使い回されるためコピーし、そのコピーは転送 (再コピーなし) で送る
+    const data = evt.inputBuffer.getChannelData(0).slice();
+    port.postMessage(data, [data.buffer]);
   };
   source.connect(processor);
   processor.connect(ctx.destination);
 
+  audioPort = port;
   audioCtx = ctx;
   mediaStream = stream;
   sourceNode = source;
@@ -75,18 +87,19 @@ const stop = () => {
     audioCtx.close();
     audioCtx = undefined;
   }
+  if (audioPort) {
+    audioPort.close();
+    audioPort = undefined;
+  }
 };
 
 const registerIpcSubscribers = () => {
-  ipcRenderer.on(electronEvent.SHERPA_STT, async (_event: any, command: string, args: { inputDevice?: string } | boolean) => {
-    switch (command) {
-      case 'start':
-        await start((args as { inputDevice?: string }).inputDevice);
-        break;
-      case 'stop':
-        stop();
-        break;
-    }
+  // 認識プロセスの準備ができたら、音声送信用の port と一緒に開始指示が届く
+  ipcRenderer.on(electronEvent.SHERPA_STT_AUDIO_PORT, async (event: Electron.IpcRendererEvent, args: { inputDevice?: string }) => {
+    await start(event.ports[0], args.inputDevice);
+  });
+  ipcRenderer.on(electronEvent.SHERPA_STT, (_event: any, command: string) => {
+    if (command === 'stop') stop();
   });
 };
 
