@@ -46,7 +46,7 @@ export const Sources: React.FC = () => {
             const normalized = normalizeThreadUrl(config.url);
             if (normalized !== config.url) setConfig('url', normalized);
           }}
-          inputProps={{ pattern: 'http.?://.+/$' }}
+          slotProps={{ htmlInput: { pattern: 'http.?://.+/$' } }}
           placeholder="http(s)://.../"
         />
         <SourceFilterToggle source="bbs" axis="broadcast" />
@@ -119,7 +119,7 @@ export const Sources: React.FC = () => {
             value={config.niconicoId}
             onChange={(e) => setConfig('niconicoId', e.target.value)}
             disabled={isServerRunning}
-            inputProps={{ pattern: '^\\d+$' }}
+            slotProps={{ htmlInput: { pattern: '^\\d+$' } }}
           />
         </LabeledInput>
         <SourceFilterToggle source="niconico" axis="broadcast" />

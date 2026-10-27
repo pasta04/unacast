@@ -14,7 +14,7 @@ export const BbsFetch: React.FC = () => {
           開始レス番号
         </Typography>
         <Caption>サーバ起動後、ブラウザからの初回アクセス時に表示するレスの開始番号です。省略した場合は表示しません。</Caption>
-        <TextField size="small" value={config.resNumber} onChange={(e) => setConfig('resNumber', e.target.value)} inputProps={{ pattern: '[0-9]{0,3}?' }} />
+        <TextField size="small" value={config.resNumber} onChange={(e) => setConfig('resNumber', e.target.value)} slotProps={{ htmlInput: { pattern: '[0-9]{0,3}?' } }} />
       </Box>
 
       <Box>

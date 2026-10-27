@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Box, Checkbox, FormControlLabel, IconButton, Paper, Popover, Typography } from '@mui/material';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlineOutlined';
 import { useAppStore } from '../store';
 
 /**

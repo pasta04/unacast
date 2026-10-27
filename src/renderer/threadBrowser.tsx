@@ -342,7 +342,7 @@ const ThreadBrowserApp: React.FC = () => {
                         {thread.name} ({thread.resNum})
                       </>
                     }
-                    primaryTypographyProps={{ variant: 'body2', sx: { wordBreak: 'break-word' } }}
+                    slotProps={{ primary: { variant: 'body2', sx: { wordBreak: 'break-word' } } }}
                   />
                 </ListItemButton>
               );
