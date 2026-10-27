@@ -185,13 +185,22 @@ class Read5ch {
 
       // 文字コード変換
       const str = iconv.decode(Buffer.from(response.data as any), 'Shift_JIS');
-      // レスポンスオブジェクト作成、content-rangeがある場合とない場合で処理を分ける
-      if (headers['content-range'] == null || this.lastByte == 0) {
-        log.debug('content-range=' + headers['content-range']);
+      // 本文が dat のどこから始まっているか。206 なら content-range の開始位置、無ければ dat 全体なので 0
+      const contentRange = headers['content-range'];
+      const bodyStart = contentRange == null ? 0 : Number(/bytes (\d+)-/.exec(String(contentRange))?.[1] ?? NaN);
+      log.debug(`content-range=${contentRange} range=${range}`);
+      // レスポンスオブジェクト作成。dat 全体なら先頭から数え、要求した位置からの差分なら続きの番号を振る
+      if (bodyStart === 0) {
         const result = parseNewResponse(str, resNum);
         responseJson = result.result;
-      } else {
+      } else if (bodyStart === range) {
         responseJson = parseDiffResponse(str, resNum);
+      } else {
+        // 要求と違う位置からの本文は、続きの番号を振ると番号がずれる (#20)。捨てて次回に全件取り直す
+        log.warn(`content-range 不整合: range=${range} content-range=${contentRange}`);
+        this.lastModified = null;
+        this.lastByte = 0;
+        return [];
       }
 
       // 最終書き込み時刻の整合性チェック
@@ -226,9 +235,10 @@ class Read5ch {
 
       // 取得バイト数表示
       // axios の RawAxiosResponseHeaders は union 型で number/string[] 等も含み得るが、
-      // HTTP の content-length は実体として文字列なので String() でナローイング
+      // HTTP の content-length は実体として文字列なので String() でナローイング。
+      // this.lastByte ではなく本文の開始位置に足す (dat 全体が返った時や、待機中に状態が変わった時に二重に足さない)
       if (headers['content-length'] != null && responseJson.length > 0) {
-        this.lastByte = this.lastByte + parseInt(String(headers['content-length'])) - 1;
+        this.lastByte = bodyStart + parseInt(String(headers['content-length'])) - 1;
         log.debug('lastByte=' + this.lastByte);
       }
     } catch (error: any) {
