@@ -54,9 +54,10 @@ async function start(port: MessagePort, inputDevice?: string) {
   const processor = ctx.createScriptProcessor(0, 1, 1);
   // 同期処理で送ることで、音声チャンクの送信順を保証する
   processor.onaudioprocess = (evt) => {
-    // inputBuffer は使い回されるためコピーし、そのコピーは転送 (再コピーなし) で送る
-    const data = evt.inputBuffer.getChannelData(0).slice();
-    port.postMessage(data, [data.buffer]);
+    // inputBuffer は使い回されるためコピーして送る。
+    // 受け側の MessagePortMain は MessagePort 以外の転送 (transfer) に対応しておらず、
+    // ArrayBuffer を transfer 指定すると null で届くため、通常の複製で送る
+    port.postMessage(evt.inputBuffer.getChannelData(0).slice());
   };
   source.connect(processor);
   processor.connect(ctx.destination);
