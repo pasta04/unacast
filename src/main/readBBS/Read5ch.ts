@@ -58,7 +58,7 @@ export const readBoard = async (boardUrl: string) => {
     } else {
       log.error('5ch系BBS板取得APIリクエストエラー、message=' + error.message);
     }
-    throw new Error('connection error');
+    throw new Error('connection error', { cause: error });
   }
 
   return list;
@@ -232,7 +232,6 @@ class Read5ch {
         log.debug('lastByte=' + this.lastByte);
       }
     } catch (error: any) {
-      responseJson = [];
       if (error.status == NOT_MODIFIED) {
         log.error('5ch系BBSレス取得APIリクエストエラー、NOT_MODIFIED');
       } else if (error.status == RANGE_NOT_SATISFIABLE) {
@@ -240,7 +239,7 @@ class Read5ch {
       } else {
         log.error('5ch系BBSレス取得APIリクエストエラー、message=' + error.message);
       }
-      throw new Error('connection error');
+      throw new Error('connection error', { cause: error });
     }
 
     return responseJson;
@@ -259,7 +258,7 @@ const parseNewResponse = (res: string, resNum: number) => {
   // 結果を格納する配列
   const result: ReturnType<typeof parseResponse>[] = [];
   // レス番号
-  let num = 0;
+  let num: number;
 
   // 新着レスを改行ごとにSplitする
   const resArray = res.split(/\r\n|\r|\n/);

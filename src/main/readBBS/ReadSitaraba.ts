@@ -43,7 +43,7 @@ export const readBoard = async (boardUrl: string) => {
     );
   } catch (error) {
     log.error('5ch系BBS板取得APIリクエストエラー、message=' + (error as any).message);
-    throw new Error('connection error');
+    throw new Error('connection error', { cause: error });
   }
 
   return list;
@@ -132,7 +132,7 @@ class ReadSitaraba {
       return responseJson;
     } catch (e) {
       // 通信エラー
-      throw new Error(`通信エラー: ${requestUrl} stack=${e}`);
+      throw new Error(`通信エラー: ${requestUrl} stack=${e}`, { cause: e });
     }
   };
 }
