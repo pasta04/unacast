@@ -447,7 +447,7 @@ export const Yomiko: React.FC = () => {
           読み上げをスキップするレス番号
         </Typography>
         <HelpPopover>
-          掲示板・jpnkn の指定したレス番号の読み上げをスキップします。空欄の場合はスキップしません。
+          掲示板・jpnkn の指定したレス番号の読み上げをスキップします。
           <br />
           <br />
           <strong>入力例:</strong>
