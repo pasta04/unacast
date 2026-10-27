@@ -142,3 +142,35 @@ export const applyYomikoOmit = (text: string, cfg: YomikoOmitConfig | undefined)
   if (cps.length <= maxLength) return text;
   return cps.slice(0, maxLength).join('') + OMIT_SUFFIX;
 };
+
+/**
+ * 「読み上げをスキップするレス番号」の入力文字列を解析する。
+ * 区切りはカンマ (半角/全角)・読点・空白 (全角空白を含む)。全角数字は半角とみなす。
+ * 正の整数でないトークンは invalid に集める (UI のエラー表示用。実行時は無視する)。
+ */
+export const parseResNumberList = (raw: string): { numbers: Set<number>; invalid: string[] } => {
+  const numbers = new Set<number>();
+  const invalid: string[] = [];
+  const tokens = (raw ?? '').split(/[,，、\s]+/).filter((t) => t !== '');
+  for (const token of tokens) {
+    const normalized = token.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+    const n = Number(normalized);
+    if (/^\d+$/.test(normalized) && n > 0) {
+      numbers.add(n);
+    } else {
+      invalid.push(token);
+    }
+  }
+  return { numbers, invalid };
+};
+
+/**
+ * 読み上げをスキップする対象のレスか。
+ * 掲示板系 (bbs / jpnkn) のレス番号が指定の集合に含まれる場合のみ対象で、
+ * YouTube 等のコメント番号や、レス番号を持たないコメント (Number(undefined) = NaN) は巻き込まない。
+ */
+export const isYomikoSkippedResNumber = (comment: { from?: string; number?: string }, skipNumbers: ReadonlySet<number>): boolean => {
+  if (skipNumbers.size === 0) return false;
+  if (comment.from !== 'bbs' && comment.from !== 'jpnkn') return false;
+  return skipNumbers.has(Number(comment.number));
+};

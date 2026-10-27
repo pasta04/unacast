@@ -24,6 +24,7 @@ import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
 import { SectionPanel, Caption, StatusDot, getStatusColor, HelpPopover } from './common';
 import { findUnknownPlaceholders } from '../../../main/yomikoTemplate';
+import { parseResNumberList } from '../../../main/speechText';
 
 type YomikoType = AppConfig['typeYomiko'];
 
@@ -50,6 +51,12 @@ const TEMPLATE_SOURCE_DEFS: { key: CommentSource; label: string; anonymous: bool
 const validateTemplate = (template: string): string => {
   const unknown = findUnknownPlaceholders(template);
   return unknown.length > 0 ? `不明なプレースホルダ: ${unknown.join(' ')}` : '';
+};
+
+/** 読み上げスキップのレス番号入力の検証。数字以外のトークンがあればエラーメッセージを返す */
+const validateSkipResNumbers = (raw: string): string => {
+  const { invalid } = parseResNumberList(raw);
+  return invalid.length > 0 ? `数字以外の指定があります: ${invalid.join(' ')}` : '';
 };
 
 type TemplateDraftRow = { template: string; anonymousTemplate: string };
@@ -435,6 +442,35 @@ export const Yomiko: React.FC = () => {
           />
         </Box>
       )}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+          読み上げをスキップするレス番号
+        </Typography>
+        <HelpPopover>
+          掲示板・jpnkn の指定したレス番号の読み上げをスキップします。
+          <br />
+          <br />
+          <strong>入力例:</strong>
+          <br />
+          <code>{'1, 1001'}</code> (カンマ区切りで複数指定)
+          <br />
+          <br />
+          <strong>注意事項:</strong>
+          <br />
+          チャットウィンドウ・配信画面への表示とレス着信音の動作には影響しません。
+        </HelpPopover>
+      </Box>
+      <Box sx={{ maxWidth: 300 }}>
+        <TextField
+          size="small"
+          fullWidth
+          value={config.yomikoSkipResNumbers}
+          placeholder="1, 1001"
+          error={!!validateSkipResNumbers(config.yomikoSkipResNumbers)}
+          helperText={validateSkipResNumbers(config.yomikoSkipResNumbers) || undefined}
+          onChange={(e) => setConfig('yomikoSkipResNumbers', e.target.value)}
+        />
+      </Box>
       <Box sx={{ mt: 1 }}>
         <Button variant="outlined" onClick={() => setDictionaryDialogOpen(true)}>
           読み上げ辞書編集
