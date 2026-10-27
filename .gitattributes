@@ -1,0 +1,18 @@
+# 改行コードを利用者の git 設定 (core.autocrlf など) によらず LF に固定する。
+# Prettier の endOfLine: "lf" と合わせている。
+* text=auto eol=lf
+
+# バイナリ (改行変換・差分の対象外)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.clip binary
+*.wav binary
+*.mp3 binary
+*.dll binary
+*.node binary
+*.onnx binary

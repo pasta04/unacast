@@ -9,6 +9,7 @@ import ElectronStore from 'electron-store';
 // サーバー起動モジュール (IPC ハンドラ等の副作用登録目的)
 import './startServer';
 import { initThreadBrowser } from './threadBrowser';
+import { registerClipboardHandlers } from './clipboard';
 import SherpaSpeechToText from './sherpaStt';
 import { electronEvent } from './const';
 remote.initialize();
@@ -256,6 +257,7 @@ if (!app.requestSingleInstanceLock()) {
     createTranslateWindow();
     createImagePreviewWindow();
     initThreadBrowser(() => resolveRendererUrl('threadBrowser'));
+    registerClipboardHandlers();
     initializeSherpaStt(globalThis.electron.sherpaStt);
 
     applyTaskbarState();

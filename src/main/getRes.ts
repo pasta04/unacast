@@ -178,7 +178,7 @@ export const threadUrlToBoardInfo = async (threadUrl: string) => {
     tempUrl += '/';
   }
 
-  let encoding = '';
+  let encoding: string;
 
   if (tempUrl.indexOf(sitarabaDomain) !== -1) {
     // スレ: https://jbbs.shitaraba.net/bbs/read.cgi/game/51638/1581839266/

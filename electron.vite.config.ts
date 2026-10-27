@@ -1,20 +1,17 @@
 import { resolve } from 'path';
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import renderer from 'vite-plugin-electron-renderer';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
     build: {
       outDir: 'dist/main',
-      commonjsOptions: {
-        // src 配下の事前バンドル済み CJS ファイル(googletrans.js, niconama/node.js 等)も
-        // rollup の commonjs プラグインを通して扱う
-        include: [/node_modules/, /\.cjs$/, /src[\\/]main[\\/].*\.js$/],
-        transformMixedEsModules: true,
-      },
-      rollupOptions: {
+      // dependencies は外部モジュール扱い (require のまま残す)。
+      // electron-store 9 以降は ESM 専用で CJS の main から require できないため、バンドルに取り込む。
+      // src 配下の事前バンドル済み CJS (googletrans.js) は Rolldown がそのまま扱う
+      externalizeDeps: { exclude: ['electron-store'] },
+      rolldownOptions: {
         input: {
           index: resolve(__dirname, 'src/main/main.ts'),
         },
@@ -36,7 +33,7 @@ export default defineConfig({
     },
     build: {
       outDir: 'dist/renderer',
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           index: resolve(__dirname, 'src/html/index.html'),
           chat: resolve(__dirname, 'src/html/chat.html'),
@@ -48,11 +45,8 @@ export default defineConfig({
     },
     plugins: [
       react(),
-      renderer({
-        // nodeIntegration を有効にしたまま、Node 組み込みモジュールと
-        // Electron 関連の依存を require のままにする
-        nodeIntegration: true,
-      }),
+      // nodeIntegration 有効の renderer で、electron と Node 組み込みモジュールを require のまま残す
+      renderer(),
     ],
   },
 });

@@ -24,7 +24,7 @@ export const Sidebar: React.FC<Props> = ({ selected, onSelect }) => (
         {sections.map((s) => (
           <ListItemButton key={s.id} selected={selected === s.id} onClick={() => onSelect(s.id)}>
             <ListItemIcon sx={{ minWidth: 36 }}>{s.icon}</ListItemIcon>
-            <ListItemText primary={s.label} primaryTypographyProps={{ fontSize: 13 }} />
+            <ListItemText primary={s.label} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
           </ListItemButton>
         ))}
       </List>

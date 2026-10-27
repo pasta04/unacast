@@ -78,7 +78,7 @@ export const HeaderBar: React.FC = () => {
               size="small"
               value={String(config.port)}
               onChange={(e) => setConfig('port', intOrZero(e.target.value))}
-              inputProps={{ pattern: '[0-9]{0,4}?' }}
+              slotProps={{ htmlInput: { pattern: '[0-9]{0,4}?' } }}
               sx={{ width: 70 }}
             />
           </Box>

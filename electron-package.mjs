@@ -4,13 +4,14 @@
 // ため、子プロセスが silent exit したときに親が exit 0 と誤認する弱点があった。
 // 直接 await すれば Promise が本プロセスのルートに繋がり、
 // 失敗時の throw / 完了時の結果がそのまま観測できる。
-const path = require('path');
-const fs = require('fs');
-const { packager } = require('@electron/packager');
+// @electron/packager 19 以降は ESM 専用のため、このスクリプトも ESM (.mjs) にしている。
+import path from 'path';
+import fs from 'fs';
+import { packager } from '@electron/packager';
 
 if (process.argv.length < 3) {
   console.log('specify platform!  win32, darwin');
-  return;
+  process.exit(1);
 }
 
 const PLATFORM = process.argv[2];
@@ -31,7 +32,7 @@ const ignore = [
   '^/eslint\\.config\\.mjs$',
   '^/\\.gitignore$',
   '^/\\.prettierrc\\.json$',
-  '^/electron-package\\.js$',
+  '^/electron-package\\.mjs$',
   '^/electron\\.vite\\.config\\.ts$',
   '^/README\\.md$',
   '^/tsconfig\\.json$',

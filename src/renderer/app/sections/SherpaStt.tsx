@@ -43,7 +43,7 @@ export const SherpaStt: React.FC = () => {
   return (
     <SectionPanel title="ローカル音声認識">
       <Caption>マイクからの音声を認識し、レスのように表示します。</Caption>
-      <Stack direction="row" spacing={2} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
         <FormControlLabel
           control={<Checkbox size="small" checked={config.sherpaStt.enable} onChange={(e) => update({ enable: e.target.checked })} disabled={isServerRunning} />}
           label="有効にする"
@@ -85,7 +85,7 @@ export const SherpaStt: React.FC = () => {
           モデルファイル
         </Typography>
         <Caption>音声認識に必要な追加のファイルです。サイズが大きいので別途ダウンロードする必要があります(170MB程度)。</Caption>
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
           <Typography variant="caption" color="text.secondary">
             ダウンロード状態: {modelStatus}
           </Typography>

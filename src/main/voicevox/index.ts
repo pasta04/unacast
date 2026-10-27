@@ -1,5 +1,5 @@
 import { electronEvent } from '../const';
-import koffi, { IKoffiLib } from 'koffi';
+import koffi, { LibraryHandle } from 'koffi';
 import axios from 'axios';
 import os from 'os';
 import path from 'path';
@@ -129,7 +129,7 @@ export const findOpenJtalkDict = (libpath: string): string | null => {
 let audioQueryJsonType015: any = null;
 
 class VoiceVoxCore_0_15 implements IVoiceVoxCore {
-  constructor(libpath: string, lib: IKoffiLib) {
+  constructor(libpath: string, lib: LibraryHandle) {
     const { VoicevoxInitializeOptions, VoicevoxAudioQueryOptions, VoicevoxSynthesisOptions } = getStructs015();
 
     try {
@@ -253,7 +253,7 @@ const getStructs016 = () => {
 let jsonType016: any = null;
 
 class VoiceVoxCore_0_16 implements IVoiceVoxCore {
-  constructor(libpath: string, lib: IKoffiLib) {
+  constructor(libpath: string, lib: LibraryHandle) {
     try {
       const { VoicevoxLoadOnnxruntimeOptions, VoicevoxInitializeOptionsV16, VoicevoxSynthesisOptionsV16 } = getStructs016();
       if (!jsonType016) {
@@ -549,7 +549,7 @@ class VoiceVoxClient {
     try {
       // まずライブラリ名での読み込み (Windows は SetDllDirectoryW 済みなので通る)。
       // 通らない場合は見つけたインストール先のフルパスで試す (macOS 等は検索パスに乗らないため)
-      let voicevox_core: IKoffiLib;
+      let voicevox_core: LibraryHandle;
       try {
         voicevox_core = koffi.load('voicevox_core');
       } catch (e) {

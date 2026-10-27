@@ -112,7 +112,7 @@ export const Display: React.FC = () => {
             if (!Number.isNaN(v)) setConfig('minDisplayTime', v);
             else if (e.target.value === '') setConfig('minDisplayTime', 0);
           }}
-          inputProps={{ pattern: '[0-9]+(\\.[0-9])?' }}
+          slotProps={{ htmlInput: { pattern: '[0-9]+(\\.[0-9])?' } }}
         />
       </Box>
 

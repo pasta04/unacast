@@ -1,5 +1,5 @@
-import electron from 'electron';
 import { Menu, MenuItem, getCurrentWindow } from '@electron/remote';
+import { readClipboardText, writeClipboardText } from '../clipboard';
 
 const mainContextMenuInText = (target: HTMLInputElement) => {
   const menu = new Menu();
@@ -10,7 +10,7 @@ const mainContextMenuInText = (target: HTMLInputElement) => {
       click: () => {
         const text = window.getSelection()?.toString() ?? '';
         if (!text) return;
-        electron.clipboard.writeText(text);
+        void writeClipboardText(text);
         target.value = target.value.replace(text, '');
       },
     }),
@@ -22,7 +22,7 @@ const mainContextMenuInText = (target: HTMLInputElement) => {
       click: () => {
         const text = window.getSelection()?.toString() ?? '';
         if (!text) return;
-        electron.clipboard.writeText(text);
+        void writeClipboardText(text);
       },
     }),
   );
@@ -31,8 +31,9 @@ const mainContextMenuInText = (target: HTMLInputElement) => {
       label: 'Paste',
       type: 'normal',
       click: () => {
-        const text = electron.clipboard.readText();
-        target.value = text;
+        void readClipboardText().then((text) => {
+          target.value = text;
+        });
       },
     }),
   );

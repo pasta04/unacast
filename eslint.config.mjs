@@ -1,14 +1,10 @@
-import { FlatCompat } from '@eslint/eslintrc';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import html from 'eslint-plugin-html';
 import js from '@eslint/js';
-import typeScriptESLint from '@typescript-eslint/eslint-plugin';
 import typeScriptESLintParser from '@typescript-eslint/parser';
 import globals from 'globals';
 import tSESLint from 'typescript-eslint';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-
-const compat = new FlatCompat();
 
 export default [
   {
@@ -18,10 +14,8 @@ export default [
   ...tSESLint.configs.recommended,
   eslintConfigPrettier,
   eslintPluginPrettierRecommended,
-  ...compat.extends('plugin:@typescript-eslint/eslint-recommended'),
   {
     plugins: {
-      typeScriptESLint,
       html,
     },
     languageOptions: {
@@ -46,13 +40,7 @@ export default [
     rules: {
       'no-console': 'off',
       'no-debugger': 'error',
-      'node/no-deprecated-api': 'off',
-      'node/no-unpublished-import': 'off',
-      'node/no-unpublished-require': 'off',
-      'node/no-unsupported-features/es-syntax': 'off',
       'no-process-exit': 'off',
-      'node/no-missing-import': 'off',
-      'node/no-unsupported-features/es-builtins': 'off',
       // any はレンダラーの DOM/IPC 周りで広範に使われており、現状は許容
       '@typescript-eslint/no-explicit-any': 'off',
       // 未使用変数: アンダースコア始まりや使用済み引数の後の引数は許可

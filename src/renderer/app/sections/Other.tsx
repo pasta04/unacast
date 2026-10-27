@@ -56,7 +56,7 @@ export const Other: React.FC = () => {
           size="small"
           value={String(config.notifyThreadResLimit)}
           onChange={(e) => setConfig('notifyThreadResLimit', intOrZero(e.target.value))}
-          inputProps={{ pattern: '[0-9]{0,5}?' }}
+          slotProps={{ htmlInput: { pattern: '[0-9]{0,5}?' } }}
         />
       </Box>
 
@@ -68,7 +68,7 @@ export const Other: React.FC = () => {
           size="small"
           value={String(config.notifyThreadConnectionErrorLimit)}
           onChange={(e) => setConfig('notifyThreadConnectionErrorLimit', intOrZero(e.target.value))}
-          inputProps={{ pattern: '[0-9]{0,5}?' }}
+          slotProps={{ htmlInput: { pattern: '[0-9]{0,5}?' } }}
         />
       </Box>
 
@@ -124,7 +124,7 @@ export const Other: React.FC = () => {
             disabled={!config.autoCreateThread.enable}
             value={String(config.autoCreateThread.resThreshold)}
             onChange={(e) => setConfig('autoCreateThread', { ...config.autoCreateThread, resThreshold: intOrZero(e.target.value) })}
-            inputProps={{ pattern: '[0-9]{0,4}?' }}
+            slotProps={{ htmlInput: { pattern: '[0-9]{0,4}?' } }}
             sx={{ width: 90 }}
           />
           <Button size="small" variant="outlined" disabled={!config.url} onClick={openAutoCreatePreview}>
