@@ -22,9 +22,6 @@ const instance = axios.create({
   }),
 });
 
-// 掲示板読み込みモジュール、一度決定したら使いまわすためにグローバル宣言
-let bbsModule: ReadSitaraba | ReadSitaraba = null as any;
-
 // リクエストのbodyをパース下りエンコードしたりするためのやつ
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
@@ -46,7 +43,8 @@ router.get('/', async (req, res) => {
 
   res.header('Content-Type', 'application/json; charset=UTF-8');
 
-  let result = await getRes(threadUrl, resNum);
+  // 定期取得と同時に走り得るので、定期取得の差分状態を壊さないよう使い捨ての読み込みモジュールで取る (#20)
+  let result = await getRes(threadUrl, resNum, true);
 
   result = result.filter((item) => item.from !== 'system');
   const doms = judgeAaMessage(result).map((item) => createDom(item, 'server', item.isAA));
@@ -69,16 +67,19 @@ const isBbsAnonymousName = (name: string | undefined): boolean | undefined => {
  * 掲示板のレスを取得する
  * @param threadUrl スレのURL
  * @param resNum この番号以降を取得する。指定しない場合は全件取得
+ * @param oneShot true なら使い捨ての読み込みモジュールを使う。
+ *   5ch 系の読み込みモジュールは前回までの取得位置を覚えて差分を取るため、定期取得以外 (配信画面の初期表示など) が
+ *   同じものを使うと、同時に走った時に定期取得のレス番号がずれる (#20)
  */
-export const getRes = async (threadUrl: string, resNum: number): Promise<UserComment[]> => {
+export const getRes = async (threadUrl: string, resNum: number, oneShot = false): Promise<UserComment[]> => {
   try {
     if (!threadUrl) return [];
 
     // リクエストURLを解析し、使用するモジュールを変更する
-    bbsModule = analysBBSName(threadUrl) as any;
+    const reader = oneShot ? createBBSReader(threadUrl) : analysBBSName(threadUrl);
 
     // 選択したモジュールでレス取得処理を行う
-    const response = await bbsModule.read(threadUrl, resNum);
+    const response = await reader.read(threadUrl, resNum);
     recordConnectionSuccess('bbs');
     log.info(`fetch ${threadUrl} resNum = ${resNum}, result = ${response.length} lastResNum=${response.length > 0 ? response[response.length - 1].number : '-'}`);
 
@@ -123,6 +124,9 @@ const analysBBSName = (threadUrl: string) => {
   // この辺も対応ドメインリストとか作ってちゃんと判定したほうがよさそう
   return read5ch;
 };
+
+/** URL に応じた使い捨ての読み込みモジュールを作る */
+const createBBSReader = (threadUrl: string) => (analysBBSName(threadUrl) === sitaraba ? new ReadSitaraba() : new Read5ch());
 
 export const getThreadList = async (boardUrl: string) => {
   const sitarabaDomain = 'jbbs.shitaraba.net';

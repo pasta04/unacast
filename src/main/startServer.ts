@@ -128,8 +128,8 @@ ipcMain.on(electronEvent.APPLY_CONFIG, async (event: any, config: (typeof global
   // (起動前に「適用」を押した場合は config の保存だけで十分で、ここで前回スレの
   //  最新レスを chat に流すと「サーバー起動してないのにレスが出る」状態になる)
   if (isChangedUrl && config.url && app) {
-    // 新スレを取得
-    const ret = await getBbsResponse(globalThis.config.url, NaN);
+    // 新スレを取得 (定期取得と同時に走り得るので使い捨ての読み込みモジュールで取る)
+    const ret = await getBbsResponse(globalThis.config.url, NaN, true);
     log.debug(ret);
     if (ret.length === 0) {
       globalThis.electron.mainWindow.webContents.send(electronEvent.SHOW_ALERT, '掲示板URLがおかしそうです');
