@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Box, Button, Link, TextField, Typography } from '@mui/material';
 import electron from 'electron';
 import { useAppStore } from './store';
-import { sendApplyConfig, sendCommentTest, sendStartServer } from './ipc';
+import { sendApplyConfig, sendChatWindowCss, sendCommentTest, sendStartServer } from './ipc';
 
 const intOrZero = (raw: string) => {
   const v = parseInt(raw, 10);
@@ -26,6 +26,7 @@ export const HeaderBar: React.FC = () => {
   const handleApply = () => {
     persist();
     sendApplyConfig(useAppStore.getState().config);
+    sendChatWindowCss(useAppStore.getState().config.chatWindowCss);
     markApplied();
   };
 
@@ -33,6 +34,7 @@ export const HeaderBar: React.FC = () => {
     if (!config.port) return;
     persist();
     sendStartServer(useAppStore.getState().config);
+    sendChatWindowCss(useAppStore.getState().config.chatWindowCss);
     markApplied();
     setServerRunning(true);
   };

@@ -10,8 +10,9 @@ import TranslateIcon from '@mui/icons-material/Translate';
 import MicIcon from '@mui/icons-material/Mic';
 import TuneIcon from '@mui/icons-material/Tune';
 import BlockIcon from '@mui/icons-material/Block';
+import PaletteIcon from '@mui/icons-material/Palette';
 
-export type SectionId = 'all' | 'sources' | 'fetch' | 'display' | 'sound' | 'yomiko' | 'aamode' | 'translate' | 'sherpaStt' | 'ngword' | 'other';
+export type SectionId = 'all' | 'sources' | 'fetch' | 'display' | 'chatWindowStyle' | 'sound' | 'yomiko' | 'aamode' | 'translate' | 'sherpaStt' | 'ngword' | 'other';
 
 export type SectionDef = {
   id: SectionId;
@@ -24,6 +25,7 @@ export const sections: SectionDef[] = [
   { id: 'sources', label: 'レス・コメント取得先', icon: <RssFeedIcon /> },
   { id: 'fetch', label: '掲示板取得設定', icon: <DownloadIcon /> },
   { id: 'display', label: '表示設定', icon: <VisibilityIcon /> },
+  { id: 'chatWindowStyle', label: 'チャットウィンドウのスタイル', icon: <PaletteIcon /> },
   { id: 'sound', label: 'レス・コメント着信音', icon: <VolumeUpIcon /> },
   { id: 'yomiko', label: '読み子設定', icon: <RecordVoiceOverIcon /> },
   { id: 'aamode', label: 'AAモード', icon: <FontDownloadIcon /> },

@@ -27,6 +27,11 @@ export const electronEvent = {
   // VOICEVOX の状態更新 renderer ← main
   UPDATE_VOICEVOX_CONFIG: 'update-voicevox-config',
 
+  /** チャットウィンドウのユーザー CSS を適用 renderer(設定画面) → main → renderer(チャット) */
+  APPLY_CHAT_WINDOW_CSS: 'apply-chat-window-css',
+  /** チャットウィンドウのユーザー CSS を取得 (チャットウィンドウの読み込み時) */
+  GET_CHAT_WINDOW_CSS: 'get-chat-window-css',
+
   /** コメント表示 */
   SHOW_COMMENT: 'show-comment',
   /** コメント欄初期化 */

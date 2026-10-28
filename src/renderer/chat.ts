@@ -130,6 +130,30 @@ ipcRenderer.on(electronEvent.SHOW_COMMENT, (event: any, args: { config: (typeof 
   }
 });
 
+/**
+ * 設定画面で編集したユーザー CSS を反映する。
+ * head の末尾に置くので、resources/style-server.css を含む既存の CSS より優先される。
+ */
+const applyUserCss = (css: string) => {
+  let style = document.getElementById('user-css') as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'user-css';
+    document.head.appendChild(style);
+  }
+  style.textContent = css;
+};
+
+ipcRenderer.on(electronEvent.APPLY_CHAT_WINDOW_CSS, (_event: any, css: string) => {
+  applyUserCss(css);
+});
+
+// 読み込み時 (起動時・再読み込み時) は main が覚えている CSS を取得する
+void ipcRenderer.invoke(electronEvent.GET_CHAT_WINDOW_CSS).then((css: string) => {
+  // 取得中に適用が届いていたら、そちらが新しいので上書きしない
+  if (!document.getElementById('user-css')) applyUserCss(css);
+});
+
 // リセット
 ipcRenderer.on(electronEvent.CLEAR_COMMENT, () => {
   // log.info('[clear-comment] received');

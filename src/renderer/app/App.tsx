@@ -13,16 +13,18 @@ import { Translate } from './sections/Translate';
 import { SherpaStt } from './sections/SherpaStt';
 import { NgWord } from './sections/NgWord';
 import { Other } from './sections/Other';
+import { ChatWindowStyle } from './sections/ChatWindowStyle';
 import { AlertDialog, ConfirmStopDialog } from './Dialogs';
 import type { SectionId } from './sections';
 import { useAppStore } from './store';
-import { sendLoadVoicevox } from './ipc';
+import { sendChatWindowCss, sendLoadVoicevox } from './ipc';
 import { loadAudioDevicesWithRetry, refreshAudioDevicesFromEvent } from './audioDevices';
 
 const sectionRenderers: Record<Exclude<SectionId, 'all'>, React.FC> = {
   sources: Sources,
   fetch: BbsFetch,
   display: Display,
+  chatWindowStyle: ChatWindowStyle,
   sound: Sound,
   yomiko: Yomiko,
   aamode: AaMode,
@@ -39,6 +41,7 @@ const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
         <Sources />
         <BbsFetch />
         <Display />
+        <ChatWindowStyle />
         <Sound />
         <Yomiko />
         <AaMode />
@@ -71,6 +74,9 @@ export const App: React.FC = () => {
       refreshAudioDevicesFromEvent();
     };
     navigator.mediaDevices.addEventListener('devicechange', onDeviceChange);
+
+    // 保存済みのチャットウィンドウのスタイルを反映する (サーバー起動前から効かせる)
+    sendChatWindowCss(useAppStore.getState().appliedConfig.chatWindowCss);
 
     // VOICEVOX が選択されている場合は初回ロード
     const config = useAppStore.getState().config;

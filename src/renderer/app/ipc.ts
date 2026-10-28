@@ -190,6 +190,11 @@ export const registerIpcSubscribers = () => {
   });
 };
 
+/** チャットウィンドウのユーザー CSS を main 経由でチャットウィンドウへ反映する */
+export const sendChatWindowCss = (css: string) => {
+  ipcRenderer.send(electronEvent.APPLY_CHAT_WINDOW_CSS, css);
+};
+
 export const sendApplyConfig = (config: AppConfig) => {
   ipcRenderer.send(electronEvent.APPLY_CONFIG, config);
 };

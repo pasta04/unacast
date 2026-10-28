@@ -266,6 +266,12 @@ declare global {
       speakWord: string;
     };
 
+    /**
+     * チャットウィンドウに注入するユーザー CSS (設定画面の「チャットウィンドウのスタイル」で編集)。
+     * resources/style-server.css より後に読み込むので、こちらが優先される。既定 ''
+     */
+    let chatWindowCss: string;
+
     let translate: {
       enable: boolean;
       targetLang: 'ja' | 'en';

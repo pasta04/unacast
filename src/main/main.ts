@@ -10,6 +10,7 @@ import ElectronStore from 'electron-store';
 import './startServer';
 import { initThreadBrowser } from './threadBrowser';
 import { registerClipboardHandlers } from './clipboard';
+import { registerChatWindowCssHandlers } from './chatWindowCss';
 import SherpaSpeechToText from './sherpaStt';
 import { electronEvent } from './const';
 remote.initialize();
@@ -258,6 +259,7 @@ if (!app.requestSingleInstanceLock()) {
     createImagePreviewWindow();
     initThreadBrowser(() => resolveRendererUrl('threadBrowser'));
     registerClipboardHandlers();
+    registerChatWindowCssHandlers();
     initializeSherpaStt(globalThis.electron.sherpaStt);
 
     applyTaskbarState();
