@@ -278,7 +278,7 @@ export const Yomiko: React.FC = () => {
   const setYomikoTemplateDialogOpen = useAppStore((s) => s.setYomikoTemplateDialogOpen);
 
   return (
-    <SectionPanel title="読み子設定">
+    <SectionPanel title="読み子設定" help={<Box>民安★Talk：読み上げ中断機能を効かせたい場合は、設定の「ただちに再生」をオンにしてください。</Box>}>
       <FormControl sx={{ display: 'block', mb: 1 }}>
         <FormLabel>読み子の種類</FormLabel>
         <RadioGroup row value={config.typeYomiko} onChange={(_, v) => setConfig('typeYomiko', v as YomikoType)}>
