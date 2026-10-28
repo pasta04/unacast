@@ -18,6 +18,8 @@ export type SectionDef = {
   id: SectionId;
   label: string;
   icon: React.ReactNode;
+  /** サイドバーでこの項目の前に区切り線を入れる */
+  dividerBefore?: boolean;
 };
 
 export const sections: SectionDef[] = [
@@ -25,7 +27,6 @@ export const sections: SectionDef[] = [
   { id: 'sources', label: 'レス・コメント取得先', icon: <RssFeedIcon /> },
   { id: 'fetch', label: '掲示板取得設定', icon: <DownloadIcon /> },
   { id: 'display', label: '表示設定', icon: <VisibilityIcon /> },
-  { id: 'chatWindowStyle', label: 'チャットウィンドウのスタイル', icon: <PaletteIcon /> },
   { id: 'sound', label: 'レス・コメント着信音', icon: <VolumeUpIcon /> },
   { id: 'yomiko', label: '読み子設定', icon: <RecordVoiceOverIcon /> },
   { id: 'aamode', label: 'AAモード', icon: <FontDownloadIcon /> },
@@ -33,4 +34,6 @@ export const sections: SectionDef[] = [
   { id: 'sherpaStt', label: 'ローカル音声認識', icon: <MicIcon /> },
   { id: 'ngword', label: 'NGワード', icon: <BlockIcon /> },
   { id: 'other', label: 'その他', icon: <TuneIcon /> },
+  // 手元のチャットウィンドウにだけ効く設定。配信に関わる設定と分けるため区切って末尾に置く (全設定には含めない)
+  { id: 'chatWindowStyle', label: 'チャットウィンドウのスタイル', icon: <PaletteIcon />, dividerBefore: true },
 ];

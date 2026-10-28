@@ -24,7 +24,6 @@ const sectionRenderers: Record<Exclude<SectionId, 'all'>, React.FC> = {
   sources: Sources,
   fetch: BbsFetch,
   display: Display,
-  chatWindowStyle: ChatWindowStyle,
   sound: Sound,
   yomiko: Yomiko,
   aamode: AaMode,
@@ -32,6 +31,7 @@ const sectionRenderers: Record<Exclude<SectionId, 'all'>, React.FC> = {
   sherpaStt: SherpaStt,
   ngword: NgWord,
   other: Other,
+  chatWindowStyle: ChatWindowStyle,
 };
 
 const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
@@ -41,7 +41,6 @@ const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
         <Sources />
         <BbsFetch />
         <Display />
-        <ChatWindowStyle />
         <Sound />
         <Yomiko />
         <AaMode />
@@ -49,6 +48,7 @@ const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
         <SherpaStt />
         <NgWord />
         <Other />
+        {/* チャットウィンドウのスタイルは手元だけに効く設定で面積も大きいため、全設定には含めない (サイドバーから開く) */}
       </>
     );
   }
