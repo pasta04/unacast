@@ -21,7 +21,7 @@ export const electronEvent = {
   SPEAK_WAV: 'speak-wav',
   ABORT_WAV: 'abort-wav',
   SPEAKING_END: 'speaking-end',
-  /** 棒読みちゃん・民安☆Talk の「読んでいる時間相当の待ち」を打ち切る main → renderer (読み上げ中断時) */
+  /** 棒読みちゃん・民安★Talk の「読んでいる時間相当の待ち」を打ち切る main → renderer (読み上げ中断時) */
   CANCEL_WAIT_YOMIKO_TIME: 'cancel-wait-yomiko-time',
 
   /** 読み上げ中かどうかの取得・変更通知 (#77) */

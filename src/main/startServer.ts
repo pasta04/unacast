@@ -1259,19 +1259,19 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
 ipcMain.on(electronEvent.SPEAKING_END, () => (isSpeaking = false));
 
 /**
- * 民安☆Talk に文章を渡す (vrx.exe "文章")。民安☆Talk は常駐アプリで、起動したプロセスは渡したらすぐ終わる。
+ * 民安★Talk に文章を渡す (vrx.exe "文章")。民安★Talk は常駐アプリで、起動したプロセスは渡したらすぐ終わる。
  * パスの誤りなどで起動できなかった時は、未処理の例外にせずログに残す。
  */
 const runTamiyasu = (text: string) => {
   log.debug(`${config.tamiyasuPath} "${text}"`);
   if (!config.tamiyasuPath) return;
   const child = spawn(config.tamiyasuPath, [text]);
-  child.on('error', (e) => log.error(`民安☆Talk を起動できません: ${e.message}`));
+  child.on('error', (e) => log.error(`民安★Talk を起動できません: ${e.message}`));
 };
 
 /**
- * 民安☆Talk の読み上げを中断する時に送る短い文章。
- * 民安☆Talk には外から読み上げを止める手段が無いため、基本設定の「ただちに再生」(新しい文章が来たら
+ * 民安★Talk の読み上げを中断する時に送る短い文章。
+ * 民安★Talk には外から読み上げを止める手段が無いため、基本設定の「ただちに再生」(新しい文章が来たら
  * 今の再生を止めて読む) が有効な場合に、新しい文章で今の読み上げを打ち切らせる割り込みとして使う。
  */
 const TAMIYASU_INTERRUPT_TEXT = '。';
@@ -1283,7 +1283,7 @@ let currentYomikoType: typeof config.typeYomiko = 'none';
  * 読み上げ中断ボタン (#77) で呼ばれる。読み子の発話を止め、playYomiko の待ちを打ち切る。
  * - VOICEVOX: 再生を止め、世代を進めて残りの分割チャンクを捨てる
  * - 棒読みちゃん: 今読んでいる 1 件をスキップさせる
- * - 民安☆Talk: 短い文章を送って割り込む (民安☆Talk の「ただちに再生」が有効な場合に今の読み上げが止まる)
+ * - 民安★Talk: 短い文章を送って割り込む (民安★Talk の「ただちに再生」が有効な場合に今の読み上げが止まる)
  */
 setSpeechStopHandler(() => {
   speechGeneration++;
@@ -1298,7 +1298,7 @@ setSpeechStopHandler(() => {
       runTamiyasu(TAMIYASU_INTERRUPT_TEXT);
       break;
   }
-  // 棒読みちゃん・民安☆Talk の「読んでいる時間相当の待ち」を renderer 側で打ち切る
+  // 棒読みちゃん・民安★Talk の「読んでいる時間相当の待ち」を renderer 側で打ち切る
   globalThis.electron.mainWindow.webContents.send(electronEvent.CANCEL_WAIT_YOMIKO_TIME);
   isSpeaking = false;
 });

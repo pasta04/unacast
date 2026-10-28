@@ -89,7 +89,7 @@ const abortWav = () => {
 let cancelYomikoTime: (() => void) | null = null;
 
 /**
- * 棒読みちゃん・民安☆Talk が読んでいる時間相当を、音量 0 の音声合成で待つ。
+ * 棒読みちゃん・民安★Talk が読んでいる時間相当を、音量 0 の音声合成で待つ。
  * 打ち切られた場合は 'canceled' を返す (呼び出し側は SPEAKING_END を送らない。
  * 中断時は main 側で待ちを終えているので、遅れて届いた SPEAKING_END が次の発話の待ちを終わらせないように)。
  */

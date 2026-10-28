@@ -30,7 +30,7 @@ type YomikoType = AppConfig['typeYomiko'];
 
 const yomikoOptions: { value: YomikoType; label: string }[] = [
   { value: 'none', label: '使用しない' },
-  { value: 'tamiyasu', label: '民安☆Talk' },
+  { value: 'tamiyasu', label: '民安★Talk' },
   { value: 'bouyomi', label: '棒読みちゃん' },
   { value: 'voicevox', label: 'VOICE VOX' },
 ];
@@ -299,7 +299,7 @@ export const Yomiko: React.FC = () => {
 
       <Box sx={{ mb: 1, maxWidth: 600 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-          民安☆Talkのファイルパス
+          民安★Talkのファイルパス
         </Typography>
         <TextField fullWidth size="small" value={config.tamiyasuPath} placeholder="C:\\hogehoge\\fugafuga\\vrx.exe" onChange={(e) => setConfig('tamiyasuPath', e.target.value)} />
       </Box>

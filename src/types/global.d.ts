@@ -155,7 +155,7 @@ declare global {
       /** 置き換える文字列 **/
       pronunciation: string;
     }[];
-    /** 民安Talkのファイルパス */
+    /** 民安★Talkのファイルパス */
     let tamiyasuPath: string;
     /** 棒読みちゃんの待ち受けポート */
     let bouyomiPort: number;
