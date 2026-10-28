@@ -1,5 +1,19 @@
 import * as React from 'react';
-import { Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormControlLabel,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
 import { SectionPanel, SourceFilterToggle, StatusDot, getStatusColor, HelpPopover } from './common';
@@ -17,6 +31,17 @@ export const SherpaStt: React.FC = () => {
   const update = (patch: Partial<AppConfig['sherpaStt']>) => setConfig('sherpaStt', { ...config.sherpaStt, ...patch });
 
   const [reloading, setReloading] = React.useState(false);
+  const [confirmRedownloadOpen, setConfirmRedownloadOpen] = React.useState(false);
+  const isModelDownloaded = modelStatus === 'ダウンロード済み';
+
+  /** ダウンロード済みなら全ファイルを取り直すことになるので、確認してから実行する */
+  const handleDownload = () => {
+    if (isModelDownloaded) {
+      setConfirmRedownloadOpen(true);
+    } else {
+      sherpaStt.downloadSherpaSttModel();
+    }
+  };
 
   /**
    * デバイス一覧を読み直し、サーバー起動中なら選択中のデバイスでマイクをつなぎ直す。
@@ -90,12 +115,30 @@ export const SherpaStt: React.FC = () => {
           <Typography variant="caption" color="text.secondary">
             ダウンロード状態: {modelStatus}
           </Typography>
-          <Button variant="contained" size="small" onClick={() => sherpaStt.downloadSherpaSttModel()} disabled={isServerRunning || status.startsWith('ダウンロード中')}>
-            {/* ダウンロード済みなら、押すと全ファイルを取り直す */}
-            {modelStatus === 'ダウンロード済み' ? '再ダウンロード' : 'ダウンロード'}
+          <Button variant="contained" size="small" onClick={handleDownload} disabled={isServerRunning || status.startsWith('ダウンロード中')}>
+            {isModelDownloaded ? '再ダウンロード' : 'ダウンロード'}
           </Button>
         </Stack>
       </Box>
+
+      <Dialog open={confirmRedownloadOpen} onClose={() => setConfirmRedownloadOpen(false)}>
+        <DialogTitle>確認</DialogTitle>
+        <DialogContent>
+          <DialogContentText>モデルファイルを再ダウンロードしますか？</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmRedownloadOpen(false)}>キャンセル</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setConfirmRedownloadOpen(false);
+              sherpaStt.downloadSherpaSttModel();
+            }}
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </SectionPanel>
   );
 };
