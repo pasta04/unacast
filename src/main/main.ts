@@ -10,6 +10,8 @@ import ElectronStore from 'electron-store';
 import './startServer';
 import { initThreadBrowser } from './threadBrowser';
 import { registerClipboardHandlers } from './clipboard';
+import { registerChatWindowCssHandlers } from './chatWindowCss';
+import { applyChatWindowRuntimeMode, chatWindowCreateOptions, loadChatWindowMode, registerChatWindowModeHandlers } from './chatWindowMode';
 import SherpaSpeechToText from './sherpaStt';
 import { electronEvent } from './const';
 remote.initialize();
@@ -89,6 +91,8 @@ if (!app.requestSingleInstanceLock()) {
   globalThis.window_config = {
     taskbar: store.get('taskbar'),
   };
+  // チャットウィンドウの表示モード (最前面・枠なし/背景透過)。ウィンドウ作成前に読み込む
+  loadChatWindowMode(store);
 
   // 全てのウィンドウが閉じたら終了
   // app.on('window-all-closed', () => {
@@ -258,6 +262,8 @@ if (!app.requestSingleInstanceLock()) {
     createImagePreviewWindow();
     initThreadBrowser(() => resolveRendererUrl('threadBrowser'));
     registerClipboardHandlers();
+    registerChatWindowCssHandlers();
+    registerChatWindowModeHandlers(recreateChatWindow);
     initializeSherpaStt(globalThis.electron.sherpaStt);
 
     applyTaskbarState();
@@ -266,6 +272,9 @@ if (!app.requestSingleInstanceLock()) {
   // 音声再生できるようにする
   app.commandLine.appendSwitch('--autoplay-policy', 'no-user-gesture-required');
 }
+
+/** チャットウィンドウの位置・大きさの保存 (作り直し時に、作り直す前の状態を保存するため保持する) */
+let chatWindowState: ReturnType<typeof windowStateKeeper> | null = null;
 
 const createChatWindow = () => {
   const windowState = windowStateKeeper({
@@ -283,8 +292,8 @@ const createChatWindow = () => {
 
     useContentSize: true,
     icon: iconPath,
-    // CSS 適用前の下地色。style-window.css の既定背景と合わせて白フラッシュを防ぐ
-    backgroundColor: '#1e1e1e',
+    // 枠・背景透過・下地色 (表示モードによる。作成時にしか指定できない)
+    ...chatWindowCreateOptions(),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -296,6 +305,9 @@ const createChatWindow = () => {
   });
   remote.enable(chatWindow.webContents);
   windowState.manage(chatWindow);
+  chatWindowState = windowState;
+  // 最前面・クリック透過
+  applyChatWindowRuntimeMode(chatWindow);
 
   chatWindow.setTitle('unacast');
   chatWindow.setMenu(null);
@@ -305,6 +317,30 @@ const createChatWindow = () => {
 
   globalThis.electron.chatWindow = chatWindow;
   // chatWindow.webContents.openDevTools();
+};
+
+/**
+ * チャットウィンドウを作り直す (枠なし/背景透過の切り替え用)。
+ * 表示中のコメントは作り直す前に取り出し、新しいウィンドウの読み込み後に戻す。位置・大きさは保存して引き継ぐ。
+ */
+const recreateChatWindow = async () => {
+  const old = globalThis.electron.chatWindow;
+  let commentsHtml = '';
+  if (old && !old.isDestroyed()) {
+    try {
+      commentsHtml = await old.webContents.executeJavaScript(`document.getElementById('res-list')?.innerHTML ?? ''`);
+    } catch (e) {
+      log.warn('[recreateChatWindow] コメントの退避に失敗', e);
+    }
+    chatWindowState?.saveState(old);
+    old.destroy();
+  }
+  createChatWindow();
+  const chatWindow = globalThis.electron.chatWindow;
+  chatWindow.setSkipTaskbar(!globalThis.window_config.taskbar.chatWindow);
+  chatWindow.webContents.once('did-finish-load', () => {
+    chatWindow.webContents.send(electronEvent.RESTORE_CHAT_COMMENTS, commentsHtml);
+  });
 };
 
 const createTranslateWindow = () => {

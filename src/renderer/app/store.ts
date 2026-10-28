@@ -84,6 +84,12 @@ export type StoreState = {
   setNgWordDialogOpen: (open: boolean) => void;
   setYomikoTemplateDialogOpen: (open: boolean) => void;
 
+  /**
+   * チャットウィンドウのスタイル (config.chatWindowCss) だけを適用済みにして保存する。
+   * 設定画面の他の項目の編集中の値は保存しない (上部の「適用」とは独立に使うため)。
+   */
+  applyChatWindowCss: () => void;
+
   /** 現在の config をローカルストレージへ保存 */
   persist: () => void;
 };
@@ -166,6 +172,12 @@ export const useAppStore = create<StoreState>((set, get) => ({
   setDictionaryDialogOpen: (open) => set({ dictionaryDialogOpen: open }),
   setNgWordDialogOpen: (open) => set({ ngWordDialogOpen: open }),
   setYomikoTemplateDialogOpen: (open) => set({ yomikoTemplateDialogOpen: open }),
+
+  applyChatWindowCss: () => {
+    const css = get().config.chatWindowCss;
+    set((state) => ({ appliedConfig: { ...state.appliedConfig, chatWindowCss: css } }));
+    saveConfigToStorage({ ...loadConfigFromStorage(), chatWindowCss: css });
+  },
 
   persist: () => saveConfigToStorage(get().config),
 }));

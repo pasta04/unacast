@@ -4,6 +4,7 @@ import { electronEvent } from '../../main/const';
 import { sleep } from '../../main/util';
 import { useAppStore } from './store';
 import type { AppConfig } from './config';
+import type { ChatWindowMode } from '../../main/chatWindowMode';
 
 const log = electronlog.scope('renderer-react');
 
@@ -188,6 +189,26 @@ export const registerIpcSubscribers = () => {
   ipcRenderer.on(electronEvent.PREVIEW_IMAGE, (_event: any, url: string) => {
     (window as any).electron?.imagePreviewWindow?.webContents?.send(electronEvent.PREVIEW_IMAGE, url);
   });
+};
+
+/** チャットウィンドウの表示モード (最前面・枠なし/背景透過・クリック透過) を取得する */
+export const invokeGetChatWindowMode = (): Promise<ChatWindowMode> => ipcRenderer.invoke(electronEvent.GET_CHAT_WINDOW_MODE);
+
+/** チャットウィンドウの表示モードを変更する。変更後のモードが返る */
+export const invokeSetChatWindowMode = (patch: Partial<ChatWindowMode>): Promise<ChatWindowMode> => ipcRenderer.invoke(electronEvent.SET_CHAT_WINDOW_MODE, patch);
+
+/** チャットウィンドウの表示モードの変更 (右クリックメニューからの変更を含む) を購読する。戻り値で購読を解除する */
+export const subscribeChatWindowMode = (listener: (mode: ChatWindowMode) => void) => {
+  const handler = (_event: any, mode: ChatWindowMode) => listener(mode);
+  ipcRenderer.on(electronEvent.CHAT_WINDOW_MODE_UPDATED, handler);
+  return () => {
+    ipcRenderer.removeListener(electronEvent.CHAT_WINDOW_MODE_UPDATED, handler);
+  };
+};
+
+/** チャットウィンドウのユーザー CSS を main 経由でチャットウィンドウへ反映する */
+export const sendChatWindowCss = (css: string) => {
+  ipcRenderer.send(electronEvent.APPLY_CHAT_WINDOW_CSS, css);
 };
 
 export const sendApplyConfig = (config: AppConfig) => {

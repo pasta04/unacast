@@ -74,6 +74,7 @@ export const defaultConfig: AppConfig = {
     },
     speakWord: 'アスキーアート',
   },
+  chatWindowCss: '',
   translate: {
     enable: true,
     targetLang: 'ja',

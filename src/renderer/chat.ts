@@ -4,6 +4,7 @@ import { writeClipboardText } from './clipboard';
 import electronlog from 'electron-log/renderer';
 const log = electronlog.scope('renderer-chat');
 import { electronEvent } from '../main/const';
+import type { ChatWindowMode } from '../main/chatWindowMode';
 
 const ipcRenderer = electron.ipcRenderer;
 
@@ -52,28 +53,89 @@ const createContextMenuInImage = (e: MouseEvent, src: string) => {
   contextMenuInImage.popup({ window: getCurrentWindow(), x: e.x, y: e.y });
 };
 
-const contextMenu = new Menu();
-contextMenu.append(
-  new MenuItem({
-    label: '最前面表示',
-    type: 'checkbox',
-    checked: false,
-    click: (e) => {
-      getCurrentWindow().setAlwaysOnTop(e.checked);
-    },
-  }),
-);
+/** ウィンドウの表示モード (main が正。変わったら CHAT_WINDOW_MODE_UPDATED で届く) */
+let windowMode: ChatWindowMode = { alwaysOnTop: false, frameless: false, clickThrough: false };
 
-contextMenu.append(
-  new MenuItem({
-    label: 'スクロールが端以外の時もコメント受信時に端に飛ぶ',
-    type: 'checkbox',
-    checked: true,
-    click: (e) => {
-      getCurrentWindow().webContents.send(electronEvent.FORCE_SCROLL, e.checked);
-    },
-  }),
-);
+const setWindowMode = (patch: Partial<ChatWindowMode>) => ipcRenderer.invoke(electronEvent.SET_CHAT_WINDOW_MODE, patch);
+
+/** 通常の右クリックメニュー。チェック状態を最新にするため、開くたびに作る */
+const createContextMenu = () => {
+  const contextMenu = new Menu();
+  contextMenu.append(
+    new MenuItem({
+      label: '最前面表示',
+      type: 'checkbox',
+      checked: windowMode.alwaysOnTop,
+      click: (e) => void setWindowMode({ alwaysOnTop: e.checked }),
+    }),
+  );
+  contextMenu.append(
+    new MenuItem({
+      label: '枠なし・背景透過',
+      type: 'checkbox',
+      checked: windowMode.frameless,
+      click: (e) => void setWindowMode({ frameless: e.checked }),
+    }),
+  );
+  contextMenu.append(
+    new MenuItem({
+      // 有効中はこのウィンドウを操作できなくなるため、解除は設定画面から行う
+      label: 'クリック透過 (解除は設定画面から)',
+      type: 'checkbox',
+      checked: windowMode.clickThrough,
+      click: (e) => void setWindowMode({ clickThrough: e.checked }),
+    }),
+  );
+  contextMenu.append(new MenuItem({ type: 'separator' }));
+  contextMenu.append(
+    new MenuItem({
+      label: 'スクロールが端以外の時もコメント受信時に端に飛ぶ',
+      type: 'checkbox',
+      checked: forceScroll,
+      click: (e) => {
+        getCurrentWindow().webContents.send(electronEvent.FORCE_SCROLL, e.checked);
+      },
+    }),
+  );
+  return contextMenu;
+};
+
+/**
+ * 枠なし・背景透過の時の見た目を整える。
+ * - 背景を半透明にする。style-window.css の直後 (ユーザーカスタム CSS より前) に置くので、ユーザーの CSS で上書きできる
+ * - 枠が無いと移動できないため、上端にドラッグ用のつまみを置く (マウスを乗せた時だけ見える。style-window.css 参照)
+ */
+const applyFramelessLook = (frameless: boolean) => {
+  if (!frameless || document.getElementById('window-drag-bar')) return;
+  const style = document.createElement('style');
+  style.id = 'window-transparent-background';
+  style.textContent = 'body { background-color: rgba(30, 30, 30, 0.5); }';
+  const windowCss = document.querySelector('link[href$="style-window.css"]');
+  if (windowCss) windowCss.insertAdjacentElement('afterend', style);
+  else document.head.prepend(style);
+
+  const bar = document.createElement('div');
+  bar.id = 'window-drag-bar';
+  bar.title = 'ドラッグして移動';
+  document.body.prepend(bar);
+};
+
+const onWindowModeChanged = (mode: ChatWindowMode) => {
+  windowMode = mode;
+  applyFramelessLook(mode.frameless);
+};
+
+ipcRenderer.on(electronEvent.CHAT_WINDOW_MODE_UPDATED, (_event: any, mode: ChatWindowMode) => onWindowModeChanged(mode));
+// つまみを body に追加するので、DOM の構築後に取得する
+const loadWindowMode = () => void ipcRenderer.invoke(electronEvent.GET_CHAT_WINDOW_MODE).then(onWindowModeChanged);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadWindowMode);
+else loadWindowMode();
+
+// 枠なし/背景透過の切り替えでウィンドウが作り直された時、作り直す前のコメントを戻す
+ipcRenderer.on(electronEvent.RESTORE_CHAT_COMMENTS, (_event: any, html: string) => {
+  const dom = document.getElementById('res-list');
+  if (dom && html && dom.innerHTML === '') dom.innerHTML = html;
+});
 
 // 右クリックメニュー
 document.oncontextmenu = (e: MouseEvent) => {
@@ -89,7 +151,7 @@ document.oncontextmenu = (e: MouseEvent) => {
     if (selectText) {
       contextMenuInText.popup({ window: getCurrentWindow(), x: e.x, y: e.y });
     } else {
-      contextMenu.popup({ window: getCurrentWindow(), x: e.x, y: e.y });
+      createContextMenu().popup({ window: getCurrentWindow(), x: e.x, y: e.y });
     }
   }
 };
@@ -128,6 +190,30 @@ ipcRenderer.on(electronEvent.SHOW_COMMENT, (event: any, args: { config: (typeof 
       document.documentElement.scrollTo(0, 0);
     }
   }
+});
+
+/**
+ * 設定画面で編集したユーザー CSS を反映する。
+ * head の末尾に置くので、resources/style-server.css を含む既存の CSS より優先される。
+ */
+const applyUserCss = (css: string) => {
+  let style = document.getElementById('user-css') as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'user-css';
+    document.head.appendChild(style);
+  }
+  style.textContent = css;
+};
+
+ipcRenderer.on(electronEvent.APPLY_CHAT_WINDOW_CSS, (_event: any, css: string) => {
+  applyUserCss(css);
+});
+
+// 読み込み時 (起動時・再読み込み時) は main が覚えている CSS を取得する
+void ipcRenderer.invoke(electronEvent.GET_CHAT_WINDOW_CSS).then((css: string) => {
+  // 取得中に適用が届いていたら、そちらが新しいので上書きしない
+  if (!document.getElementById('user-css')) applyUserCss(css);
 });
 
 // リセット

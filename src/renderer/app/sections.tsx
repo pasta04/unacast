@@ -10,13 +10,16 @@ import TranslateIcon from '@mui/icons-material/Translate';
 import MicIcon from '@mui/icons-material/Mic';
 import TuneIcon from '@mui/icons-material/Tune';
 import BlockIcon from '@mui/icons-material/Block';
+import PaletteIcon from '@mui/icons-material/Palette';
 
-export type SectionId = 'all' | 'sources' | 'fetch' | 'display' | 'sound' | 'yomiko' | 'aamode' | 'translate' | 'sherpaStt' | 'ngword' | 'other';
+export type SectionId = 'all' | 'sources' | 'fetch' | 'display' | 'chatWindowStyle' | 'sound' | 'yomiko' | 'aamode' | 'translate' | 'sherpaStt' | 'ngword' | 'other';
 
 export type SectionDef = {
   id: SectionId;
   label: string;
   icon: React.ReactNode;
+  /** サイドバーでこの項目の前に区切り線を入れる */
+  dividerBefore?: boolean;
 };
 
 export const sections: SectionDef[] = [
@@ -31,4 +34,6 @@ export const sections: SectionDef[] = [
   { id: 'sherpaStt', label: 'ローカル音声認識', icon: <MicIcon /> },
   { id: 'ngword', label: 'NGワード', icon: <BlockIcon /> },
   { id: 'other', label: 'その他', icon: <TuneIcon /> },
+  // 手元のチャットウィンドウにだけ効く設定。配信に関わる設定と分けるため区切って末尾に置く (全設定には含めない)
+  { id: 'chatWindowStyle', label: 'チャットウィンドウのスタイル', icon: <PaletteIcon />, dividerBefore: true },
 ];

@@ -13,3 +13,22 @@ body {
      アプリ内ウィンドウはダークモード相当の不透明色を既定にする。 */
   background-color: #1e1e1e;
 }
+
+/* 枠なし・背景透過の時に上端に置く、ウィンドウ移動用のつまみ (chat.ts が追加する)。
+   普段は見えず、マウスを乗せた時だけ表示する */
+#window-drag-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  z-index: 10000;
+  -webkit-app-region: drag;
+  cursor: move;
+  background-color: rgba(255, 255, 255, 0.35);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+body:hover #window-drag-bar {
+  opacity: 1;
+}

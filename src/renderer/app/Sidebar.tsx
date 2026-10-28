@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { sections, SectionId } from './sections';
 
 const DRAWER_WIDTH = 220;
@@ -22,10 +22,13 @@ export const Sidebar: React.FC<Props> = ({ selected, onSelect }) => (
     <Box sx={{ overflow: 'auto' }}>
       <List dense>
         {sections.map((s) => (
-          <ListItemButton key={s.id} selected={selected === s.id} onClick={() => onSelect(s.id)}>
-            <ListItemIcon sx={{ minWidth: 36 }}>{s.icon}</ListItemIcon>
-            <ListItemText primary={s.label} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-          </ListItemButton>
+          <React.Fragment key={s.id}>
+            {s.dividerBefore && <Divider sx={{ my: 0.5 }} />}
+            <ListItemButton selected={selected === s.id} onClick={() => onSelect(s.id)}>
+              <ListItemIcon sx={{ minWidth: 36 }}>{s.icon}</ListItemIcon>
+              <ListItemText primary={s.label} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
+            </ListItemButton>
+          </React.Fragment>
         ))}
       </List>
     </Box>

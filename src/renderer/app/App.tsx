@@ -13,10 +13,11 @@ import { Translate } from './sections/Translate';
 import { SherpaStt } from './sections/SherpaStt';
 import { NgWord } from './sections/NgWord';
 import { Other } from './sections/Other';
+import { ChatWindowStyle } from './sections/ChatWindowStyle';
 import { AlertDialog, ConfirmStopDialog } from './Dialogs';
 import type { SectionId } from './sections';
 import { useAppStore } from './store';
-import { sendLoadVoicevox } from './ipc';
+import { sendChatWindowCss, sendLoadVoicevox } from './ipc';
 import { loadAudioDevicesWithRetry, refreshAudioDevicesFromEvent } from './audioDevices';
 
 const sectionRenderers: Record<Exclude<SectionId, 'all'>, React.FC> = {
@@ -30,6 +31,7 @@ const sectionRenderers: Record<Exclude<SectionId, 'all'>, React.FC> = {
   sherpaStt: SherpaStt,
   ngword: NgWord,
   other: Other,
+  chatWindowStyle: ChatWindowStyle,
 };
 
 const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
@@ -46,6 +48,7 @@ const SectionContent: React.FC<{ selected: SectionId }> = ({ selected }) => {
         <SherpaStt />
         <NgWord />
         <Other />
+        {/* チャットウィンドウのスタイルは手元だけに効く設定で面積も大きいため、全設定には含めない (サイドバーから開く) */}
       </>
     );
   }
@@ -71,6 +74,9 @@ export const App: React.FC = () => {
       refreshAudioDevicesFromEvent();
     };
     navigator.mediaDevices.addEventListener('devicechange', onDeviceChange);
+
+    // 保存済みのチャットウィンドウのスタイルを反映する (サーバー起動前から効かせる)
+    sendChatWindowCss(useAppStore.getState().appliedConfig.chatWindowCss);
 
     // VOICEVOX が選択されている場合は初回ロード
     const config = useAppStore.getState().config;
