@@ -4,7 +4,7 @@ import { useAppStore } from '../store';
 import { invokeGetChatWindowMode, invokeSetChatWindowMode, sendChatWindowCss, subscribeChatWindowMode } from '../ipc';
 import type { ChatWindowMode } from '../../../main/chatWindowMode';
 import { CSS_PROPERTIES, CSS_TARGETS, buildCssValue, buildPreviewDocument, upsertCssDeclaration } from '../chatWindowCss';
-import { SectionPanel, Caption } from './common';
+import { SectionPanel, Caption, HelpPopover } from './common';
 
 /**
  * ウィンドウの表示モード (最前面・枠なし/背景透過・クリック透過)。
@@ -35,9 +35,18 @@ const ChatWindowModeControls: React.FC = () => {
   const disabled = !mode || busy;
   return (
     <Box sx={{ mb: 1.5 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-        ウィンドウの表示
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+          ウィンドウの表示
+        </Typography>
+        <HelpPopover>
+          <Box>
+            枠なし・背景透過: タイトルバーを消し、背景を半透明にします。移動はウィンドウ上端のつまみ (マウスを乗せると表示) をドラッグします。背景の濃さは下の CSS の body の
+            background-color で変えられます。
+          </Box>
+          <Box sx={{ mt: 1 }}>クリック透過: マウス操作が後ろのウィンドウに届くようになります。アプリを再起動すると解除されます。</Box>
+        </HelpPopover>
+      </Box>
       <Caption>ゲーム画面などの上に重ねてコメントを見る時に使います。チャットウィンドウの右クリックメニューからも切り替えられます。</Caption>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
         <FormControlLabel
@@ -53,14 +62,7 @@ const ChatWindowModeControls: React.FC = () => {
           label="クリック透過"
         />
       </Box>
-      <Caption>
-        枠なし・背景透過: タイトルバーを消し、背景を半透明にします。移動はウィンドウ上端のつまみ (マウスを乗せると表示) をドラッグします。背景の濃さは下の CSS の body の
-        background-color で変えられます。
-      </Caption>
-      <Caption>
-        クリック透過:
-        マウス操作が後ろのウィンドウに届くようになります。有効中はチャットウィンドウを操作できないため、解除はこの画面から行ってください。アプリを再起動すると解除されます。
-      </Caption>
+      <Caption>クリック透過中はチャットウィンドウを操作できないため、解除はこの画面から行ってください。</Caption>
     </Box>
   );
 };
