@@ -11,6 +11,7 @@ import './startServer';
 import { initThreadBrowser } from './threadBrowser';
 import { registerClipboardHandlers } from './clipboard';
 import { registerChatWindowCssHandlers } from './chatWindowCss';
+import { registerSpeechControlHandlers } from './speechControl';
 import { applyChatWindowRuntimeMode, chatWindowCreateOptions, loadChatWindowMode, registerChatWindowModeHandlers } from './chatWindowMode';
 import SherpaSpeechToText from './sherpaStt';
 import { electronEvent } from './const';
@@ -263,6 +264,7 @@ if (!app.requestSingleInstanceLock()) {
     initThreadBrowser(() => resolveRendererUrl('threadBrowser'));
     registerClipboardHandlers();
     registerChatWindowCssHandlers();
+    registerSpeechControlHandlers();
     registerChatWindowModeHandlers(recreateChatWindow);
     initializeSherpaStt(globalThis.electron.sherpaStt);
 

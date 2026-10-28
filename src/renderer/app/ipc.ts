@@ -85,13 +85,28 @@ const abortWav = () => {
   }
 };
 
+/** 実行中の「読んでいる時間相当の待ち」を打ち切る関数 (読み上げ中断用) */
+let cancelYomikoTime: (() => void) | null = null;
+
+/**
+ * 棒読みちゃん・民安☆Talk が読んでいる時間相当を、音量 0 の音声合成で待つ。
+ * 打ち切られた場合は 'canceled' を返す (呼び出し側は SPEAKING_END を送らない。
+ * 中断時は main 側で待ちを終えているので、遅れて届いた SPEAKING_END が次の発話の待ちを終わらせないように)。
+ */
 const yomikoTime = async (msg: string) => {
-  return new Promise<void>((resolve) => {
+  return new Promise<'end' | 'canceled'>((resolve) => {
     const uttr = new globalThis.SpeechSynthesisUtterance(msg);
     uttr.volume = 0;
-    uttr.onend = () => resolve();
+    uttr.onend = () => resolve('end');
+    const cancel = () => {
+      speechSynthesis.cancel();
+      resolve('canceled');
+    };
+    cancelYomikoTime = cancel;
     speechSynthesis.speak(uttr);
-    sleep(10 * 1000).then(() => resolve());
+    sleep(10 * 1000).then(() => resolve('end'));
+  }).finally(() => {
+    cancelYomikoTime = null;
   });
 };
 
@@ -128,8 +143,12 @@ export const registerIpcSubscribers = () => {
   });
 
   ipcRenderer.on(electronEvent.WAIT_YOMIKO_TIME, async (_event: any, arg: string) => {
-    await yomikoTime(arg);
-    ipcRenderer.send(electronEvent.SPEAKING_END);
+    const result = await yomikoTime(arg);
+    if (result === 'end') ipcRenderer.send(electronEvent.SPEAKING_END);
+  });
+
+  ipcRenderer.on(electronEvent.CANCEL_WAIT_YOMIKO_TIME, () => {
+    cancelYomikoTime?.();
   });
 
   ipcRenderer.on(electronEvent.SHOW_ALERT, (_event: any, args: string) => {

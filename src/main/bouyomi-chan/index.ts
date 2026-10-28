@@ -1,4 +1,6 @@
 import net from 'net';
+import electronlog from 'electron-log';
+const log = electronlog.scope('bouyomi');
 
 type Options = {
   host?: string;
@@ -76,7 +78,24 @@ class BouyomiChan {
     len = buff.writeUInt32LE(messageByteLength, len);
     buff.write(concatMessage, len);
 
+    this.send(buff);
+  }
+
+  /**
+   * 今読み上げている文章をスキップする (棒読みちゃん側に溜まっている後続の読み上げはそのまま)
+   */
+  skip() {
+    /** スキップコマンド。読み上げ以外のコマンドは 2 バイトのコマンドだけを送る */
+    const COMMAND_TO_SKIP = 0x0030;
+    const buff = Buffer.alloc(2);
+    buff.writeUInt16LE(COMMAND_TO_SKIP);
+    this.send(buff);
+  }
+
+  private send(buff: Buffer) {
     const client = net.createConnection(this.port, this.host);
+    // 棒読みちゃんが起動していない時の接続エラーを、未処理の例外にせずログに残す
+    client.on('error', (e) => log.error(`棒読みちゃんに接続できません: ${e.message}`));
     client.write(buff);
     client.end();
   }

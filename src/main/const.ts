@@ -21,6 +21,14 @@ export const electronEvent = {
   SPEAK_WAV: 'speak-wav',
   ABORT_WAV: 'abort-wav',
   SPEAKING_END: 'speaking-end',
+  /** 棒読みちゃん・民安☆Talk の「読んでいる時間相当の待ち」を打ち切る main → renderer (読み上げ中断時) */
+  CANCEL_WAIT_YOMIKO_TIME: 'cancel-wait-yomiko-time',
+
+  /** 読み上げ中かどうかの取得・変更通知 (#77) */
+  GET_SPEECH_STATE: 'get-speech-state',
+  SPEECH_STATE_UPDATED: 'speech-state-updated',
+  /** 読み上げを中断する renderer → main */
+  STOP_SPEECH: 'stop-speech',
 
   // VOICEVOX の読み込み renderer → main
   LOAD_VOICEVOX: 'load-voicevox',

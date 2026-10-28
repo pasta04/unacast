@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Box, Button, Link, TextField, Typography } from '@mui/material';
 import electron from 'electron';
 import { useAppStore } from './store';
+import { SpeechStopButton } from './SpeechStopButton';
 import { sendApplyConfig, sendChatWindowCss, sendCommentTest, sendStartServer } from './ipc';
 
 const intOrZero = (raw: string) => {
@@ -68,6 +69,7 @@ export const HeaderBar: React.FC = () => {
         <Button variant="outlined" sx={{ ml: 1 }} onClick={handleTest}>
           テスト
         </Button>
+        <SpeechStopButton />
         {!isServerRunning ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
