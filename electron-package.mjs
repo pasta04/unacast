@@ -37,6 +37,8 @@ const ignore = [
   '^/README\\.md$',
   '^/tsconfig\\.json$',
   '^/package-lock\\.json$',
+  // リポジトリ直下の zip (リリース用に作った配布物など) をアプリに含めない
+  '^/[^/]+\\.zip$',
 ];
 
 const expectedOutDir = path.resolve(`unacast-${PLATFORM}-x64`);
