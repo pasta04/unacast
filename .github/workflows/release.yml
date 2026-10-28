@@ -1,0 +1,92 @@
+name: Release
+
+# 手動で起動するリリース。package.json の version をタグ名にして、
+# Windows 版 (通常版・unpack 版) をビルドし、タグ付きのリリースを作成して zip を添付する。
+# 手順: package.json の version を上げて master にマージ → このワークフローを master で実行する。
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'リリース名'
+        required: true
+        type: string
+      notes:
+        description: 'リリースノート (Markdown)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+# 同時に複数のリリースを作らない
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+# nodejs.yml と同じく、pwsh で実行し終了コードを必ず伝播させる
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          # nodejs.yml と同じ理由で 24.15.0 に固定
+          node-version: 24.15.0
+      - name: Check version
+        id: version
+        run: |
+          if ("${{ github.ref }}" -ne 'refs/heads/master') {
+            Write-Error 'master ブランチで実行してください'
+            exit 1
+          }
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          git ls-remote --exit-code --tags origin "refs/tags/$version" | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Error "タグ $version は既にあります。package.json の version を上げてください"
+            exit 1
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Output "リリースするバージョン: $version"
+          exit 0
+      - name: Install
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # buildwin と buildwinunpack は同じフォルダ (unacast-win32-x64) に出力するため、順に zip にする
+      - name: Build (buildwin)
+        run: |
+          npm run buildwin
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path unacast-win32-x64 -DestinationPath unacast-win32-x64.zip
+          Remove-Item -Recurse -Force unacast-win32-x64
+      - name: Build (buildwinunpack)
+        run: |
+          npm run buildwinunpack
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path unacast-win32-x64 -DestinationPath unacast-win32-x64_unpack.zip
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          # 入力はシェルに直接展開せず、環境変数経由で渡す
+          RELEASE_TITLE: ${{ inputs.title }}
+          RELEASE_NOTES: ${{ inputs.notes }}
+        run: |
+          Set-Content -Path release-notes.md -Value $env:RELEASE_NOTES -Encoding utf8
+          # タグはまだ無いので、gh がこのコミットにタグを作る
+          gh release create $env:VERSION unacast-win32-x64.zip unacast-win32-x64_unpack.zip --target '${{ github.sha }}' --title $env:RELEASE_TITLE --notes-file release-notes.md
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
