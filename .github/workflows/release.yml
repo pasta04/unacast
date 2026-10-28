@@ -3,23 +3,17 @@ name: Release
 # 手動で起動するリリース。package.json の version をタグ名にして、
 # Windows 版 (通常版・unpack 版) をビルドし、タグ付きのリリースを作成して zip を添付する。
 # 手順: package.json の version を上げて master にマージ → このワークフローを master で実行する。
-# reupload にチェックした場合は、既にあるリリースの zip だけを作り直して差し替える (リリース名・本文は変えない)。
 on:
   workflow_dispatch:
     inputs:
       title:
-        description: 'リリース名 (新規作成時は必須)'
-        required: false
+        description: 'リリース名'
+        required: true
         type: string
       notes:
-        description: 'リリースノート (Markdown、新規作成時は必須)'
-        required: false
+        description: 'リリースノート (Markdown)'
+        required: true
         type: string
-      reupload:
-        description: '既にあるリリースの zip だけを作り直して差し替える'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -52,10 +46,6 @@ jobs:
           node-version: 24.15.0
       - name: Check version
         id: version
-        env:
-          REUPLOAD: ${{ inputs.reupload }}
-          RELEASE_TITLE: ${{ inputs.title }}
-          RELEASE_NOTES: ${{ inputs.notes }}
         run: |
           if ("${{ github.ref }}" -ne 'refs/heads/master') {
             Write-Error 'master ブランチで実行してください'
@@ -63,25 +53,12 @@ jobs:
           }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           git ls-remote --exit-code --tags origin "refs/tags/$version" | Out-Null
-          $tagExists = $LASTEXITCODE -eq 0
-          if ($env:REUPLOAD -eq 'true') {
-            if (-not $tagExists) {
-              Write-Error "タグ $version がありません。zip の差し替えは既にあるリリースに対してのみ行えます"
-              exit 1
-            }
-            Write-Output "リリース $version の zip を差し替えます"
-          } else {
-            if ($tagExists) {
-              Write-Error "タグ $version は既にあります。package.json の version を上げてください (zip だけ作り直す場合は reupload にチェック)"
-              exit 1
-            }
-            if ([string]::IsNullOrWhiteSpace($env:RELEASE_TITLE) -or [string]::IsNullOrWhiteSpace($env:RELEASE_NOTES)) {
-              Write-Error '新規リリースにはリリース名とリリースノートが必要です'
-              exit 1
-            }
-            Write-Output "リリースするバージョン: $version"
+          if ($LASTEXITCODE -eq 0) {
+            Write-Error "タグ $version は既にあります。package.json の version を上げてください"
+            exit 1
           }
           "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Output "リリースするバージョン: $version"
           exit 0
       - name: Install
         run: |
@@ -105,7 +82,6 @@ jobs:
           Compress-Archive -Path unacast-win32-x64 -DestinationPath "$env:RUNNER_TEMP/unacast-win32-x64_unpack.zip"
           Get-ChildItem $env:RUNNER_TEMP -Filter *.zip | ForEach-Object { Write-Output ("{0}: {1:N0} bytes" -f $_.Name, $_.Length) }
       - name: Create release
-        if: ${{ !inputs.reupload }}
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -116,12 +92,4 @@ jobs:
           Set-Content -Path "$env:RUNNER_TEMP/release-notes.md" -Value $env:RELEASE_NOTES -Encoding utf8
           # タグはまだ無いので、gh がこのコミットにタグを作る
           gh release create $env:VERSION "$env:RUNNER_TEMP/unacast-win32-x64.zip" "$env:RUNNER_TEMP/unacast-win32-x64_unpack.zip" --target '${{ github.sha }}' --title $env:RELEASE_TITLE --notes-file "$env:RUNNER_TEMP/release-notes.md"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Replace release assets
-        if: ${{ inputs.reupload }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          gh release upload $env:VERSION "$env:RUNNER_TEMP/unacast-win32-x64.zip" "$env:RUNNER_TEMP/unacast-win32-x64_unpack.zip" --clobber
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
