@@ -31,6 +31,8 @@ defaults:
 jobs:
   release:
     runs-on: windows-latest
+    # zip はリポジトリの外 (ランナーの一時フォルダ RUNNER_TEMP) に作る。
+    # リポジトリ直下に置くと、後続の buildwinunpack がアプリに含めてしまうため
     steps:
       - name: Set git to use LF
         run: |
@@ -71,13 +73,14 @@ jobs:
         run: |
           npm run buildwin
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Compress-Archive -Path unacast-win32-x64 -DestinationPath unacast-win32-x64.zip
+          Compress-Archive -Path unacast-win32-x64 -DestinationPath "$env:RUNNER_TEMP/unacast-win32-x64.zip"
           Remove-Item -Recurse -Force unacast-win32-x64
       - name: Build (buildwinunpack)
         run: |
           npm run buildwinunpack
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Compress-Archive -Path unacast-win32-x64 -DestinationPath unacast-win32-x64_unpack.zip
+          Compress-Archive -Path unacast-win32-x64 -DestinationPath "$env:RUNNER_TEMP/unacast-win32-x64_unpack.zip"
+          Get-ChildItem $env:RUNNER_TEMP -Filter *.zip | ForEach-Object { Write-Output ("{0}: {1:N0} bytes" -f $_.Name, $_.Length) }
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -86,7 +89,7 @@ jobs:
           RELEASE_TITLE: ${{ inputs.title }}
           RELEASE_NOTES: ${{ inputs.notes }}
         run: |
-          Set-Content -Path release-notes.md -Value $env:RELEASE_NOTES -Encoding utf8
+          Set-Content -Path "$env:RUNNER_TEMP/release-notes.md" -Value $env:RELEASE_NOTES -Encoding utf8
           # タグはまだ無いので、gh がこのコミットにタグを作る
-          gh release create $env:VERSION unacast-win32-x64.zip unacast-win32-x64_unpack.zip --target '${{ github.sha }}' --title $env:RELEASE_TITLE --notes-file release-notes.md
+          gh release create $env:VERSION "$env:RUNNER_TEMP/unacast-win32-x64.zip" "$env:RUNNER_TEMP/unacast-win32-x64_unpack.zip" --target '${{ github.sha }}' --title $env:RELEASE_TITLE --notes-file "$env:RUNNER_TEMP/release-notes.md"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
