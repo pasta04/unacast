@@ -1,9 +1,69 @@
 import * as React from 'react';
-import { Box, Button, MenuItem, TextField, Typography } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, MenuItem, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
-import { sendChatWindowCss } from '../ipc';
+import { invokeGetChatWindowMode, invokeSetChatWindowMode, sendChatWindowCss, subscribeChatWindowMode } from '../ipc';
+import type { ChatWindowMode } from '../../../main/chatWindowMode';
 import { CSS_PROPERTIES, CSS_TARGETS, buildCssValue, buildPreviewDocument, upsertCssDeclaration } from '../chatWindowCss';
 import { SectionPanel, Caption } from './common';
+
+/**
+ * ウィンドウの表示モード (最前面・枠なし/背景透過・クリック透過)。
+ * config ではなく main が持つウィンドウ設定なので、「適用」を待たずにすぐ切り替える。
+ * チャットウィンドウの右クリックメニューからの変更も購読して表示を合わせる。
+ */
+const ChatWindowModeControls: React.FC = () => {
+  const [mode, setMode] = React.useState<ChatWindowMode | null>(null);
+  const [busy, setBusy] = React.useState(false);
+
+  React.useEffect(() => {
+    let active = true;
+    void invokeGetChatWindowMode().then((m) => active && setMode(m));
+    const unsubscribe = subscribeChatWindowMode(setMode);
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
+  const update = (patch: Partial<ChatWindowMode>) => {
+    setBusy(true);
+    void invokeSetChatWindowMode(patch)
+      .then(setMode)
+      .finally(() => setBusy(false));
+  };
+
+  const disabled = !mode || busy;
+  return (
+    <Box sx={{ mb: 1.5 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+        ウィンドウの表示
+      </Typography>
+      <Caption>ゲーム画面などの上に重ねてコメントを見る時に使います。チャットウィンドウの右クリックメニューからも切り替えられます。</Caption>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
+        <FormControlLabel
+          control={<Checkbox size="small" checked={mode?.alwaysOnTop ?? false} disabled={disabled} onChange={(e) => update({ alwaysOnTop: e.target.checked })} />}
+          label="最前面に表示"
+        />
+        <FormControlLabel
+          control={<Checkbox size="small" checked={mode?.frameless ?? false} disabled={disabled} onChange={(e) => update({ frameless: e.target.checked })} />}
+          label="枠なし・背景透過"
+        />
+        <FormControlLabel
+          control={<Checkbox size="small" checked={mode?.clickThrough ?? false} disabled={disabled} onChange={(e) => update({ clickThrough: e.target.checked })} />}
+          label="クリック透過"
+        />
+      </Box>
+      <Caption>
+        枠なし・背景透過: タイトルバーを消し、背景を半透明にします。移動はウィンドウ上端のつまみ (マウスを乗せると表示) をドラッグします。背景の濃さは下の CSS の body の
+        background-color で変えられます。
+      </Caption>
+      <Caption>
+        クリック透過:
+        マウス操作が後ろのウィンドウに届くようになります。有効中はチャットウィンドウを操作できないため、解除はこの画面から行ってください。アプリを再起動すると解除されます。
+      </Caption>
+    </Box>
+  );
+};
 
 /** 「項目を選んで挿入」: 対象・項目・値を選んで、CSS の該当ブロックに書き込む */
 const CssInsertHelper: React.FC<{ onInsert: (selector: string, property: string, value: string) => void }> = ({ onInsert }) => {
@@ -118,6 +178,10 @@ export const ChatWindowStyle: React.FC = () => {
         <>
           <Box>手元で確認するチャットウィンドウの見た目 (文字サイズ・色・背景など) を CSS で変更します。配信画面 (OBS) には影響しません。</Box>
           <Box sx={{ mt: 1 }}>
+            「ウィンドウの表示」の最前面・枠なし/背景透過・クリック透過は、チェックするとすぐ切り替わります
+            (「適用」は不要)。枠なし/背景透過を切り替えると、チャットウィンドウを作り直します (表示中のコメントは引き継ぎます)。
+          </Box>
+          <Box sx={{ mt: 1 }}>
             「項目を選んで挿入」で対象と項目を選ぶと、下の CSS に書き込まれます。同じ対象のブロックがあれば、その中の値を置き換えます。CSS を直接書いても構いません。
           </Box>
           <Box sx={{ mt: 1 }}>編集中の内容は右のプレビューにすぐ反映されます。「適用」を押すと保存され、チャットウィンドウに反映されます。</Box>
@@ -125,7 +189,11 @@ export const ChatWindowStyle: React.FC = () => {
         </>
       }
     >
-      <Caption>手元のチャットウィンドウの見た目を CSS で変更します。配信画面 (OBS) には影響しません。</Caption>
+      <Caption>手元のチャットウィンドウの見た目を変更します。配信画面 (OBS) には影響しません。</Caption>
+      <ChatWindowModeControls />
+      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+        スタイル (CSS)
+      </Typography>
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <Box sx={{ flex: '1 1 420px', minWidth: 320 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
