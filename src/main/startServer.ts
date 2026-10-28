@@ -15,6 +15,7 @@ import { incrementThreadTitle } from './readBBS/createThread';
 import { resolveYomikoTemplate, applyYomikoTemplate } from './yomikoTemplate';
 import { splitYomikoText, applyYomikoOmit, parseResNumberList, isYomikoSkippedResNumber } from './speechText';
 import { registerExternalApiRoutes } from './externalApi/routes';
+import { beginSpeechSession, setSpeechStopHandler, sleepUnlessStopped } from './speechControl';
 // レス取得APIをセット
 import getRes, { getRes as getBbsResponse, getThreadList, threadUrlToBoardInfo } from './getRes';
 import { CommentItem, ImageItem } from './youtube-chat/parser';
@@ -1196,6 +1197,7 @@ const speakVoicevoxChunked = async (msg: string, gen: number) => {
 const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => {
   // log.info('[playYomiko] start');
   const gen = ++speechGeneration;
+  currentYomikoType = typeYomiko;
   if (isSpeaking) {
     // 以前の読み子がまだ読んでいる
     switch (typeYomiko) {
@@ -1219,8 +1221,7 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
   // 読み子呼び出し
   switch (typeYomiko) {
     case 'tamiyasu': {
-      log.debug(`${config.tamiyasuPath} "${msg}"`);
-      spawn(config.tamiyasuPath, [msg]);
+      runTamiyasu(msg);
       // 読み子が読んでる時間分相当待つ
       globalThis.electron.mainWindow.webContents.send(electronEvent.WAIT_YOMIKO_TIME, msg);
       break;
@@ -1256,6 +1257,51 @@ const playYomiko = async (typeYomiko: typeof config.typeYomiko, msg: string) => 
   // log.info('[playYomiko] end');
 };
 ipcMain.on(electronEvent.SPEAKING_END, () => (isSpeaking = false));
+
+/**
+ * 民安★Talk に文章を渡す (vrx.exe "文章")。民安★Talk は常駐アプリで、起動したプロセスは渡したらすぐ終わる。
+ * パスの誤りなどで起動できなかった時は、未処理の例外にせずログに残す。
+ */
+const runTamiyasu = (text: string) => {
+  log.debug(`${config.tamiyasuPath} "${text}"`);
+  if (!config.tamiyasuPath) return;
+  const child = spawn(config.tamiyasuPath, [text]);
+  child.on('error', (e) => log.error(`民安★Talk を起動できません: ${e.message}`));
+};
+
+/**
+ * 民安★Talk の読み上げを中断する時に送る短い文章。
+ * 民安★Talk には外から読み上げを止める手段が無いため、基本設定の「ただちに再生」(新しい文章が来たら
+ * 今の再生を止めて読む) が有効な場合に、新しい文章で今の読み上げを打ち切らせる割り込みとして使う。
+ */
+const TAMIYASU_INTERRUPT_TEXT = '。';
+
+/** 今の発話で使っている読み子 (中断時の止め方を選ぶのに使う) */
+let currentYomikoType: typeof config.typeYomiko = 'none';
+
+/**
+ * 読み上げ中断ボタン (#77) で呼ばれる。読み子の発話を止め、playYomiko の待ちを打ち切る。
+ * - VOICEVOX: 再生を止め、世代を進めて残りの分割チャンクを捨てる
+ * - 棒読みちゃん: 今読んでいる 1 件をスキップさせる
+ * - 民安★Talk: 短い文章を送って割り込む (民安★Talk の「ただちに再生」が有効な場合に今の読み上げが止まる)
+ */
+setSpeechStopHandler(() => {
+  speechGeneration++;
+  switch (currentYomikoType) {
+    case 'voicevox':
+      voiceVox?.abort();
+      break;
+    case 'bouyomi':
+      bouyomi?.skip();
+      break;
+    case 'tamiyasu':
+      runTamiyasu(TAMIYASU_INTERRUPT_TEXT);
+      break;
+  }
+  // 棒読みちゃん・民安★Talk の「読んでいる時間相当の待ち」を renderer 側で打ち切る
+  globalThis.electron.mainWindow.webContents.send(electronEvent.CANCEL_WAIT_YOMIKO_TIME);
+  isSpeaking = false;
+});
 
 let isPlayingSe = false;
 const playSe = async () => {
@@ -1444,11 +1490,14 @@ export const sendDom = async (messageList: UserComment[]) => {
       }
     }
 
-    // 読み子
+    // 読み上げと、表示を維持する待ちは中断できる (#77)。その間を読み上げ中のセッションとする
     // メッセージが音声認識かどうかで使う読み子を分ける
-    if (speakTarget) {
-      const typeYomiko = speakTarget.from === 'stt' ? globalThis.config.typeYomikoStt : globalThis.config.typeYomiko;
-      if (typeYomiko !== 'none') {
+    const typeYomiko = speakTarget ? (speakTarget.from === 'stt' ? globalThis.config.typeYomikoStt : globalThis.config.typeYomiko) : 'none';
+    const holdDisplay = globalThis.config.dispType === 1;
+    const speechSession = typeYomiko !== 'none' || holdDisplay ? beginSpeechSession() : null;
+    try {
+      // 読み子
+      if (speakTarget && typeYomiko !== 'none') {
         // 読み上げテンプレートを解決 (ソース別 × 匿名/非匿名。{text} {name} {res} が使える)
         const template = resolveYomikoTemplate(globalThis.config.yomikoTemplate, speakTarget.from, speakTarget.isAnonymous);
 
@@ -1486,11 +1535,13 @@ export const sendDom = async (messageList: UserComment[]) => {
           await playYomiko(typeYomiko, text);
         }
       }
-    }
 
-    // 追加で表示を維持する時間
-    if (globalThis.config.dispType === 1) {
-      await sleep(globalThis.config.minDisplayTime * 1000);
+      // 追加で表示を維持する時間 (中断されたら待たない)
+      if (holdDisplay && speechSession) {
+        await sleepUnlessStopped(globalThis.config.minDisplayTime * 1000, speechSession.signal);
+      }
+    } finally {
+      speechSession?.end();
     }
 
     // 鳴らし終わって読み子が終わった
