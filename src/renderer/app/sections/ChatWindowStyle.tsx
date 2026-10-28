@@ -40,7 +40,8 @@ const ChatWindowModeControls: React.FC = () => {
           ウィンドウの表示
         </Typography>
         <HelpPopover>
-          <Box>
+          <Box>ゲーム画面などの上に重ねてコメントを見る時に使います。チャットウィンドウの右クリックメニューからも切り替えられます。</Box>
+          <Box sx={{ mt: 1 }}>
             枠なし・背景透過: タイトルバーを消し、背景を半透明にします。移動はウィンドウ上端のつまみ (マウスを乗せると表示) をドラッグします。背景の濃さは下の CSS の body の
             background-color で変えられます。
           </Box>
@@ -50,7 +51,6 @@ const ChatWindowModeControls: React.FC = () => {
           </Box>
         </HelpPopover>
       </Box>
-      <Caption>ゲーム画面などの上に重ねてコメントを見る時に使います。チャットウィンドウの右クリックメニューからも切り替えられます。</Caption>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
         <FormControlLabel
           control={<Checkbox size="small" checked={mode?.alwaysOnTop ?? false} disabled={disabled} onChange={(e) => update({ alwaysOnTop: e.target.checked })} />}
