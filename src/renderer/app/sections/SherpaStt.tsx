@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
 import type { AppConfig } from '../config';
-import { SectionPanel, Caption, SourceFilterToggle, StatusDot, getStatusColor, HelpPopover } from './common';
+import { SectionPanel, SourceFilterToggle, StatusDot, getStatusColor, HelpPopover } from './common';
 import { reloadAudioDevices } from '../audioDevices';
 import sherpaStt from '../../sherpaStt';
 
@@ -41,8 +41,7 @@ export const SherpaStt: React.FC = () => {
   }, []);
 
   return (
-    <SectionPanel title="ローカル音声認識">
-      <Caption>マイクからの音声を認識し、レスのように表示します。</Caption>
+    <SectionPanel title="ローカル音声認識" help="マイクからの音声を認識し、レスのように表示します。">
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
         <FormControlLabel
           control={<Checkbox size="small" checked={config.sherpaStt.enable} onChange={(e) => update({ enable: e.target.checked })} disabled={isServerRunning} />}
@@ -81,16 +80,19 @@ export const SherpaStt: React.FC = () => {
       </Box>
 
       <Box sx={{ maxWidth: 600 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1 }}>
-          モデルファイル
-        </Typography>
-        <Caption>音声認識に必要な追加のファイルです。サイズが大きいので別途ダウンロードする必要があります(170MB程度)。</Caption>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            モデルファイル
+          </Typography>
+          <HelpPopover>音声認識に必要なファイルをダウンロードします(170MB程度)</HelpPopover>
+        </Box>
         <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
           <Typography variant="caption" color="text.secondary">
             ダウンロード状態: {modelStatus}
           </Typography>
           <Button variant="contained" size="small" onClick={() => sherpaStt.downloadSherpaSttModel()} disabled={isServerRunning || status.startsWith('ダウンロード中')}>
-            ダウンロード
+            {/* ダウンロード済みなら、押すと全ファイルを取り直す */}
+            {modelStatus === 'ダウンロード済み' ? '再ダウンロード' : 'ダウンロード'}
           </Button>
         </Stack>
       </Box>
