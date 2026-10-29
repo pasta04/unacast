@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 import { ChatClient } from 'dank-twitch-irc';
-import { LiveChat } from '../main/youtube-chat';
+import { LiveChat, ApiLiveChat } from '../main/youtube-chat';
 import NiconamaComment from '../main/niconama';
 import TwicasComment from '../main/twicas';
 import JpnknFast from '../main/jpnkn';
@@ -21,7 +21,7 @@ declare global {
     /** Twitchチャットインスタンス */
     let twitchChat: ChatClient;
     /** Youtubeチャットインスタンス */
-    let youtubeChat: LiveChat;
+    let youtubeChat: LiveChat | ApiLiveChat;
     /** jpnknFast */
     let jpnknFast: JpnknFast;
     /** ニコ生チャットインスタンス */
@@ -60,6 +60,12 @@ declare global {
     let youtubeId: string;
     /** Youtube LiveID */
     let youtubeLiveId: string;
+    /** Youtube コメントの取得方法 (scrape = ページ解析, api = YouTube Data API) */
+    let youtubeFetchMode: 'scrape' | 'api';
+    /** YouTube Data API のキー */
+    let youtubeApiKey: string;
+    /** YouTube Data API でのコメント取得間隔 (秒) */
+    let youtubeApiInterval: number;
     /** Twitch ユーザID */
     let twitchId: string;
     /** ニコニココミュニティID */

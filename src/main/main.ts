@@ -12,6 +12,7 @@ import { initThreadBrowser } from './threadBrowser';
 import { registerClipboardHandlers } from './clipboard';
 import { registerChatWindowCssHandlers } from './chatWindowCss';
 import { registerSpeechControlHandlers } from './speechControl';
+import { registerYoutubeAuthHandlers } from './youtube-chat/youtubeAuth';
 import { applyChatWindowRuntimeMode, chatWindowCreateOptions, loadChatWindowMode, registerChatWindowModeHandlers } from './chatWindowMode';
 import SherpaSpeechToText from './sherpaStt';
 import { electronEvent } from './const';
@@ -265,6 +266,7 @@ if (!app.requestSingleInstanceLock()) {
     registerClipboardHandlers();
     registerChatWindowCssHandlers();
     registerSpeechControlHandlers();
+    registerYoutubeAuthHandlers();
     registerChatWindowModeHandlers(recreateChatWindow);
     initializeSherpaStt(globalThis.electron.sherpaStt);
 

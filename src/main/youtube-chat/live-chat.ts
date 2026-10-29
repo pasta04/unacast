@@ -14,7 +14,10 @@ const log = electronlog.scope('Youtube-chat');
 const RETRY_MIN_MS = 2 * 1000;
 const RETRY_MAX_MS = 60 * 1000;
 
-type EventMap = {
+/** リクエストに追加するヘッダ (YouTube にログイン中なら Cookie・認証ヘッダ) を返す */
+export type AuthHeadersProvider = () => Promise<Record<string, string>>;
+
+export type EventMap = {
   start: [message: string];
   end: [reason?: string];
   firstComment: [item: CommentItem];
@@ -28,7 +31,7 @@ type EventMap = {
  * YouTubeライブチャット取得イベント
  */
 export class LiveChat extends EventEmitter<EventMap> {
-  private static readonly headers = {
+  private static readonly baseHeaders = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36',
     'Content-Type': 'application/json',
   };
@@ -50,12 +53,14 @@ export class LiveChat extends EventEmitter<EventMap> {
   private retryDelayMs = RETRY_MIN_MS;
   /** コメント取得 API に送るクライアントバージョン (配信ページから取得した現在の値) */
   private clientVersion = FALLBACK_CLIENT_VERSION;
+  private readonly getAuthHeaders: AuthHeadersProvider;
 
   constructor(
-    options: { channelId: string } | { liveId: string },
+    options: ({ channelId: string } | { liveId: string }) & { getAuthHeaders?: AuthHeadersProvider },
     private interval = 5000,
   ) {
     super();
+    this.getAuthHeaders = options.getAuthHeaders ?? (async () => ({}));
     if ('channelId' in options) {
       this.channelId = options.channelId;
     } else if ('liveId' in options) {
@@ -79,7 +84,7 @@ export class LiveChat extends EventEmitter<EventMap> {
     if (this.channelId) {
       const url = `https://www.youtube.com/channel/${this.channelId}/live`;
       try {
-        const liveRes = await axios.get(url, { headers: LiveChat.headers });
+        const liveRes = await axios.get(url, { headers: await this.headers() });
 
         // ライブが始まってなくて、チャンネルのトップに飛ばされているケース
         if (!liveRes.data.match(/liveChatHeaderRenderer/)) {
@@ -126,6 +131,11 @@ export class LiveChat extends EventEmitter<EventMap> {
     }
   }
 
+  /** リクエストヘッダ。ログイン中なら Cookie・認証ヘッダを加える */
+  private async headers(): Promise<Record<string, string>> {
+    return { ...LiveChat.baseHeaders, ...(await this.getAuthHeaders()) };
+  }
+
   /** 再試行の前に待つ。待つたびに次の待ち時間を倍にする (上限 RETRY_MAX_MS) */
   private async waitBeforeRetry() {
     const delay = this.retryDelayMs;
@@ -145,13 +155,17 @@ export class LiveChat extends EventEmitter<EventMap> {
 
   private async getInitParam(): Promise<{ api: string; continuation: string }> {
     const url = `https://www.youtube.com/watch?v=${this.liveId}`;
-    const res = await axios.get<string>(url);
+    // 配信ページは従来ヘッダ無しで取得している。ログイン中のみ Cookie などを付ける
+    const auth = await this.getAuthHeaders();
+    const res = await axios.get<string>(url, { headers: auth });
     const page = parseWatchPage(res.data);
 
     // ボット確認 (「ログインして bot ではないことを確認してください」) などでログインを求められると、
     // 配信ページの代わりに確認画面が返り、コメント取得に必要な情報が入っていない
     if (page.loginRequiredReason) {
-      throw new Error(`YouTube にログインを求められています (${page.loginRequiredReason})。時間をおいて自動で再接続します`);
+      throw new Error(
+        `YouTube にボット確認を求められています (${page.loginRequiredReason})。設定の Youtube で「YouTube にログイン」するか、取得方法を「公式 API」にしてください。このまま自動で再接続を続けます`,
+      );
     }
     // 配信中か確認。配信中でなければエラーとみなす
     if (page.isLiveNow === false) throw new Error(`liveId = ${this.liveId} is not Live Now`);
@@ -188,7 +202,7 @@ export class LiveChat extends EventEmitter<EventMap> {
       };
       log.debug(`POST ${url}`);
       res = await axios
-        .post<GetLiveChatResponse>(url, JSON.stringify(reqBody), { headers: LiveChat.headers })
+        .post<GetLiveChatResponse>(url, JSON.stringify(reqBody), { headers: await this.headers() })
         .then((data) => {
           return data;
         })
