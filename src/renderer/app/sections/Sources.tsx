@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, Button, FormControlLabel, MenuItem, Radio, RadioGroup, Select, TextField, Typography } from '@mui/material';
+import { Box, Button, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
 import { invokeGetYoutubeLoginState, invokeYoutubeLogin, invokeYoutubeLogout, sendOpenThreadBrowser, subscribeYoutubeLoginState } from '../ipc';
 import { normalizeThreadUrl } from '../../../main/util';
@@ -17,16 +17,10 @@ const StatusLine: React.FC<{ label: string; value: string; configured?: boolean 
   </Typography>
 );
 
-/** 公式 API でのコメント取得間隔 (秒) の選択肢 */
-const youtubeApiIntervalOptions = [5, 10, 15, 30, 60];
-
 /**
- * YouTube のコメント取得方法 (ページ解析 / 公式 API) と、ボット確認への対処 (ログイン・API キー) の設定
+ * YouTube のボット確認への対処 (アプリ内での YouTube へのログイン)
  */
-const YoutubeFetchSettings: React.FC = () => {
-  const config = useAppStore((s) => s.config);
-  const isServerRunning = useAppStore((s) => s.isServerRunning);
-  const setConfig = useAppStore((s) => s.setConfig);
+const YoutubeLogin: React.FC = () => {
   const [loggedIn, setLoggedIn] = React.useState<boolean | null>(null);
 
   React.useEffect(() => {
@@ -35,56 +29,23 @@ const YoutubeFetchSettings: React.FC = () => {
   }, []);
 
   return (
-    <Box sx={{ mt: 0.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <Typography variant="caption">取得方法</Typography>
-        <HelpPopover>
-          <Box>
-            YouTube に「ログインして bot ではないことを確認してください」(ボット確認)
-            を求められると、ページ解析ではコメントを取得できなくなります。その場合は次のどちらかで対処できます。
-          </Box>
-          <Box sx={{ mt: 1 }}>
-            YouTube にログイン: ページ解析のまま、ログインした状態で取得します。ログイン情報はこのアプリの中にだけ保存されます。配信者本人のアカウントでなくても構いません。
-          </Box>
-          <Box sx={{ mt: 1 }}>公式 API: YouTube Data API v3 で取得します。Google Cloud のプロジェクトで YouTube Data API v3 を有効にし、作成した API キーを入力してください。</Box>
-          <Box sx={{ mt: 1 }}>
-            公式 API には1日 10,000 ユニットの利用上限があり、コメント取得1回で 5 ユニット使います。取得間隔 10 秒で1時間あたり約 1,800 ユニット (約5時間半で上限)、30 秒で約 600
-            ユニット (約16時間で上限) です。上限は太平洋時間の0時 (日本時間の16時か17時) に戻ります。
-          </Box>
-        </HelpPopover>
-      </Box>
-      <RadioGroup row value={config.youtubeFetchMode} onChange={(_, v) => setConfig('youtubeFetchMode', v as 'scrape' | 'api')}>
-        <FormControlLabel value="scrape" control={<Radio size="small" />} label="ページ解析 (通常)" disabled={isServerRunning} />
-        <FormControlLabel value="api" control={<Radio size="small" />} label="公式 API" disabled={isServerRunning} />
-      </RadioGroup>
-      {config.youtubeFetchMode === 'api' ? (
-        <Box sx={{ mb: 0.5 }}>
-          <Typography variant="caption">API キー</Typography>
-          <TextField fullWidth size="small" type="password" value={config.youtubeApiKey} onChange={(e) => setConfig('youtubeApiKey', e.target.value)} disabled={isServerRunning} />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-            <Typography variant="caption">取得間隔</Typography>
-            <Select size="small" value={config.youtubeApiInterval} onChange={(e) => setConfig('youtubeApiInterval', Number(e.target.value))} disabled={isServerRunning}>
-              {youtubeApiIntervalOptions.map((sec) => (
-                <MenuItem key={sec} value={sec}>
-                  {sec} 秒
-                </MenuItem>
-              ))}
-            </Select>
-          </Box>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mt: 0.5, mb: 0.5 }}>
+      <Typography variant="caption" color="text.secondary">
+        YouTube: {loggedIn === null ? '-' : loggedIn ? 'ログイン中' : '未ログイン'}
+      </Typography>
+      <Button size="small" variant="outlined" onClick={() => invokeYoutubeLogin()}>
+        YouTube にログイン
+      </Button>
+      <Button size="small" variant="outlined" disabled={!loggedIn} onClick={() => invokeYoutubeLogout()}>
+        ログアウト
+      </Button>
+      <HelpPopover>
+        <Box>
+          YouTube に「ログインして bot ではないことを確認してください」(ボット確認) を求められると、コメントを取得できなくなります。その場合は YouTube
+          にログインしてください。ログインした状態でコメントを取得します。
         </Box>
-      ) : (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mb: 0.5 }}>
-          <Typography variant="caption" color="text.secondary">
-            YouTube: {loggedIn === null ? '-' : loggedIn ? 'ログイン中' : '未ログイン'}
-          </Typography>
-          <Button size="small" variant="outlined" onClick={() => invokeYoutubeLogin()}>
-            YouTube にログイン
-          </Button>
-          <Button size="small" variant="outlined" disabled={!loggedIn} onClick={() => invokeYoutubeLogout()}>
-            ログアウト
-          </Button>
-        </Box>
-      )}
+        <Box sx={{ mt: 1 }}>ログイン情報はこのアプリの中にだけ保存され、ログアウトで消えます。</Box>
+      </HelpPopover>
     </Box>
   );
 };
@@ -161,7 +122,7 @@ export const Sources: React.FC = () => {
         <LabeledInput prefix="https://www.youtube.com/channel/" suffix="/">
           <TextField size="small" value={config.youtubeId} onChange={(e) => setConfig('youtubeId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
-        <YoutubeFetchSettings />
+        <YoutubeLogin />
         <SourceFilterToggle source="youtube" axis="broadcast" />
         <Box sx={{ mt: 0.5 }}>
           <StatusLine label="status" value={status.youtube} configured={!!(config.youtubeLiveId || config.youtubeId)} />

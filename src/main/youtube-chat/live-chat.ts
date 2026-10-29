@@ -17,7 +17,7 @@ const RETRY_MAX_MS = 60 * 1000;
 /** リクエストに追加するヘッダ (YouTube にログイン中なら Cookie・認証ヘッダ) を返す */
 export type AuthHeadersProvider = () => Promise<Record<string, string>>;
 
-export type EventMap = {
+type EventMap = {
   start: [message: string];
   end: [reason?: string];
   firstComment: [item: CommentItem];
@@ -163,9 +163,7 @@ export class LiveChat extends EventEmitter<EventMap> {
     // ボット確認 (「ログインして bot ではないことを確認してください」) などでログインを求められると、
     // 配信ページの代わりに確認画面が返り、コメント取得に必要な情報が入っていない
     if (page.loginRequiredReason) {
-      throw new Error(
-        `YouTube にボット確認を求められています (${page.loginRequiredReason})。設定の Youtube で「YouTube にログイン」するか、取得方法を「公式 API」にしてください。このまま自動で再接続を続けます`,
-      );
+      throw new Error(`YouTube にボット確認を求められています (${page.loginRequiredReason})。設定の Youtube で「YouTube にログイン」してください。このまま自動で再接続を続けます`);
     }
     // 配信中か確認。配信中でなければエラーとみなす
     if (page.isLiveNow === false) throw new Error(`liveId = ${this.liveId} is not Live Now`);

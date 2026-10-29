@@ -4,7 +4,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import log from 'electron-log';
 import { ChatClient } from 'dank-twitch-irc';
-import { ApiLiveChat, LiveChat } from './youtube-chat';
+import { LiveChat } from './youtube-chat';
 import { getAuthHeaders } from './youtube-chat/youtubeAuth';
 import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
@@ -660,24 +660,7 @@ const startYoutubeChat = async () => {
   try {
     log.info('[Youtube Chat] connect started');
     const target = globalThis.config.youtubeLiveId ? { liveId: globalThis.config.youtubeLiveId } : { channelId: globalThis.config.youtubeId };
-    if (globalThis.config.youtubeFetchMode === 'api') {
-      if (!globalThis.config.youtubeApiKey) {
-        globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, {
-          commentType: 'youtube',
-          category: 'status',
-          message: 'error! 取得方法が「公式 API」の場合は API キーを設定してください',
-        });
-        return;
-      }
-      globalThis.electron.youtubeChat = new ApiLiveChat({
-        ...target,
-        apiKey: globalThis.config.youtubeApiKey,
-        intervalSec: globalThis.config.youtubeApiInterval,
-        getAuthHeaders,
-      });
-    } else {
-      globalThis.electron.youtubeChat = new LiveChat({ ...target, getAuthHeaders });
-    }
+    globalThis.electron.youtubeChat = new LiveChat({ ...target, getAuthHeaders });
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'wait live' });
 
     // 接続開始イベント
