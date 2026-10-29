@@ -44,6 +44,11 @@ export const electronEvent = {
   GET_CHAT_WINDOW_MODE: 'get-chat-window-mode',
   SET_CHAT_WINDOW_MODE: 'set-chat-window-mode',
   CHAT_WINDOW_MODE_UPDATED: 'chat-window-mode-updated',
+  /** YouTube へのログイン (ボット確認の対処用) のログイン・ログアウト・状態取得・状態変更通知 */
+  YOUTUBE_LOGIN: 'youtube-login',
+  YOUTUBE_LOGOUT: 'youtube-logout',
+  GET_YOUTUBE_LOGIN_STATE: 'get-youtube-login-state',
+  YOUTUBE_LOGIN_STATE_UPDATED: 'youtube-login-state-updated',
   /** チャットウィンドウを作り直した時に、作り直す前のコメントを戻す main → renderer(チャット) */
   RESTORE_CHAT_COMMENTS: 'restore-chat-comments',
 

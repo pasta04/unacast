@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { useAppStore } from '../store';
-import { sendOpenThreadBrowser } from '../ipc';
+import { invokeGetYoutubeLoginState, invokeYoutubeLogin, invokeYoutubeLogout, sendOpenThreadBrowser, subscribeYoutubeLoginState } from '../ipc';
 import { normalizeThreadUrl } from '../../../main/util';
-import { SectionPanel, LabeledInput, Caption, SourceFilterToggle, StatusDot, getStatusColor } from './common';
+import { SectionPanel, LabeledInput, Caption, SourceFilterToggle, StatusDot, getStatusColor, HelpPopover } from './common';
 
 /**
  * 取得元の status を 1 行で表示する。
@@ -16,6 +16,39 @@ const StatusLine: React.FC<{ label: string; value: string; configured?: boolean 
     {label}: {value}
   </Typography>
 );
+
+/**
+ * YouTube のボット確認への対処 (アプリ内での YouTube へのログイン)
+ */
+const YoutubeLogin: React.FC = () => {
+  const [loggedIn, setLoggedIn] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    invokeGetYoutubeLoginState().then((state) => setLoggedIn(state.loggedIn));
+    return subscribeYoutubeLoginState((state) => setLoggedIn(state.loggedIn));
+  }, []);
+
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mt: 0.5, mb: 0.5 }}>
+      <Typography variant="caption" color="text.secondary">
+        YouTube: {loggedIn === null ? '-' : loggedIn ? 'ログイン中' : '未ログイン'}
+      </Typography>
+      <Button size="small" variant="outlined" onClick={() => invokeYoutubeLogin()}>
+        YouTube にログイン
+      </Button>
+      <Button size="small" variant="outlined" disabled={!loggedIn} onClick={() => invokeYoutubeLogout()}>
+        ログアウト
+      </Button>
+      <HelpPopover>
+        <Box>
+          YouTube に「ログインして bot ではないことを確認してください」(ボット確認) を求められると、コメントを取得できなくなります。その場合は YouTube
+          にログインしてください。ログインした状態でコメントを取得します。
+        </Box>
+        <Box sx={{ mt: 1 }}>ログイン情報はこのアプリの中にだけ保存され、ログアウトで消えます。</Box>
+      </HelpPopover>
+    </Box>
+  );
+};
 
 export const Sources: React.FC = () => {
   const config = useAppStore((s) => s.config);
@@ -89,6 +122,7 @@ export const Sources: React.FC = () => {
         <LabeledInput prefix="https://www.youtube.com/channel/" suffix="/">
           <TextField size="small" value={config.youtubeId} onChange={(e) => setConfig('youtubeId', e.target.value)} disabled={isServerRunning} />
         </LabeledInput>
+        <YoutubeLogin />
         <SourceFilterToggle source="youtube" axis="broadcast" />
         <Box sx={{ mt: 0.5 }}>
           <StatusLine label="status" value={status.youtube} configured={!!(config.youtubeLiveId || config.youtubeId)} />

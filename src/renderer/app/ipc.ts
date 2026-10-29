@@ -5,6 +5,7 @@ import { sleep } from '../../main/util';
 import { useAppStore } from './store';
 import type { AppConfig } from './config';
 import type { ChatWindowMode } from '../../main/chatWindowMode';
+import type { YoutubeLoginState } from '../../main/youtube-chat/youtubeAuth';
 
 const log = electronlog.scope('renderer-react');
 
@@ -222,6 +223,24 @@ export const subscribeChatWindowMode = (listener: (mode: ChatWindowMode) => void
   ipcRenderer.on(electronEvent.CHAT_WINDOW_MODE_UPDATED, handler);
   return () => {
     ipcRenderer.removeListener(electronEvent.CHAT_WINDOW_MODE_UPDATED, handler);
+  };
+};
+
+/** YouTube のログイン画面を開く */
+export const invokeYoutubeLogin = (): Promise<void> => ipcRenderer.invoke(electronEvent.YOUTUBE_LOGIN);
+
+/** YouTube からログアウトする */
+export const invokeYoutubeLogout = (): Promise<void> => ipcRenderer.invoke(electronEvent.YOUTUBE_LOGOUT);
+
+/** YouTube のログイン状態を取得する */
+export const invokeGetYoutubeLoginState = (): Promise<YoutubeLoginState> => ipcRenderer.invoke(electronEvent.GET_YOUTUBE_LOGIN_STATE);
+
+/** YouTube のログイン状態の変化を購読する。戻り値で購読を解除する */
+export const subscribeYoutubeLoginState = (listener: (state: YoutubeLoginState) => void) => {
+  const handler = (_event: any, state: YoutubeLoginState) => listener(state);
+  ipcRenderer.on(electronEvent.YOUTUBE_LOGIN_STATE_UPDATED, handler);
+  return () => {
+    ipcRenderer.removeListener(electronEvent.YOUTUBE_LOGIN_STATE_UPDATED, handler);
   };
 };
 

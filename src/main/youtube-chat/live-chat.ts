@@ -1,9 +1,21 @@
 import { EventEmitter } from '../EventEmitter';
 import axios, { AxiosResponse } from 'axios';
 import { actionToRenderer, CommentItem, getContinuation, parseData } from './parser';
+import { FALLBACK_CLIENT_VERSION, parseWatchPage } from './watchPage';
 import { sleep } from '../util';
 import electronlog from 'electron-log';
 const log = electronlog.scope('Youtube-chat');
+
+/**
+ * 接続を始められなかった時の再試行間隔。失敗が続くほど倍にしていき、上限で止める。
+ * YouTube にボット確認を求められている時などに、短い間隔で取り直し続けて確認を長引かせないため。
+ * 接続できたら最小値に戻す。
+ */
+const RETRY_MIN_MS = 2 * 1000;
+const RETRY_MAX_MS = 60 * 1000;
+
+/** リクエストに追加するヘッダ (YouTube にログイン中なら Cookie・認証ヘッダ) を返す */
+export type AuthHeadersProvider = () => Promise<Record<string, string>>;
 
 type EventMap = {
   start: [message: string];
@@ -19,7 +31,7 @@ type EventMap = {
  * YouTubeライブチャット取得イベント
  */
 export class LiveChat extends EventEmitter<EventMap> {
-  private static readonly headers = {
+  private static readonly baseHeaders = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36',
     'Content-Type': 'application/json',
   };
@@ -37,12 +49,18 @@ export class LiveChat extends EventEmitter<EventMap> {
   private observer?: NodeJS.Timeout;
   /** 停止要求をされた */
   private isStop = false;
+  /** 次に接続を再試行するまでの待ち時間 */
+  private retryDelayMs = RETRY_MIN_MS;
+  /** コメント取得 API に送るクライアントバージョン (配信ページから取得した現在の値) */
+  private clientVersion = FALLBACK_CLIENT_VERSION;
+  private readonly getAuthHeaders: AuthHeadersProvider;
 
   constructor(
-    options: { channelId: string } | { liveId: string },
+    options: ({ channelId: string } | { liveId: string }) & { getAuthHeaders?: AuthHeadersProvider },
     private interval = 5000,
   ) {
     super();
+    this.getAuthHeaders = options.getAuthHeaders ?? (async () => ({}));
     if ('channelId' in options) {
       this.channelId = options.channelId;
     } else if ('liveId' in options) {
@@ -57,6 +75,7 @@ export class LiveChat extends EventEmitter<EventMap> {
     this.isStop = false;
     this.commentApiKey = '';
     this.continuation = '';
+    this.retryDelayMs = RETRY_MIN_MS;
     this.fetchLiveId();
   }
 
@@ -65,13 +84,13 @@ export class LiveChat extends EventEmitter<EventMap> {
     if (this.channelId) {
       const url = `https://www.youtube.com/channel/${this.channelId}/live`;
       try {
-        const liveRes = await axios.get(url, { headers: LiveChat.headers });
+        const liveRes = await axios.get(url, { headers: await this.headers() });
 
         // ライブが始まってなくて、チャンネルのトップに飛ばされているケース
         if (!liveRes.data.match(/liveChatHeaderRenderer/)) {
           // 配信が開始してないパターンが考えられるのでリトライ
           this.emit('error', new Error('Live stream not found'));
-          await sleep(2000);
+          await this.waitBeforeRetry();
           this.fetchLiveId();
           return;
         }
@@ -89,26 +108,40 @@ export class LiveChat extends EventEmitter<EventMap> {
         if (init.api && init.continuation) {
           this.commentApiKey = init.api;
           this.continuation = init.continuation;
+          this.retryDelayMs = RETRY_MIN_MS;
           this.observer = setInterval(() => this.fetchChat(), this.interval);
           this.emit('start', this.liveId);
         } else {
           // 配信ページはあるのに何らかの理由でAPIKeyが取れなかった
           this.emit('error', new Error(`failed fetch apikey liveId=${this.liveId}`));
-          await sleep(2000);
+          await this.waitBeforeRetry();
           this.fetchLiveId();
         }
       } catch (e: any) {
         // 考えられるのは、LiveIdを指定していて、ページが取れたが、isLiveNowがfalseだった時
         this.emit('error', new Error(e.message));
-        await sleep(2000);
+        await this.waitBeforeRetry();
         this.fetchLiveId();
       }
     } else {
       // 配信が開始してないパターンが考えられるのでリトライ
       this.emit('error', new Error('Live stream not found'));
-      await sleep(2000);
+      await this.waitBeforeRetry();
       this.fetchLiveId();
     }
+  }
+
+  /** リクエストヘッダ。ログイン中なら Cookie・認証ヘッダを加える */
+  private async headers(): Promise<Record<string, string>> {
+    return { ...LiveChat.baseHeaders, ...(await this.getAuthHeaders()) };
+  }
+
+  /** 再試行の前に待つ。待つたびに次の待ち時間を倍にする (上限 RETRY_MAX_MS) */
+  private async waitBeforeRetry() {
+    const delay = this.retryDelayMs;
+    this.retryDelayMs = Math.min(delay * 2, RETRY_MAX_MS);
+    if (delay > RETRY_MIN_MS) log.info(`retry in ${delay / 1000}s`);
+    await sleep(delay);
   }
 
   public stop(reason?: string) {
@@ -122,43 +155,26 @@ export class LiveChat extends EventEmitter<EventMap> {
 
   private async getInitParam(): Promise<{ api: string; continuation: string }> {
     const url = `https://www.youtube.com/watch?v=${this.liveId}`;
-    const res = await axios.get<string>(url);
+    // 配信ページは従来ヘッダ無しで取得している。ログイン中のみ Cookie などを付ける
+    const auth = await this.getAuthHeaders();
+    const res = await axios.get<string>(url, { headers: auth });
+    const page = parseWatchPage(res.data);
 
-    let isLiveNow: string | undefined;
-    try {
-      // 配信中か確認。配信中でなければエラーとみなす
-      isLiveNow = res.data
-        .match(/isLiveNow":.*?,/)?.[0]
-        .split(':')[1]
-        .replace(/"/g, '')
-        .replace(/,/g, '');
-      log.debug(isLiveNow);
-    } catch (e: any) {
-      log.error(e.message);
-      return { api: '', continuation: '' };
+    // ボット確認 (「ログインして bot ではないことを確認してください」) などでログインを求められると、
+    // 配信ページの代わりに確認画面が返り、コメント取得に必要な情報が入っていない
+    if (page.loginRequiredReason) {
+      throw new Error(`YouTube にボット確認を求められています (${page.loginRequiredReason})。設定の Youtube で「YouTube にログイン」してください。このまま自動で再接続を続けます`);
     }
-    if (isLiveNow === 'false') throw new Error(`liveId = ${this.liveId} is not Live Now`);
+    // 配信中か確認。配信中でなければエラーとみなす
+    if (page.isLiveNow === false) throw new Error(`liveId = ${this.liveId} is not Live Now`);
 
-    try {
-      const key = res.data
-        .match(/innertubeApiKey":".*?"/)?.[0]
-        .split(':')[1]
-        .replace(/"/g, '');
-
-      log.debug(`key is ${key}`);
-
-      const continuation = res.data
-        .match(/continuation":".*?"/)?.[0]
-        .split(':')[1]
-        .replace(/"/g, '');
-
-      log.debug(`initial continuation is ${continuation}`);
-
-      return { api: key as string, continuation: continuation as string };
-    } catch (e: any) {
-      log.error(e.message);
-      return { api: '', continuation: '' };
+    log.debug(`key is ${page.apiKey}`);
+    log.debug(`initial continuation is ${page.continuation}`);
+    if (page.clientVersion) {
+      this.clientVersion = page.clientVersion;
+      log.debug(`clientVersion is ${page.clientVersion}`);
     }
+    return { api: page.apiKey ?? '', continuation: page.continuation ?? '' };
   }
 
   private async fetchChat() {
@@ -169,7 +185,7 @@ export class LiveChat extends EventEmitter<EventMap> {
         context: {
           client: {
             clientName: 'WEB',
-            clientVersion: '2.20210126.08.02',
+            clientVersion: this.clientVersion,
             timeZone: 'Asia/Tokyo',
             utcOffsetMinutes: 540,
             mainAppWebInfo: {
@@ -184,7 +200,7 @@ export class LiveChat extends EventEmitter<EventMap> {
       };
       log.debug(`POST ${url}`);
       res = await axios
-        .post<GetLiveChatResponse>(url, JSON.stringify(reqBody), { headers: LiveChat.headers })
+        .post<GetLiveChatResponse>(url, JSON.stringify(reqBody), { headers: await this.headers() })
         .then((data) => {
           return data;
         })

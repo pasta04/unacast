@@ -5,6 +5,7 @@ import cors from 'cors';
 import log from 'electron-log';
 import { ChatClient } from 'dank-twitch-irc';
 import { LiveChat } from './youtube-chat';
+import { getAuthHeaders } from './youtube-chat/youtubeAuth';
 import { ipcMain } from 'electron';
 import expressWs from 'express-ws';
 import { readWavFiles, sleep, escapeHtml, unescapeHtml, decodeNumericCharRefs, removeEmoji, judgeAaMessage, isNihongo, convertUrltoImgTagSrc, normalizeThreadUrl } from './util';
@@ -658,11 +659,8 @@ const startTwitchChat = async () => {
 const startYoutubeChat = async () => {
   try {
     log.info('[Youtube Chat] connect started');
-    if (globalThis.config.youtubeLiveId) {
-      globalThis.electron.youtubeChat = new LiveChat({ liveId: globalThis.config.youtubeLiveId });
-    } else {
-      globalThis.electron.youtubeChat = new LiveChat({ channelId: globalThis.config.youtubeId });
-    }
+    const target = globalThis.config.youtubeLiveId ? { liveId: globalThis.config.youtubeLiveId } : { channelId: globalThis.config.youtubeId };
+    globalThis.electron.youtubeChat = new LiveChat({ ...target, getAuthHeaders });
     globalThis.electron.mainWindow.webContents.send(electronEvent.UPDATE_STATUS, { commentType: 'youtube', category: 'status', message: 'wait live' });
 
     // 接続開始イベント
